@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from "../Topnav";
+import img from "../images/log.jpg";
 
 export default function Login() {
   return (
@@ -12,21 +13,11 @@ export default function Login() {
         {/* LEFT SIDE: HERO IMAGE */}
         <div className="relative hidden md:block w-full h-full">
           <img 
-            src="https://www.mmu.ac.uk/sites/default/files/styles/open_graph_image/public/2023-03/1547BAP0573_For_Graduation_2022%5B1%5D.jpg?h=e5aec6c8&itok=4MeGlK8W" 
+            src={img} 
             alt="University Students" 
             className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent" />
-          
-          <div className="absolute bottom-12 left-12 text-white p-6 bg-blue-900/40 rounded-2xl backdrop-blur-sm border border-blue-700">
-            <h1 className="text-5xl font-black tracking-tighter leading-none">
-              Welcome Back to<br />
-              SpeakUni.
-            </h1>
-            <p className="mt-4 text-xl opacity-90 text-blue-100 max-w-sm">
-              Your personalized academic English coach is waiting.
-            </p>
-          </div>
         </div>
 
         {/* RIGHT SIDE: LOGIN FORM */}
