@@ -16,6 +16,13 @@
   --color-accent-border: rgba(170, 59, 255, 0.5);
   --color-social-bg: rgba(244, 243, 236, 0.5);
 
+  --color-accent: #2563eb;         /* A strong Blue-600 */
+  --color-accent-bg: #eff6ff;      /* Very light blue-50 */
+  --color-text-heading: #1e3a8a;   /* Deep Blue-900 */
+  --color-text: #4b5563;           /* Standard Gray */
+  --color-border: #dbeafe;         /* Light Blue-100 */
+
+
   --shadow: 
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
     rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
