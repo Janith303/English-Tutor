@@ -1,0 +1,124 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import Navbar from "../Topnav";
+
+export default function Login() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 md:p-0">
+      <Navbar />
+    
+      <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 bg-white  shadow-2xl overflow-hidden min-h-[80vh]">
+        
+        {/* LEFT SIDE: HERO IMAGE */}
+        <div className="relative hidden md:block w-full h-full">
+          <img 
+            src="https://www.mmu.ac.uk/sites/default/files/styles/open_graph_image/public/2023-03/1547BAP0573_For_Graduation_2022%5B1%5D.jpg?h=e5aec6c8&itok=4MeGlK8W" 
+            alt="University Students" 
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-blue-900/80 via-blue-900/20 to-transparent" />
+          
+          <div className="absolute bottom-12 left-12 text-white p-6 bg-blue-900/40 rounded-2xl backdrop-blur-sm border border-blue-700">
+            <h1 className="text-5xl font-black tracking-tighter leading-none">
+              Welcome Back to<br />
+              SpeakUni.
+            </h1>
+            <p className="mt-4 text-xl opacity-90 text-blue-100 max-w-sm">
+              Your personalized academic English coach is waiting.
+            </p>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: LOGIN FORM */}
+        <div className="flex flex-col justify-center items-center p-8 md:p-16 bg-white">
+          <div className="w-full max-w-md space-y-8">
+            
+            <div className="text-center md:text-left">
+              <h2 className="text-4xl md:text-5xl font-black text-blue-900 tracking-tight">
+                Account Login
+              </h2>
+              <p className="mt-3 text-lg text-gray-600">
+                Enter your credentials to access your dashboard.
+              </p>
+            </div>
+
+            <form className="space-y-5">
+              {/* Username Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700" htmlFor="username">
+                  Username or Email
+                </label>
+                <input 
+                  type="text" 
+                  id="username"
+                  placeholder="e.g., IT23194510my.sliit.lk"
+                  className="w-full px-5 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition outline-none"
+                  required
+                />
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700" htmlFor="password">
+                  Password
+                </label>
+                <input 
+                  type="password" 
+                  id="password"
+                  placeholder="••••••••••••"
+                  className="w-full px-5 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition outline-none"
+                  required
+                />
+              </div>
+
+               {/* Forget Password as a normal link */}
+                <Link 
+                  to="/forgot-password" 
+                  className="text-blue-600 font-semibold hover:underline text-sm transition"
+                >
+                  Forgot Password?
+                </Link>
+
+              {/* Action Section: Login Button and Text Link */}
+              <div className="flex flex-col items-center gap-4 pt-2">
+                <button 
+                  type="submit" 
+                  className="w-full py-4 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-700 transition shadow-lg active:scale-95"
+                >
+                  Login
+                </button>
+              </div>
+            </form>
+
+            {/* Divider */}
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-3 bg-white text-gray-500 font-medium">Or continue with</span>
+              </div>
+            </div>
+
+            {/* Social Login */}
+            <div className="grid grid-cols-2 gap-4">
+                {['Google', 'Apple'].map((provider) => (
+                    <button key={provider} className="flex items-center justify-center gap-3 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition">
+                        <img src={`https://authjs.dev/img/providers/${provider.toLowerCase()}.svg`} alt={provider} className="h-5 w-5"/>
+                        <span className="font-semibold text-gray-700">{provider}</span>
+                    </button>
+                ))}
+            </div>
+
+            <p className="text-center text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/signup" className="font-bold text-blue-600 hover:underline">
+                Sign up for free
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
