@@ -20,10 +20,10 @@ export default function Login() {
         </div>
 
         {/* RIGHT SIDE: LOGIN FORM */}
-        <div className="flex flex-col justify-center items-center p-8 md:p-16 bg-white">
+        <div className="flex flex-col justify-center items-center p-9 md:p-20 bg-white">
           <div className="w-full max-w-md space-y-8">
             <div className="text-center md:text-left">
-              <h2 className="text-4xl md:text-5xl font-black text-blue-900 tracking-tight">
+              <h2 className="text-5xl md:text-5xl font-black text-blue-900 tracking-tight">
                 Account Login
               </h2>
               <p className="mt-3 text-lg text-gray-600">
