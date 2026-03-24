@@ -50,7 +50,7 @@ export default function SignUp() {
         
         <div className="text-center mb-16 space-y-4">
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter">
-            Choose Your <span className="text-blue-600">SpeakUni</span> Path
+            Choose Your <span className="text-blue-600">English</span> Path
           </h1>
           <p className="text-xl text-slate-600 font-medium">
             Select your role to get started
