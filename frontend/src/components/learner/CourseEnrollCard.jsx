@@ -1,3 +1,8 @@
+import starImg from "../images/star.png";
+import avatarImg from "../images/avatar.png";
+import thunderboltImg from "../images/thunder-bolt.png";
+import wallclockImg from "../images/wall-clock.png";
+
 export default function CourseEnrollCard({ course, onEnroll }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow duration-200">
@@ -6,7 +11,7 @@ export default function CourseEnrollCard({ course, onEnroll }) {
           {course.level}
         </span>
         <div className="flex items-center gap-1">
-          <img src="/star.png" alt="Rating Star" className="w-4 h-4" />
+          <img src={starImg} alt="Rating Star" className="w-4 h-4" />
           <span className="text-sm font-semibold text-gray-700">
             {course.rating}
           </span>
@@ -19,7 +24,7 @@ export default function CourseEnrollCard({ course, onEnroll }) {
 
       <div className="flex items-center gap-2">
         <img
-          src="/avatar.png"
+          src={avatarImg}
           alt="Instructor Avatar"
           className="w-8 h-8 rounded-full object-cover"
         />
@@ -32,11 +37,7 @@ export default function CourseEnrollCard({ course, onEnroll }) {
 
       <div className="bg-blue-50 rounded-xl px-4 py-3">
         <div className="flex items-center gap-1.5 text-blue-400 text-xs font-medium mb-1">
-          <img
-            src="/thunder-bolt.png"
-            alt="Focus Area"
-            className="w-3.5 h-3.5"
-          />
+          <img src={thunderboltImg} alt="Focus Area" className="w-3.5 h-3.5" />
           Focus Area
         </div>
         <p className="text-blue-600 text-sm font-semibold">
@@ -55,7 +56,7 @@ export default function CourseEnrollCard({ course, onEnroll }) {
           <span className="text-gray-500">{course.totalLessons} Lessons</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <img src="/wall-clock.png" alt="Duration" className="w-4 h-4" />
+          <img src={wallclockImg} alt="Duration" className="w-4 h-4" />
           <span>{course.durationWeeks} weeks</span>
         </div>
       </div>
