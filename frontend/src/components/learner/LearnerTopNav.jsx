@@ -34,13 +34,7 @@ export default function LearnerTopNav({ student }) {
 
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
-            {student?.avatar ? (
-              <img src={student.avatar} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-sm font-semibold">
-                {student?.name?.charAt(0) || "U"}
-              </span>
-            )}
+            <img src="/avatar.png" alt="Student Avatar" className="w-full h-full object-cover rounded-full" />
           </div>
         </div>
       </div>
