@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Navbar from "../Topnav"; // Double check this path matches your folder
+import Navbar from "../Topnav"; 
 import Footer from "../Footer";
 
 const sliderImages = [
