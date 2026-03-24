@@ -1,19 +1,26 @@
 // src/components/Navbar.jsx
 import { Link } from "react-router-dom";
+import logo from "../components/images/logo.png"; 
 
 export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-blue-100">
-      <div className="max-w-7xl mx-auto px-6 py- flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 py-1 flex items-center justify-between">
         {/* Logo Section */}
-        <Link to="/" className="flex items-center gap-1 group h-15">
-          {/* Changed bg-accent to bg-blue-600 for your new palette */}
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl font-bold shadow-sm group-hover:bg-blue-700 transition-colors">
-            📚
-          </div>
-          <div className="flex flex-col justify-center leading-none">
-             <h2 className="text-xl md:text-2xl font-black text-blue-900 leading-none tracking-tight">English Tutor</h2>
-          </div>
+        <Link to="/" className="flex items-center gap-2 group">
+          {/* h-10 (40px) or h-12 (48px) is usually perfect for navbars. 
+             object-contain ensures the logo isn't stretched.
+          */}
+     <Link to="/" className="flex items-center gap-2 group">
+          {/* h-10 (40px) or h-12 (48px) is usually perfect for navbars. 
+             object-contain ensures the logo isn't stretched.
+          */}
+          <img 
+            src={logo} 
+            alt="English Tutor Logo" 
+            className="h-6 md:h-13 w-auto object-contain transition-transform " 
+          />
+        </Link>
         </Link>
 
         {/* Navigation Links - Desktop */}

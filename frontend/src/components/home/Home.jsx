@@ -25,7 +25,7 @@ export default function Home() {
 
       {/* 1. Image Slider Section (Top) 
           Reduced pt-16 to account for slim navbar and removed mb/mt gaps */}
-      <section className="bg-gray-50 pt-15 pb-6">
+      <section className="bg-gray-50 pt-12 pb-6">
         <div className="w-full mx-auto">
           <div className="relative w-full h-[300px] md:h-[540px] overflow-hidden shadow-lg border-b border-blue-100">
             {sliderImages.map((img, index) => (
