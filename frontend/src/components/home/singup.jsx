@@ -33,10 +33,10 @@ export default function SignUp() {
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         
         {/* Top Left - Bright Electric Cyan/Blue */}
-        <div className="absolute top-[-20%] left-[-10%] w-[700px] h-[700px] bg-cyan-400/40 rounded-full blur-[130px] animate-pulse" />
+        <div className="absolute top-[-20%] left-[-10%] w-175 h-175 bg-cyan-400/40 rounded-full blur-[130px] animate-pulse" />
         
         {/* Top Right - Soft Neon Purple/Magenta */}
-        <div className="absolute top-[-10%] right-[-15%] w-[800px] h-[800px] bg-fuchsia-400/30 rounded-full blur-[160px]" />
+        <div className="absolute top-[-10%] right-[-15%] w-200 h-200 bg-fuchsia-400/30 rounded-full blur-[160px]" />
         
         {/* Center Right - Vibrant Royal Blue */}
         <div className="absolute top-[30%] right-[10%] w-[600px] h-[600px] bg-blue-500/30 rounded-full blur-[140px]" />
