@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../Topnav";
 import img from "../images/log.jpg";
+import topIcon from "../images/icon.png";
 
 export default function Login() {
   return (
@@ -22,15 +23,21 @@ export default function Login() {
         {/* RIGHT SIDE: LOGIN FORM */}
         <div className="flex flex-col justify-center items-center p-9 md:p-20 bg-white">
           <div className="w-full max-w-md space-y-8">
-            <div className="text-center md:text-left">
-              <h2 className="text-5xl md:text-5xl font-black text-blue-900 tracking-tight">
-                Account Login
-              </h2>
-              <p className="mt-3 text-lg text-gray-600">
-                Enter your credentials to access your dashboard.
-              </p>
+            <div className="flex flex-col items-center text-center w-full">
+              <img
+                src={topIcon}
+                alt="Login Icon"
+                className="h-15 w-auto mb-6 object-contain"
+              />
+              <div className="text-center w-full">
+                <h2 className="text-5xl md:text-5xl font-black text-blue-900 tracking-tight">
+                  Account Login
+                </h2>
+                <p className="mt-3 text-lg text-gray-600 ">
+                  Enter your credentials to access your dashboard.
+                </p>
+              </div>
             </div>
-
             <form className="space-y-5">
               <div className="space-y-2">
                 <label
