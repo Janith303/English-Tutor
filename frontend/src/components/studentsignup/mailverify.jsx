@@ -19,14 +19,27 @@ export default function StudentSignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] flex flex-col relative overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-slate-200 flex flex-col relative overflow-hidden">
       <Navbar />
 
-      {/* --- MAGIC BACKGROUND BLOBS --- */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[10%] right-[-5%] w-[600px] h-[600px] bg-indigo-700/20 rounded-full blur-[150px]" />
-      </div>
+   {/* --- NEW LIGHT CRYSTAL MESH BACKGROUND --- */}
+<div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-slate-50">
+  
+  {/* 1. Top Left - Soft Electric Blue (Higher Opacity) */}
+  <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-400/30 rounded-full blur-[80px]" />
+
+  {/* 2. Top Right - Clean Cyan (Slightly more "Blue" feel) */}
+  <div className="absolute top-[0%] right-[-5%] w-[600px] h-[600px] bg-cyan-300/25 rounded-full blur-[100px]" />
+
+  {/* 3. Center Left - Subtle Indigo (This adds the "Academic" depth) */}
+  <div className="absolute top-[30%] left-[5%] w-[400px] h-[400px] bg-indigo-200/40 rounded-full blur-[90px]" />
+
+  {/* 4. Bottom Right - Soft Violet (Warmth) */}
+  <div className="absolute bottom-[-10%] right-[0%] w-[550px] h-[550px] bg-purple-200/30 rounded-full blur-[110px]" />
+  
+  {/* 5. Subtle Texture Overlay (Optional: makes it look High-Fidelity) */}
+  <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
+</div>
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 mt-16">
         
@@ -52,7 +65,7 @@ export default function StudentSignUp() {
                 }`}>
                   {item.icon}
                 </div>
-                <span className={`mt-2 text-xs font-bold uppercase tracking-wider ${step >= item.id ? "text-blue-400" : "text-slate-500"}`}>
+                <span className={`mt-2 text-xs font-bold uppercase tracking-wider ${step >= item.id ? "text-blue-600" : "text-slate-500"}`}>
                   {item.label}
                 </span>
               </div>
