@@ -42,7 +42,7 @@ const statsData = [
 
 export default function StudentDashboard() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-blue-100 to-indigo-200">
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
@@ -52,7 +52,7 @@ export default function StudentDashboard() {
           transition={{ duration: 0.5 }}
           className="mb-8"
         >
-          <h1 className="text-3xl font-bold text-gray-800">Welcome back, Sarah!</h1>
+          <h1 className="text-3xl font-bold text-gray-800">Quiz Dashboard</h1>
           <p className="text-gray-500 mt-2">Keep up the great work on your learning journey</p>
         </motion.div>
 
