@@ -25,24 +25,20 @@ export default function StudentSignUp() {
     <div className="min-h-screen bg-slate-200 flex flex-col relative overflow-hidden">
       <Navbar />
 
-   {/* --- NEW LIGHT CRYSTAL MESH BACKGROUND --- */}
-<div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-slate-50">
-  
-  {/* 1. Top Left - Soft Electric Blue (Higher Opacity) */}
-  <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-400/30 rounded-full blur-[80px]" />
+   <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        {/* Top Left - Bright Electric Cyan/Blue */}
+        <div className="absolute top-[-20%] left-[-10%] w-175 h-175 bg-cyan-400/40 rounded-full blur-[130px] animate-pulse" />
 
-  {/* 2. Top Right - Clean Cyan (Slightly more "Blue" feel) */}
-  <div className="absolute top-[0%] right-[-5%] w-[600px] h-[600px] bg-cyan-300/25 rounded-full blur-[100px]" />
+        {/* Top Right - Soft Neon Purple/Magenta */}
+        <div className="absolute top-[-10%] right-[-15%] w-200 h-200 bg-fuchsia-400/30 rounded-full blur-[160px]" />
 
-  {/* 3. Center Left - Subtle Indigo (This adds the "Academic" depth) */}
-  <div className="absolute top-[30%] left-[5%] w-[400px] h-[400px] bg-indigo-200/40 rounded-full blur-[90px]" />
+        {/* Center Right - Vibrant Royal Blue */}
+        <div className="absolute top-[30%] right-[10%] w-[600px] h-[600px] bg-blue-500/30 rounded-full blur-[140px]" />
 
-  {/* 4. Bottom Right - Soft Violet (Warmth) */}
-  <div className="absolute bottom-[-10%] right-[0%] w-[550px] h-[550px] bg-purple-200/30 rounded-full blur-[110px]" />
-  
-  {/* 5. Subtle Texture Overlay (Optional: makes it look High-Fidelity) */}
-  <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
-</div>
+        {/* Bottom Left - Soft Pastel Pink/Rose */}
+        <div className="absolute bottom-[-10%] left-[5%] w-[500px] h-[500px] bg-pink-400/30 rounded-full blur-[120px]" />
+      </div>
+
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 mt-16">
         
