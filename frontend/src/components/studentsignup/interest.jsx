@@ -3,24 +3,49 @@ import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../Topnav";
 import ProgressBar from "../progressbar/studentp";
 // 1. Import professional icons
-import { 
-  PenTool, 
-  Mic2, 
-  Briefcase, 
-  Puzzle, 
-  BookText, 
-  ChevronLeft, 
+import {
+  PenTool,
+  Mic2,
+  Briefcase,
+  Puzzle,
+  BookText,
+  ChevronLeft,
   Target,
   Compass,
-  Zap
+  Zap,
 } from "lucide-react";
 
 const interestAreas = [
-  { id: "writing", label: "Academic Writing", icon: PenTool, desc: "Essays & Research" },
-  { id: "speaking", label: "Presentation Skills", icon: Mic2, desc: "Public Speaking" },
-  { id: "career", label: "Interview Prep", icon: Briefcase, desc: "Job Readiness" },
-  { id: "grammar", label: "Grammar & Flow", icon: Puzzle, desc: "Sentence Structure" },
-  { id: "vocab", label: "Vocabulary", icon: BookText, desc: "Academic Lexicon" },
+  {
+    id: "writing",
+    label: "Academic Writing",
+    icon: PenTool,
+    desc: "Essays & Research",
+  },
+  {
+    id: "speaking",
+    label: "Presentation Skills",
+    icon: Mic2,
+    desc: "Public Speaking",
+  },
+  {
+    id: "career",
+    label: "Interview Prep",
+    icon: Briefcase,
+    desc: "Job Readiness",
+  },
+  {
+    id: "grammar",
+    label: "Grammar & Flow",
+    icon: Puzzle,
+    desc: "Sentence Structure",
+  },
+  {
+    id: "vocab",
+    label: "Vocabulary",
+    icon: BookText,
+    desc: "Academic Lexicon",
+  },
 ];
 
 const levels = [
