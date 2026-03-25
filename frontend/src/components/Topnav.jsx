@@ -1,6 +1,6 @@
 // src/components/Navbar.jsx
 import { Link } from "react-router-dom";
-import logo from "../components/images/logo.png"; 
+import logo from "../components/images/logo.png";
 
 export default function Navbar() {
   return (
@@ -11,15 +11,16 @@ export default function Navbar() {
           {/* h-10 (40px) or h-12 (48px) is usually perfect for navbars. 
              object-contain ensures the logo isn't stretched.
           */}
-     <Link to="/" className="flex items-center gap-2 group">
-          {/* h-10 (40px) or h-12 (48px) is usually perfect for navbars. 
+          <Link to="/" className="flex items-center gap-2 group">
+            {/* h-10 (40px) or h-12 (48px) is usually perfect for navbars. 
              object-contain ensures the logo isn't stretched.
           */}
-          <img 
-            src={logo} 
-            alt="English Tutor Logo" 
-            className="h-6 md:h-13 w-auto object-contain transition-transform " 
-          />
+            <img
+              src={logo}
+              alt="English Tutor Logo"
+              className="h-6 md:h-13 w-auto object-contain transition-transform "
+            />
+          </Link>
         </Link>
 
         {/* Navigation Links - Desktop */}
@@ -35,13 +36,6 @@ export default function Navbar() {
             className="text-gray-600 hover:text-blue-600 transition-colors"
           >
             About Us
-          </Link>
-
-          <Link
-            to="/dashboard"
-            className="text-gray-600 hover:text-blue-600 transition-colors"
-          >
-            Courses
           </Link>
         </div>
 
