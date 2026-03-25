@@ -73,7 +73,7 @@
     color-scheme: light dark;
   }
 
-  @media (max-width: var(--breakpoint-lg)) {
+  @media (max-width: 1024px) {
     :root {
       font-size: 16px;
     }
