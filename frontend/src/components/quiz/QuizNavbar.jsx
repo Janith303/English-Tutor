@@ -2,8 +2,11 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import logoImg from "../images/logo.jpg";
 import avatarImg from "../images/avatar.png";
+import { Menu, X } from "lucide-react";
 
-export default function LearnerTopNav({ student }) {
+export default function QuizNavbar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const navItems = [
     { path: "/dashboard", label: "Dashboard" },
     { path: "/hub", label: "My Learning" },
@@ -33,7 +36,7 @@ export default function LearnerTopNav({ student }) {
           ))}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
             <img
               src={avatarImg}
@@ -42,7 +45,33 @@ export default function LearnerTopNav({ student }) {
             />
           </div>
         </div>
+
+        <button
+          className="md:hidden p-2 text-gray-500"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        >
+          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </div>
+
+      {isMenuOpen && (
+        <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `block py-2 text-sm font-medium ${
+                  isActive ? "text-purple-600" : "text-gray-500"
+                }`
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }
