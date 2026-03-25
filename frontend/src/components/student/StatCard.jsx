@@ -20,4 +20,5 @@ export default function StatCard({ icon: Icon, value, label, subtext, bgColor = 
       </div>
     </motion.div>
   );
+  
 }
