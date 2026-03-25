@@ -26,8 +26,8 @@ const categories = [
 export default function CategoryCard({ icon: Icon, title, description }) {
   return (
     <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border border-gray-100">
-      <div className="w-14 h-14 rounded-xl bg-purple-100 flex items-center justify-center mb-4">
-        <Icon className="w-7 h-7 text-purple-600" />
+      <div className="w-14 h-14 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
+        <Icon className="w-7 h-7 text-blue-600" />
       </div>
       <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
       <p className="text-gray-500 text-sm leading-relaxed">{description}</p>

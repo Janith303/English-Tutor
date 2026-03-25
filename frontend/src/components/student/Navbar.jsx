@@ -1,22 +1,22 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import logoImg from "../images/logo.jpg";
-import avatarImg from "../images/avatar.png";
 import { Menu, X } from "lucide-react";
 
-export default function QuizNavbar() {
+export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navItems = [
-    { path: "/dashboard", label: "Dashboard" },
-    { path: "/student-dashboard", label: "Student Dashboard" },
+    { path: "/", label: "Home" },
     { path: "/quiz", label: "Quiz" },
+    { path: "/student-dashboard", label: "Dashboard" },
   ];
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <span className="text-2xl font-bold text-blue-600">English Tutor</span>
+        <NavLink to="/" className="flex items-center">
+          <span className="text-2xl font-bold text-blue-600">English Tutor</span>
+        </NavLink>
 
         <div className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
@@ -37,13 +37,18 @@ export default function QuizNavbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
-            <img
-              src={avatarImg}
-              alt="Student Avatar"
-              className="w-full h-full object-cover rounded-full"
-            />
-          </div>
+          <NavLink
+            to="/login"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
+          >
+            Login
+          </NavLink>
+          <NavLink
+            to="/signup"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Sign Up
+          </NavLink>
         </div>
 
         <button
@@ -62,7 +67,7 @@ export default function QuizNavbar() {
               to={item.path}
               className={({ isActive }) =>
                 `block py-2 text-sm font-medium ${
-                  isActive ? "text-blue-400" : "text-gray-500"
+                  isActive ? "text-blue-600" : "text-gray-500"
                 }`
               }
               onClick={() => setIsMenuOpen(false)}
@@ -70,6 +75,22 @@ export default function QuizNavbar() {
               {item.label}
             </NavLink>
           ))}
+          <div className="flex gap-3 mt-4 pt-4 border-t border-gray-100">
+            <NavLink
+              to="/login"
+              className="flex-1 px-4 py-2 text-sm font-medium text-center text-gray-600 border border-gray-200 rounded-lg"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Login
+            </NavLink>
+            <NavLink
+              to="/signup"
+              className="flex-1 px-4 py-2 text-sm font-medium text-center text-white bg-blue-600 rounded-lg"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Sign Up
+            </NavLink>
+          </div>
         </div>
       )}
     </nav>
