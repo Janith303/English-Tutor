@@ -26,7 +26,7 @@ export default function QuizNavbar() {
               className={({ isActive }) =>
                 `text-sm font-medium pb-1 transition-colors ${
                   isActive
-                    ? "text-purple-600 border-b-2 border-purple-600"
+                    ? "text-blue-600 border-b-2 border-blue-600"
                     : "text-gray-500 hover:text-gray-800"
                 }`
               }
@@ -62,7 +62,7 @@ export default function QuizNavbar() {
               to={item.path}
               className={({ isActive }) =>
                 `block py-2 text-sm font-medium ${
-                  isActive ? "text-purple-600" : "text-gray-500"
+                  isActive ? "text-blue-400" : "text-gray-500"
                 }`
               }
               onClick={() => setIsMenuOpen(false)}
