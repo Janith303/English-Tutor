@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import LearnerTopNav from "../components/learner/LearnerTopNav";
-import WelcomeHeroBanner from "../components/learner/WelcomeHeroBanner";
-import RecommendedCoursesGrid from "../components/learner/RecommendedCoursesGrid";
-import { mockStudent, mockCourses } from "../data/mockCourses";
+import LearnerTopNav from "../learner/LearnerTopNav";
+import WelcomeHeroBanner from "../learner/WelcomeHeroBanner";
+import RecommendedCoursesGrid from "../learner/RecommendedCoursesGrid";
+import { mockStudent, mockCourses } from "../../data/mockCourses";
 
 export default function LearnerDashboard() {
   const navigate = useNavigate();
