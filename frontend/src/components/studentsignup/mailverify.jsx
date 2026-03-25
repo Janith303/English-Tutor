@@ -1,8 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../Topnav";
 import logo from "../images/icon.png"
+import ProgressBar from "../progressbar/studentp";
 
 export default function StudentSignUp() {
+    const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isVerified, setIsVerified] = useState(false);
   const [email, setEmail] = useState("");
@@ -44,34 +47,7 @@ export default function StudentSignUp() {
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 mt-16">
         
         {/* PROGRESS BAR */}
-        <div className="w-full max-w-3xl mb-12">
-          <div className="flex justify-between items-center relative">
-            {/* Background Line */}
-            <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-700 -translate-y-1/2 z-0"></div>
-            {/* Active Progress Line */}
-            <div 
-              className="absolute top-1/2 left-0 h-1 bg-blue-500 -translate-y-1/2 z-0 transition-all duration-500"
-              style={{ width: `${(step - 1) * 50}%` }}
-            ></div>
-
-            {[
-              { id: 1, label: "Verification", icon: "🎓" },
-              { id: 2, label: "Interests", icon: "📚" },
-              { id: 3, label: "Placement", icon: "✍️" }
-            ].map((item) => (
-              <div key={item.id} className="relative z-10 flex flex-col items-center">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl border-4 transition-all duration-300 ${
-                  step >= item.id ? "bg-blue-600 border-blue-400 shadow-[0_0_15px_rgba(37,99,235,0.5)]" : "bg-slate-800 border-slate-700 text-slate-500"
-                }`}>
-                  {item.icon}
-                </div>
-                <span className={`mt-2 text-xs font-bold uppercase tracking-wider ${step >= item.id ? "text-blue-600" : "text-slate-500"}`}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ProgressBar currentStep={1} />
 
         {/* SIGN UP CARD */}
         <div className="w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden p-8 md:p-12 animate-in fade-in zoom-in duration-500">
@@ -160,7 +136,7 @@ export default function StudentSignUp() {
           )}
 
           {/* Footer Navigation */}
-          <div className="mt-10 pt-6 border-t border-slate-100 flex justify-between items-center">
+          <div className="mt-10 pt-6 border-t border-slate-500  flex justify-between items-center">
             <button 
                disabled={step === 1}
                onClick={() => setStep(step - 1)}
@@ -170,7 +146,7 @@ export default function StudentSignUp() {
             </button>
             <button 
               disabled={!isVerified}
-              onClick={() => setStep(step + 1)}
+              onClick={() => navigate("/signup/interests")}
               className={`px-10 py-3 rounded-xl font-bold transition-all transform hover:scale-105 active:scale-95 ${
                 isVerified ? "bg-blue-600 text-white shadow-xl shadow-blue-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"
               }`}
