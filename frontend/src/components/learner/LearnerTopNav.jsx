@@ -23,7 +23,7 @@ export default function LearnerTopNav({ student }) {
               className={({ isActive }) =>
                 `text-sm font-medium pb-1 transition-colors ${
                   isActive
-                    ? "text-purple-600 border-b-2 border-purple-600"
+                    ? "text-blue-600 border-b-2 border-blue-600"
                     : "text-gray-500 hover:text-gray-800"
                 }`
               }
