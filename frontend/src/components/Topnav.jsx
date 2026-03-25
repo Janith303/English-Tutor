@@ -1,6 +1,6 @@
 // src/components/Navbar.jsx
 import { Link } from "react-router-dom";
-import logo from "../components/images/logo.png";
+import logo from "../components/images/logo.jpg";
 
 export default function Navbar() {
   return (
@@ -15,11 +15,8 @@ export default function Navbar() {
             {/* h-10 (40px) or h-12 (48px) is usually perfect for navbars. 
              object-contain ensures the logo isn't stretched.
           */}
-            <img
-              src={logo}
-              alt="English Tutor Logo"
-              className="h-6 md:h-13 w-auto object-contain transition-transform "
-            />
+      
+                <img src={logo} alt="logo" className="h-15" />
           </Link>
         </Link>
 
