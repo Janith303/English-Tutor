@@ -21,7 +21,6 @@ export default function Navbar() {
             className="h-6 md:h-13 w-auto object-contain transition-transform " 
           />
         </Link>
-        </Link>
 
         {/* Navigation Links - Desktop */}
         <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
@@ -36,6 +35,13 @@ export default function Navbar() {
             className="text-gray-600 hover:text-blue-600 transition-colors"
           >
             About Us
+          </Link>
+
+          <Link
+            to="/dashboard"
+            className="text-gray-600 hover:text-blue-600 transition-colors"
+          >
+            Courses
           </Link>
         </div>
 
