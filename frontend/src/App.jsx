@@ -6,9 +6,6 @@ import SignUp from './components/home/singup';
 import LearnerDashboard from "./components/pages/LearnerDashboard";
 import QuizHome from "./components/quiz/QuizHome";
 import StudentDashboard from "./components/student/StudentDashboard";
-import StudentSignUp from "./components/studentsignup/mailverify";
-import StudentSignUpStep2 from "./components/studentsignup/interest";
-import PlacementTest from "./components/studentsignup/placementtest";
 
 function App() {
   return (
