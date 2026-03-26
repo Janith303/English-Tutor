@@ -173,7 +173,7 @@ export default function TutorStepTwo({ onNext, onBack }) {
               <ArrowLeft size={18} /> Back
             </button>
             <button 
-              onClick={onNext}
+              onClick={() => navigate("/stsignup/mailverify")}
               disabled={selectedAreas.length === 0 || !bio}
               className="flex-[2] py-5 bg-slate-900 text-white rounded-[1.8rem] font-black text-lg shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-30 group"
             >
@@ -184,7 +184,7 @@ export default function TutorStepTwo({ onNext, onBack }) {
         </div>
 
         <p className="mt-10 text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">
-          SpeakUni • Student Tutor Onboarding 2026
+          English Tutor • Student Tutor Onboarding 2026
         </p>
       </main>
     </div>
