@@ -10,6 +10,7 @@ import StudentSignUp from "./components/studentsignup/mailverify";
 import StudentSignUpStep2 from "./components/studentsignup/interest";
 import PlacementTest from "./components/studentsignup/placementtest";
 import Studenttutor from "./components/stutorsignup/verify";
+import Stexperiance from "./components/stutorsignup/experiance";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/signup/interests" element={<StudentSignUpStep2 />} />
             <Route path="/signup/test" element={<PlacementTest />} />
             <Route path="/stsignup/stverify" element={<Studenttutor />} />
+            <Route path="/stsignup/stexperiance" element={<Stexperiance />} />
           </Routes>
     </Router>
   );
