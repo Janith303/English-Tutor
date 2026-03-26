@@ -3,12 +3,16 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './components/home/Home';
 import Login from './components/home/login';
 import SignUp from './components/home/singup';
+import BecomeTutor from './components/home/becometutor';
 import LearnerDashboard from "./components/pages/LearnerDashboard";
 import QuizHome from "./components/quiz/QuizHome";
 import StudentDashboard from "./components/student/StudentDashboard";
 import StudentSignUp from "./components/studentsignup/mailverify";
 import StudentSignUpStep2 from "./components/studentsignup/interest";
 import PlacementTest from "./components/studentsignup/placementtest";
+import Studenttutor from "./components/stutorsignup/verify";
+import Stexperiance from "./components/stutorsignup/experiance";
+import Stmailverify from "./components/stutorsignup/stmailverify";
 
 function App() {
   return (
@@ -23,6 +27,10 @@ function App() {
             <Route path="/signup/sverify" element={<StudentSignUp />} />
             <Route path="/signup/interests" element={<StudentSignUpStep2 />} />
             <Route path="/signup/test" element={<PlacementTest />} />
+            <Route path="/stsignup/stverify" element={<Studenttutor />} />
+            <Route path="/stsignup/stexperiance" element={<Stexperiance />} />
+            <Route path="/stsignup/mailverify" element={<Stmailverify />} />
+            <Route path="/becometutor" element={<BecomeTutor />} />
           </Routes>
     </Router>
   );

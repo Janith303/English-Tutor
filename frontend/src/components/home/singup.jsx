@@ -17,7 +17,7 @@ const roles = [
     tagline:
       "A SLIIT student? Mentor peers and sharpen your own communication skills.",
     img: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=600",
-    alt: "Group of students collaborating",
+    path: "/stsignup/stverify",
   },
   {
     title: "Tutor",
