@@ -29,7 +29,7 @@ export default function Navbar() {
             Home
           </Link>
           <Link
-            to="/about"
+            to="/becometutor"
             className="text-gray-600 hover:text-blue-600 transition-colors"
           >
            become a tutor

@@ -27,7 +27,7 @@ export default function Footer() {
         </Link>
 
         <p className="mt-12 text-sm text-indigo-300">
-          © {new Date().getFullYear()} SpeakUni • Built for Sri Lankan & global university students
+          © {new Date().getFullYear()} English Tutor • Built for Sri Lankan & global university students
         </p>
       </div>
     </footer>

@@ -69,7 +69,7 @@ export default function StudentSignUpStep2() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-300/20 rounded-full blur-[120px]" />
       </div>
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 mt-12">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-10 mt-12">
         
         <ProgressBar currentStep={2} />
 
