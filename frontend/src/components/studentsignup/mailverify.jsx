@@ -1,15 +1,21 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../Topnav";
-import logo from "../images/icon.png"
+import logo from "../images/icon.png";
 import ProgressBar from "../progressbar/studentp";
+import { Lock, Eye, EyeOff } from "lucide-react"; // Import for password UI
 
 export default function StudentSignUp() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isVerified, setIsVerified] = useState(false);
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+
+  // New States for Password
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Email Validation Logic
   const validateEmail = (val) => {
@@ -21,65 +27,75 @@ export default function StudentSignUp() {
     }
   };
 
+  // Check if passwords match
+  const passwordsMatch = password !== "" && password === confirmPassword;
+
   return (
     <div className="min-h-screen bg-slate-200 flex flex-col relative overflow-hidden">
       <Navbar />
 
-   <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* Top Left - Bright Electric Cyan/Blue */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-175 h-175 bg-cyan-400/40 rounded-full blur-[130px] animate-pulse" />
-
-        {/* Top Right - Soft Neon Purple/Magenta */}
         <div className="absolute top-[-10%] right-[-15%] w-200 h-200 bg-fuchsia-400/30 rounded-full blur-[160px]" />
-
-        {/* Center Right - Vibrant Royal Blue */}
         <div className="absolute top-[30%] right-[10%] w-[600px] h-[600px] bg-blue-500/30 rounded-full blur-[140px]" />
-
-        {/* Bottom Left - Soft Pastel Pink/Rose */}
         <div className="absolute bottom-[-10%] left-[5%] w-[500px] h-[500px] bg-pink-400/30 rounded-full blur-[120px]" />
       </div>
 
-
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 mt-16">
-        
-        {/* PROGRESS BAR */}
         <ProgressBar currentStep={1} />
 
-        {/* SIGN UP CARD */}
-        <div className="w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden p-8 md:p-12 animate-in fade-in zoom-in duration-500">
-          
-          {/* Top Illustration/Icon */}
+        <div className="w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden p-8 md:p-12 animate-in fade-in zoom-in duration-500 border border-white/50 backdrop-blur-sm">
           <div className="flex justify-center mb-8">
-            <div className="bg-blue-50 p-4 rounded-3xl">
-              <img src={logo} alt="SpeakUni" className="h-16 w-auto object-contain" />
+            <div className="bg-blue-50 p-4 rounded-3xl transition-transform hover:scale-110 duration-300">
+              <img
+                src={logo}
+                alt="SpeakUni"
+                className="h-16 w-auto object-contain"
+              />
             </div>
           </div>
 
           {step === 1 && (
-            <div className="space-y-6">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-black text-slate-900">Student Verification</h2>
-                <p className="text-slate-500 mt-2">Let's confirm your university status</p>
+            <div className="space-y-5">
+              <div className="text-center mb-6">
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+                  Student Verification
+                </h2>
+                <p className="text-slate-500 mt-2 font-medium">
+                  Create your academic account
+                </p>
               </div>
 
+              {/* Row 1: Name and Uni */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900 uppercase ml-1">Full Name</label>
-                  <input type="text" placeholder="John Doe" className="w-full px-5 py-3 bg-slate-50 border text-slate-700 border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" />
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="John Doe"
+                    className="w-full px-5 py-3 bg-slate-50 border text-slate-700 border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                  />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-900 uppercase ml-1">University</label>
-                  <select className="w-full px-5 py-3 text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 appearance-none">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    University
+                  </label>
+                  <select className="w-full px-5 py-3 text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 appearance-none cursor-pointer">
                     <option>SLIIT</option>
                   </select>
                 </div>
               </div>
 
+              {/* Row 2: Faculty and Year */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-900 uppercase ml-1">Faculty</label>
-                  <select className="w-full px-5 py-3 text-slate-700 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 cursor-pointer">
-                    <option value="" className="text-slate-400">Select Faculty</option>
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    Faculty
+                  </label>
+                  <select className="w-full px-5 py-3 text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 cursor-pointer">
+                    <option value="">Select Faculty</option>
                     <option>Computing</option>
                     <option>Business</option>
                     <option>Engineering</option>
@@ -87,8 +103,10 @@ export default function StudentSignUp() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-900 uppercase ml-1">Academic Year</label>
-                  <select className="w-full px-5 py-3 text-slate-700 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 cursor-pointer">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    Academic Year
+                  </label>
+                  <select className="w-full px-5 py-3 text-slate-700 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 cursor-pointer">
                     <option value="">Select Year</option>
                     <option>1st Year</option>
                     <option>2nd Year</option>
@@ -98,33 +116,98 @@ export default function StudentSignUp() {
                 </div>
               </div>
 
+              {/* Email Field */}
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-900 uppercase ml-1">University Email</label>
+                <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                  University Email
+                </label>
                 <div className="relative">
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     value={email}
                     onChange={(e) => validateEmail(e.target.value)}
-                    placeholder="IT21XXXX@my.sliit.lk" 
-                    className={`w-full px-5 py-3 text-slate-900 bg-slate-50 border rounded-2xl outline-none transition-all ${error ? "border-red-400 ring-2 ring-red-100" : "border-slate-200 focus:border-blue-500"}`}
+                    placeholder="IT21XXXX@my.sliit.lk"
+                    className={`w-full px-5 py-3 text-slate-900 bg-slate-50 border rounded-2xl outline-none transition-all ${error ? "border-red-400 ring-4 ring-red-50" : "border-slate-200 focus:border-blue-500"}`}
                   />
-                  {email && !error && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500">✓</span>}
+                  {email && !error && (
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 font-bold">
+                      ✓
+                    </span>
+                  )}
                 </div>
-                {error && <p className="text-red-500 text-xs mt-1 font-medium">{error}</p>}
+                {error && (
+                  <p className="text-red-500 text-[10px] mt-1 font-bold ml-1">
+                    {error}
+                  </p>
+                )}
               </div>
-
+              {/* Verification Code Section */}
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <input type="text" placeholder="Verification Code" className="w-full px-5 text-slate-700 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none" />
+                  <input
+                    type="text"
+                    placeholder="Verification Code"
+                    className="w-full px-5 text-slate-700 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all"
+                  />
                 </div>
-                <button className="px-6 py-3 bg-slate-900 text-white font-bold rounded-2xl hover:bg-black transition-all active:scale-95">
+                <button className="px-6 py-3 bg-slate-900 text-white font-bold rounded-2xl hover:bg-black transition-all active:scale-95 shadow-lg shadow-slate-200">
                   Send Code
                 </button>
               </div>
 
-              <button 
-                onClick={() => setIsVerified(true)}
-                className={`w-full py-4 font-black rounded-2xl transition-all shadow-lg ${isVerified ? "bg-green-500 text-white shadow-green-200" : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200"}`}
+              {/* PASSWORD FIELDS */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-5 py-3 bg-slate-50 border text-slate-700 border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-500"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className={`w-full px-5 py-3 bg-slate-50 border text-slate-700 rounded-2xl outline-none transition-all ${confirmPassword && !passwordsMatch ? "border-red-400 ring-4 ring-red-50" : "border-slate-200 focus:border-blue-500"}`}
+                    />
+                    {confirmPassword && passwordsMatch && (
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 font-bold text-xs">
+                        Match
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (!passwordsMatch) {
+                    alert("Passwords do not match!");
+                    return;
+                  }
+                  setIsVerified(true);
+                }}
+                className={`w-full py-4 font-black rounded-2xl transition-all shadow-xl transform active:scale-[0.98] ${isVerified ? "bg-green-500 text-white shadow-green-100" : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100"}`}
               >
                 {isVerified ? "Status: Verified ✅" : "Verify Account"}
               </button>
@@ -132,19 +215,21 @@ export default function StudentSignUp() {
           )}
 
           {/* Footer Navigation */}
-          <div className="mt-10 pt-6 border-t border-slate-500  flex justify-between items-center">
-            <button 
-               disabled={step === 1}
-               onClick={() => setStep(step - 1)}
-               className="text-slate-400 font-bold hover:text-slate-600 disabled:opacity-0 transition-all"
+          <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center">
+            <button
+              disabled={step === 1}
+              onClick={() => setStep(step - 1)}
+              className="text-slate-400 font-bold hover:text-slate-600 disabled:opacity-0 transition-all"
             >
               Back
             </button>
-            <button 
+            <button
               disabled={!isVerified}
               onClick={() => navigate("/signup/interests")}
-              className={`px-10 py-3 rounded-xl font-bold transition-all transform hover:scale-105 active:scale-95 ${
-                isVerified ? "bg-blue-600 text-white shadow-xl shadow-blue-200" : "bg-slate-200 text-slate-400 cursor-not-allowed"
+              className={`px-10 py-3 rounded-2xl font-bold transition-all transform hover:scale-105 active:scale-95 ${
+                isVerified
+                  ? "bg-blue-600 text-white shadow-xl shadow-blue-200"
+                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
               }`}
             >
               Next Step
@@ -152,8 +237,8 @@ export default function StudentSignUp() {
           </div>
         </div>
 
-        <p className="mt-8 text-slate-500 text-sm">
-          Secured by English Tutor Academic Verification System
+        <p className="mt-8 text-slate-500 text-sm font-medium">
+          Secured by SpeakUni Academic Verification System
         </p>
       </main>
     </div>
