@@ -17,6 +17,7 @@ import Stexperiance from './components/stutorsignup/experiance';
 import Stmailverify from './components/stutorsignup/stmailverify';
 import TutorSignup from './components/tutorsignup/tsignup';
 import MyLearningPage from "./components/mylearning/MyLearningPage";
+import TutorDetailsPage from "./components/learner/TutorDetailsPage";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <Route path="/tutor/stverify" element={<TutorSignup />} />
             <Route path="/learning/:courseId" element={<PersonalizedLearningHub />} />
         <Route path="/my-learning" element={<MyLearningPage />} />
+        <Route path="/course/:courseId" element={<TutorDetailsPage />} />
         <Route path="/quiz" element={<QuizHome />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/signup/sverify" element={<StudentSignUp />} />
