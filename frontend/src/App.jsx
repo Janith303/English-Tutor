@@ -9,6 +9,7 @@ import StudentDashboard from "./components/student/StudentDashboard";
 import StudentSignUp from "./components/studentsignup/mailverify";
 import StudentSignUpStep2 from "./components/studentsignup/interest";
 import PlacementTest from "./components/studentsignup/placementtest";
+import QandAPage from './components/qa/QandAPage';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             <Route path="/signup/sverify" element={<StudentSignUp />} />
             <Route path="/signup/interests" element={<StudentSignUpStep2 />} />
             <Route path="/signup/test" element={<PlacementTest />} />
+            <Route path="/qa" element={<QandAPage />} />
           </Routes>
     </Router>
   );
