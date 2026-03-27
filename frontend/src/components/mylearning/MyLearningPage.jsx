@@ -25,7 +25,7 @@ export default function MyLearningPage() {
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <LearnerTopNav student={mockStudent} />
-      <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+      <div className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
         <div className="flex gap-8">
           <div className="flex-1 min-w-0">
             <div className="flex flex-col mb-6">

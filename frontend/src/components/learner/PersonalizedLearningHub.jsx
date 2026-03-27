@@ -39,7 +39,7 @@ export default function PersonalizedLearningHub() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <LearnerTopNav student={student} />
-      <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+      <div className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
