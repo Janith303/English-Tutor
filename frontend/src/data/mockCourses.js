@@ -14,8 +14,8 @@ export const FOCUS_AREAS = [
 
 export const mockStudent = {
   id: 1,
-  name: "John",
-  fullName: "John Perera",
+  name: "Sanduni",
+  fullName: "Sanduni Perera",
   level: LEVELS.BEGINNER,
   selectedArea: "Academic Writing",
   earnedCredits: 120,
