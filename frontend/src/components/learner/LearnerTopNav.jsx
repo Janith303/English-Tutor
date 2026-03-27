@@ -6,7 +6,7 @@ import avatarImg from "../images/avatar.png";
 export default function LearnerTopNav({ student }) {
   const navItems = [
     { path: "/dashboard", label: "Dashboard" },
-    { path: "/hub", label: "My Learning" },
+    { path: "/my-learning", label: "My Learning" },
     { path: "/quiz", label: "Quiz" },
     { path: "/qa", label: "Q&A Wall" },
   ];

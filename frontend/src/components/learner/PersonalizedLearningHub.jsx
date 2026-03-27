@@ -40,6 +40,7 @@ export default function PersonalizedLearningHub() {
     <div className="flex flex-col min-h-screen bg-gray-50">
       <LearnerTopNav student={student} />
       <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <button
@@ -69,6 +70,7 @@ export default function PersonalizedLearningHub() {
             </p>
           </div>
 
+          {/* Progress pill */}
           <div className="hidden md:flex items-center gap-3 bg-white border border-gray-100 shadow-sm rounded-xl px-5 py-3">
             <div className="relative w-10 h-10">
               <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
@@ -104,6 +106,7 @@ export default function PersonalizedLearningHub() {
           </div>
         </div>
 
+        {/* Two-column layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <LessonTrackerList
