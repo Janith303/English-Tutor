@@ -10,9 +10,7 @@ import StudentDashboard from "./components/student/StudentDashboard";
 import StudentSignUp from "./components/studentsignup/mailverify";
 import StudentSignUpStep2 from "./components/studentsignup/interest";
 import PlacementTest from "./components/studentsignup/placementtest";
-import Studenttutor from "./components/stutorsignup/verify";
-import Stexperiance from "./components/stutorsignup/experiance";
-import Stmailverify from "./components/stutorsignup/stmailverify";
+import QandAPage from './components/qa/QandAPage';
 
 function App() {
   return (
@@ -27,10 +25,7 @@ function App() {
             <Route path="/signup/sverify" element={<StudentSignUp />} />
             <Route path="/signup/interests" element={<StudentSignUpStep2 />} />
             <Route path="/signup/test" element={<PlacementTest />} />
-            <Route path="/stsignup/stverify" element={<Studenttutor />} />
-            <Route path="/stsignup/stexperiance" element={<Stexperiance />} />
-            <Route path="/stsignup/mailverify" element={<Stmailverify />} />
-            <Route path="/becometutor" element={<BecomeTutor />} />
+            <Route path="/qa" element={<QandAPage />} />
           </Routes>
     </Router>
   );
