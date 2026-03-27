@@ -1,15 +1,18 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import LearnerTopNav from "../components/learner/LearnerTopNav";
-import CreditProgressPanel from "../components/learner/CreditProgressPanel";
-import LessonTrackerList from "../components/learner/LessonTrackerList";
-import { mockStudent, mockLessons } from "../data/mockCourses";
+import { useParams, useNavigate } from "react-router-dom";
+import LearnerTopNav from "./LearnerTopNav";
+import CreditProgressPanel from "./CreditProgressPanel";
+import LessonTrackerList from "./LessonTrackerList";
+import { mockStudent, mockLessons, mockCourses } from "../../data/mockCourses";
 
-export default function PersonalizedLearningHub({ enrolledCourse, onBack }) {
-  const [activePage, setActivePage] = useState("mylearning");
+export default function PersonalizedLearningHub() {
+  const { courseId } = useParams();
   const navigate = useNavigate();
   const [student, setStudent] = useState(mockStudent);
   const [lessons, setLessons] = useState(mockLessons);
+
+  // Find the enrolled course from mockCourses
+  const enrolledCourse = mockCourses.find((c) => c.id === parseInt(courseId));
 
   const handleStartLesson = (lesson) => {
     const confirm = window.confirm(
@@ -18,9 +21,7 @@ export default function PersonalizedLearningHub({ enrolledCourse, onBack }) {
     if (!confirm) return;
 
     const newCredits = student.earnedCredits + lesson.creditsAwarded;
-
     setStudent((prev) => ({ ...prev, earnedCredits: newCredits }));
-
     setLessons((prev) =>
       prev.map((l) => {
         if (l.id === lesson.id) return { ...l, isCompleted: true };
@@ -36,21 +37,13 @@ export default function PersonalizedLearningHub({ enrolledCourse, onBack }) {
   const courseProgress = Math.round((completedCount / totalCount) * 100);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <LearnerTopNav
-        student={student}
-        activePage={activePage}
-        onNavigate={setActivePage}
-      />
-
-      <main className="max-w-7xl mx-auto px-6 py-8">
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <LearnerTopNav student={student} />
+      <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <button
-              onClick={() => {
-                onBack();
-                navigate("/dashboard");
-              }}
+              onClick={() => navigate("/dashboard")}
               className="text-sm text-blue-600 hover:underline flex items-center gap-1 mb-1"
             >
               <svg
@@ -119,10 +112,8 @@ export default function PersonalizedLearningHub({ enrolledCourse, onBack }) {
               onStartLesson={handleStartLesson}
             />
           </div>
-
           <div className="flex flex-col gap-5">
             <CreditProgressPanel student={student} />
-
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
               <h3 className="font-bold text-gray-900 mb-3 text-base">
                 Course Info
@@ -156,7 +147,7 @@ export default function PersonalizedLearningHub({ enrolledCourse, onBack }) {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
