@@ -66,7 +66,7 @@ export default function MyLearningPage() {
                     <CourseProgressCard key={course.id} course={course} />
                   ))
                 ) : (
-                  <div className="text-sm text-gray-400 bg-white border border-gray-100 rounded-2xl p-6 text-center">
+                  <div className="text-sm text-gray-400 bg-white border border-gray-100 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
                     No courses in progress. Enroll in a course to get started!
                   </div>
                 )}
@@ -83,7 +83,7 @@ export default function MyLearningPage() {
                     <CourseProgressCard key={course.id} course={course} />
                   ))
                 ) : (
-                  <div className="text-sm text-gray-400 bg-white border border-gray-100 rounded-2xl p-6 text-center">
+                  <div className="text-sm text-gray-400 bg-white border border-gray-100 rounded-2xl p-6 text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
                     You haven't completed any courses yet. Keep learning!
                   </div>
                 )}
@@ -94,11 +94,11 @@ export default function MyLearningPage() {
           <aside className="w-72 flex-shrink-0 flex flex-col gap-6">
             <LearningStatsPanel stats={learningProgress} />
 
-            <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
               <SidebarRecommendations courses={recommendedCourses} />
             </div>
 
-            <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
               <WeekSchedulePanel schedule={weekSchedule} />
             </div>
           </aside>

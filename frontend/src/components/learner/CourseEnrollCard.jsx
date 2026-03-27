@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 export default function CourseEnrollCard({ course, onEnroll }) {
   const navigate = useNavigate();
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow duration-200">
+    <div
+      onClick={() => navigate(`/course/${course.id}`)}
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-4 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer"
+    >
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs font-medium px-3 py-1.5 rounded-full">
           <svg

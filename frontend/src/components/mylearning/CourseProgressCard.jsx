@@ -5,7 +5,7 @@ export default function CourseProgressCard({ course }) {
   const isCompleted = course.status === "completed";
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-5 flex items-center gap-5 shadow-sm hover:shadow-md transition-shadow duration-200">
+    <div className="bg-white border border-gray-100 rounded-2xl p-5 flex items-center gap-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
       <div className="flex-shrink-0 flex flex-col items-start gap-1.5">
         <span className="text-xs bg-blue-50 text-blue-500 font-medium px-2.5 py-1 rounded-md">
           {course.type}

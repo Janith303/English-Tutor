@@ -8,7 +8,7 @@ export default function CreditProgressPanel({ student }) {
   const creditGap = required ? Math.max(required - earned, 0) : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
       <h3 className="font-bold text-gray-900 mb-4 text-base">Your Progress</h3>
 
       <div className="flex items-center justify-between mb-3">
@@ -40,14 +40,23 @@ export default function CreditProgressPanel({ student }) {
           </div>
 
           <div className="mt-4 bg-amber-50 border border-amber-100 rounded-xl p-3 flex items-start gap-2">
-            <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
             <p className="text-amber-700 text-xs leading-relaxed">
               You need <strong>{creditGap} more credits</strong> to advance to{" "}
-              <strong>{thresholdInfo.nextLevel}</strong>.
-              Complete more lessons to unlock the next level!
+              <strong>{thresholdInfo.nextLevel}</strong>. Complete more lessons
+              to unlock the next level!
             </p>
           </div>
         </>

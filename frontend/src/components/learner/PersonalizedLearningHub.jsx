@@ -71,7 +71,7 @@ export default function PersonalizedLearningHub() {
           </div>
 
           {/* Progress pill */}
-          <div className="hidden md:flex items-center gap-3 bg-white border border-gray-100 shadow-sm rounded-xl px-5 py-3">
+          <div className="hidden md:flex items-center gap-3 bg-white border border-gray-100 shadow-sm rounded-xl px-5 py-3 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
             <div className="relative w-10 h-10">
               <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
                 <circle
@@ -117,7 +117,7 @@ export default function PersonalizedLearningHub() {
           </div>
           <div className="flex flex-col gap-5">
             <CreditProgressPanel student={student} />
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
               <h3 className="font-bold text-gray-900 mb-3 text-base">
                 Course Info
               </h3>
