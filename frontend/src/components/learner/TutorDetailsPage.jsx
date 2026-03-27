@@ -122,7 +122,7 @@ const TutorDetailsPage = () => {
             </div>
           </div>
 
-          <div className="w-72 border rounded-xl p-5 shadow-sm bg-white">
+          <div className="w-72 border rounded-xl p-5 shadow-sm bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-blue-600 tracking-wide">
                 FREE
