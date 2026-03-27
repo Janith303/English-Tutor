@@ -10,7 +10,6 @@ export default function PersonalizedLearningHub() {
   const [student, setStudent] = useState(mockStudent);
   const [lessons, setLessons] = useState(mockLessons);
 
-  // Find the enrolled course from mockCourses
   const enrolledCourse = mockCourses.find((c) => c.id === parseInt(courseId));
 
   const handleStartLesson = (lesson) => {
@@ -36,7 +35,6 @@ export default function PersonalizedLearningHub() {
   const courseProgress = Math.round((completedCount / totalCount) * 100);
   const creditsToTarget = Math.max(150 - student.earnedCredits, 0);
 
-  // Recommended lessons
   const recommendedLessons = [
     {
       id: 101,
@@ -48,7 +46,6 @@ export default function PersonalizedLearningHub() {
     { id: 103, title: "Academic Citations Guide", credits: 25, impact: "High" },
   ];
 
-  // Level progression
   const levels = [
     { label: "A1", status: "active" },
     { label: "A2", status: "target" },
@@ -62,7 +59,6 @@ export default function PersonalizedLearningHub() {
       <LearnerTopNav />
 
       <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Header with Back Button */}
         <button
           onClick={() => navigate("/dashboard")}
           className="mb-6 px-4 py-2 bg-white rounded-lg text-blue-600 font-medium hover:bg-gray-100 transition-colors"
@@ -70,9 +66,7 @@ export default function PersonalizedLearningHub() {
           ← Back to Dashboard
         </button>
 
-        {/* Top Section: University Logo + Title | User Avatar + Rank */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          {/* Left: University Logo + Title */}
           <div className="bg-white rounded-3xl px-6 py-4 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center text-white font-bold">
@@ -87,7 +81,6 @@ export default function PersonalizedLearningHub() {
             </div>
           </div>
 
-          {/* Right: User Avatar + Rank Badge */}
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-3xl px-6 py-4 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border border-blue-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
@@ -107,14 +100,12 @@ export default function PersonalizedLearningHub() {
           </div>
         </div>
 
-        {/* Progress Bridge - Central Visual */}
         <div className="bg-white rounded-3xl p-8 mb-8 shadow-sm border border-gray-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
           <h3 className="text-center font-bold text-lg text-gray-900 mb-8">
             Your Learning Bridge
           </h3>
 
           <div className="flex items-center justify-between gap-8">
-            {/* Current Level - A1 (Cyan Glow) */}
             <div className="flex flex-col items-center flex-1">
               <div className="relative w-20 h-20 mb-4">
                 <div className="absolute inset-0 bg-cyan-400 rounded-full blur-xl opacity-50 animate-pulse"></div>
@@ -131,7 +122,6 @@ export default function PersonalizedLearningHub() {
               </p>
             </div>
 
-            {/* Bridge Gap */}
             <div className="flex-2 flex flex-col items-center gap-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
@@ -142,7 +132,6 @@ export default function PersonalizedLearningHub() {
               <div className="w-32 h-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-yellow-400 rounded-full shadow-md"></div>
             </div>
 
-            {/* Target Level - A2 (Dim Gold) */}
             <div className="flex flex-col items-center flex-1">
               <div className="relative w-20 h-20 mb-4">
                 <div className="absolute inset-0 bg-yellow-300 rounded-full blur-xl opacity-20"></div>
@@ -161,7 +150,6 @@ export default function PersonalizedLearningHub() {
           </div>
         </div>
 
-        {/* Adaptive Lesson Feed */}
         <div className="mb-8">
           <h3 className="font-bold text-lg text-gray-900 mb-4">
             Recommended for Your A2 Goal
@@ -196,9 +184,7 @@ export default function PersonalizedLearningHub() {
           </div>
         </div>
 
-        {/* Main Content: Lessons Feed + Credit Vault Sidebar */}
         <div className="grid grid-cols-3 gap-6 mb-8">
-          {/* Left: Lessons Feed (2 columns) */}
           <div className="col-span-2 space-y-4">
             <h3 className="font-bold text-lg text-gray-900 mb-4">
               All Lessons
@@ -246,9 +232,7 @@ export default function PersonalizedLearningHub() {
             ))}
           </div>
 
-          {/* Right: Credit Vault Sidebar */}
           <div className="space-y-4">
-            {/* Daily Goal Ring */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
               <h4 className="font-bold text-gray-900 text-center mb-4">
                 Daily Goal
@@ -288,7 +272,6 @@ export default function PersonalizedLearningHub() {
               </p>
             </div>
 
-            {/* Live Credit Feed */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
               <h4 className="font-bold text-gray-900 mb-4">Credit Vault</h4>
               <div className="space-y-3">
@@ -307,7 +290,6 @@ export default function PersonalizedLearningHub() {
               </div>
             </div>
 
-            {/* Progression Map */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-200 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
               <h4 className="font-bold text-gray-900 mb-4">Your Journey</h4>
               <div className="space-y-2">
