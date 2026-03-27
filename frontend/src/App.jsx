@@ -14,6 +14,7 @@ import QandAPage from './components/qa/QandAPage';
 import Studenttutor from './components/stutorsignup/verify';
 import Stexperiance from './components/stutorsignup/experiance';
 import Stmailverify from './components/stutorsignup/stmailverify';
+import TutorSignup from './components/tutorsignup/tsignup';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
             <Route path="/stsignup/stexperiance" element={<Stexperiance />} />
             <Route path="/stsignup/mailverify" element={<Stmailverify />} />
             <Route path="/becometutor" element={<BecomeTutor />} />
+            <Route path="/tutor/stverify" element={<TutorSignup />} />
           </Routes>
     </Router>
   );

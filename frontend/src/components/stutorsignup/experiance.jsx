@@ -151,14 +151,14 @@ export default function TutorStepTwo({ onNext, onBack }) {
             {/* 4. Supporting Documents */}
             <section className="space-y-4">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Upload size={14} className="text-blue-500" /> Supporting Documents (Optional)
+                <Upload size={14} className="text-blue-500" /> Short teaching video 
               </label>
               <div className="p-8 border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50 flex flex-col items-center justify-center group hover:bg-blue-50 hover:border-blue-300 transition-all cursor-pointer">
                 <div className="p-4 bg-white rounded-2xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
                    <Upload className="text-blue-600" size={24} />
                 </div>
-                <p className="text-sm font-bold text-slate-600">Upload Certificates or Achievements</p>
-                <p className="text-xs text-slate-400 mt-1 uppercase tracking-tighter">PDF, PNG or JPG (Max 5MB)</p>
+                <p className="text-sm font-bold text-slate-600">Upload teaching video</p>
+                <p className="text-xs text-slate-400 mt-1 uppercase tracking-tighter"> MP4 (Max 20MB)</p>
               </div>
             </section>
 

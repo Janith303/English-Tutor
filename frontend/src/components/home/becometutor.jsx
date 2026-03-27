@@ -24,7 +24,7 @@ const steps = [
   },
   {
     title: "Submit Application",
-    desc: "Fill out the 3-step form with your skills, availability, and university ID.",
+    desc: "Fill out the 3-step form with your skills, availability, Short Teaching Video, and university ID.",
     icon: <ClipboardList size={32} />,
   },
   {
