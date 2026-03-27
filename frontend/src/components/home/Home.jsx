@@ -16,7 +16,7 @@ import Navbar from "../Topnav";
 import Footer from "../Footer";
 
 const sliderImages = [
-  "https://images.unsplash.com/photo-1523240715632-6103498a358c?w=1200", 
+  "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1200", 
   "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=1200", 
   "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1200", 
 ];
