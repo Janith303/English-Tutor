@@ -17,14 +17,14 @@ const roles = [
     tagline:
       "A SLIIT student? Mentor peers and sharpen your own communication skills.",
     img: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=600",
-    alt: "Group of students collaborating",
+    path: "/stsignup/stverify",
   },
   {
     title: "Tutor",
     tagline:
       "An English expert or academic? Join our network to teach global scholars.",
     img: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600",
-    alt: "A tutor leading a small seminar",
+    path: "/tutor/stverify",
   },
 ];
 

@@ -97,7 +97,7 @@ export default function PlacementTest() {
       </div>
 
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 mt-12">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-10 mt-12">
         <ProgressBar currentStep={3} />
 
         <div className="w-full max-w-3xl bg-white/90 backdrop-blur-md rounded-[2.5rem] shadow-2xl border border-white p-8 md:p-12 animate-in fade-in slide-in-from-bottom-8 duration-700">

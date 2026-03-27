@@ -8,6 +8,7 @@ export default function LearnerTopNav({ student }) {
     { path: "/dashboard", label: "Dashboard" },
     { path: "/hub", label: "My Learning" },
     { path: "/quiz", label: "Quiz" },
+    { path: "/qa", label: "Q&A Wall" },
   ];
 
   return (
