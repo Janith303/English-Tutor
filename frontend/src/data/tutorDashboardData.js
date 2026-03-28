@@ -16,7 +16,7 @@ export const tutorStats = [
   },
   {
     id: "customers",
-    label: "TOTAL CUSTOMERS",
+    label: "TOTAL LEARNERS",
     value: "1,205",
     icon: "sparkles",
     iconBg: "bg-indigo-100",

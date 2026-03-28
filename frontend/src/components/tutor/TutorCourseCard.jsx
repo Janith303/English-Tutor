@@ -1,6 +1,6 @@
 export default function TutorCourseCard({ course, onEdit }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex h-56">
+    <div className="bg-gradient-to-br from-[#2563EB] to-[#3B82F6] rounded-2xl shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex h-56">
       <div
         className={`relative w-1/3 bg-gradient-to-br ${course.thumbnailBg} flex flex-col items-center justify-center`}
       >
@@ -12,21 +12,21 @@ export default function TutorCourseCard({ course, onEdit }) {
           </p>
         </div>
 
-        <span className="absolute top-3 right-3 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+        <span className="absolute top-3 right-3 bg-white text-blue-600 text-xs font-semibold px-3 py-1 rounded-full">
           {course.status}
         </span>
       </div>
 
       <div className="w-2/3 p-5 flex flex-col flex-1 gap-3">
-        <h3 className="font-bold text-gray-900 text-base leading-snug">
+        <h3 className="font-extrabold text-white text-base leading-snug">
           {course.title}
         </h3>
-        <p className="text-sm text-gray-500 leading-relaxed flex-1">
+        <p className="text-sm text-white font-semibold leading-relaxed flex-1">
           {course.description}
         </p>
 
         <div className="flex items-center justify-between pt-1">
-          <div className="flex items-center gap-1.5 text-gray-400 text-sm">
+          <div className="flex items-center gap-1.5 text-white font-semibold text-sm">
             <svg
               className="w-4 h-4"
               fill="none"
@@ -44,7 +44,7 @@ export default function TutorCourseCard({ course, onEdit }) {
           </div>
           <button
             onClick={() => onEdit && onEdit(course)}
-            className="bg-gray-100 hover:bg-blue-50 hover:text-blue-600 text-gray-700 text-sm font-semibold px-4 py-1.5 rounded-xl transition-colors"
+            className="bg-white/20 hover:bg-white hover:text-blue-600 text-white text-sm font-semibold px-4 py-1.5 rounded-xl transition-colors"
           >
             Edit Course
           </button>

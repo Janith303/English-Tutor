@@ -22,8 +22,8 @@ export default function TutorTopNav({
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
-        <img src={logo} alt="English Tutor Logo" className="h-12 w-auto" />
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <img src={logo} alt="English Tutor Logo" className="h-17" />
 
         <div className="flex-1 hidden md:flex items-center justify-center gap-8">
           {navItems.map((item) => (

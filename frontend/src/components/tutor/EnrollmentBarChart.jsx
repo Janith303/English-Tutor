@@ -12,18 +12,18 @@ export default function EnrollmentBarChart({ data }) {
   const totalWidth = data.length * (barWidth + gap) - gap;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+    <div className="bg-blue-100 rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h3 className="font-bold text-gray-900 text-lg">Total Enrollments</h3>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <h3 className="font-bold text-black text-lg">Total Enrollments</h3>
+          <p className="text-sm text-black mt-0.5">
             Trends over the last 30 days
           </p>
         </div>
         <button
           onClick={() => setView(view === "monthly" ? "weekly" : "monthly")}
-          className="text-sm font-semibold text-blue-600 hover:underline"
+          className="text-sm font-semibold text-black hover:underline"
         >
           {view === "monthly" ? "Monthly View" : "Weekly View"}
         </button>
@@ -87,7 +87,7 @@ export default function EnrollmentBarChart({ data }) {
                   width={barWidth}
                   height={barH}
                   rx={6}
-                  fill={isPeak ? "#2563eb" : "#dbeafe"}
+                  fill={isPeak ? "#000000" : "#000000"}
                   className="transition-all duration-300 cursor-pointer hover:opacity-80"
                   onMouseEnter={() =>
                     setHoveredBar({
@@ -145,8 +145,8 @@ export default function EnrollmentBarChart({ data }) {
       </div>
 
       <div className="flex justify-between mt-1 px-1">
-        <span className="text-xs text-gray-400">30 DAYS AGO</span>
-        <span className="text-xs text-gray-400">TODAY</span>
+        <span className="text-xs text-black">30 DAYS AGO</span>
+        <span className="text-xs text-black">TODAY</span>
       </div>
     </div>
   );
