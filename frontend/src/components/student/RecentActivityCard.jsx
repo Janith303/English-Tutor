@@ -42,25 +42,25 @@ export default function RecentActivityCard() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
-      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+      className="bg-white rounded-2xl p-6 shadow-sm border border-[#E2E8F0]"
     >
-      <h2 className="text-lg font-semibold text-gray-800 mb-6">Recent Activity</h2>
+      <h2 className="text-lg font-semibold text-[#0F172A] mb-6">Recent Activity</h2>
 
       <div className="space-y-4">
         {activities.map((activity) => (
           <div
             key={activity.id}
-            className="flex items-start gap-4 pb-4 border-b border-gray-50 last:border-0 last:pb-0"
+            className="flex items-start gap-4 pb-4 border-b border-[#EFF6FF] last:border-0 last:pb-0"
           >
             <div className={`${activity.color} p-2.5 rounded-full`}>
               <activity.icon className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800">{activity.title}</p>
-              <p className="text-xs text-gray-500 mt-1">{activity.subtext}</p>
+              <p className="text-sm font-medium text-[#0F172A]">{activity.title}</p>
+              <p className="text-xs text-[#475569] mt-1">{activity.subtext}</p>
             </div>
             {activity.points && (
-              <span className="text-sm font-semibold text-blue-600 whitespace-nowrap">
+              <span className="text-sm font-semibold text-[#2563EB] whitespace-nowrap">
                 {activity.points}
               </span>
             )}

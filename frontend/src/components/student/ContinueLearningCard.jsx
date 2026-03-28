@@ -24,11 +24,11 @@ export default function ContinueLearningCard() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.1 }}
-      className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+      className="bg-white rounded-2xl p-6 shadow-sm border border-[#E2E8F0]"
     >
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-gray-800">Continue Learning</h2>
-        <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+        <h2 className="text-lg font-semibold text-[#0F172A]">Continue Learning</h2>
+        <a href="#" className="text-sm text-[#2563EB] hover:text-[#1D4ED8] font-medium">
           View All →
         </a>
       </div>
@@ -37,22 +37,22 @@ export default function ContinueLearningCard() {
         {learningItems.map((item) => (
           <div
             key={item.id}
-            className="bg-gray-50 rounded-xl p-4 flex items-center gap-4"
+            className="bg-[#EFF6FF] rounded-xl p-4 flex items-center gap-4"
           >
-            <div className="bg-blue-100 p-3 rounded-xl">
-              <item.icon className="w-5 h-5 text-blue-600" />
+            <div className="bg-[#DBEAFE] p-3 rounded-xl">
+              <item.icon className="w-5 h-5 text-[#2563EB]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-800">{item.title}</p>
-              <p className="text-xs text-gray-500 mt-1">{item.subtitle}</p>
-              <div className="mt-2 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <p className="text-sm font-medium text-[#0F172A]">{item.title}</p>
+              <p className="text-xs text-[#475569] mt-1">{item.subtitle}</p>
+              <div className="mt-2 h-1.5 bg-[#DBEAFE] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                  className="h-full bg-[#2563EB] rounded-full transition-all duration-300"
                   style={{ width: `${item.progress}%` }}
                 />
               </div>
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2563EB] text-white text-xs font-medium rounded-xl hover:bg-[#1D4ED8] transition-colors">
               <Play className="w-3 h-3" />
               Resume
             </button>

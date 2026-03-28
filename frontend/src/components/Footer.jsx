@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-br from-indigo-950 to-purple-950 text-white py-16">
+    <footer className="bg-gradient-to-br from-[#0F172A] to-[#1E3A8A] text-white py-16">
       <div className="max-w-7xl mx-auto px-6 text-center">
         <div className="flex justify-center mb-8">
           <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-4xl backdrop-blur-sm">
@@ -15,18 +15,18 @@ export default function Footer() {
           Ready to speak like a pro?
         </h2>
 
-        <p className="text-xl text-indigo-200 mb-10 max-w-lg mx-auto">
+        <p className="text-xl text-blue-200 mb-10 max-w-lg mx-auto">
           Join thousands of university students already improving their English every day.
         </p>
 
         <Link
           to="/signup"
-          className="inline-block px-12 py-5 bg-white text-indigo-950 text-2xl font-bold rounded-3xl hover:bg-indigo-100 transition transform hover:-translate-y-1 shadow-xl"
+          className="inline-block px-12 py-5 bg-[#2563EB] text-white text-2xl font-bold rounded-3xl hover:bg-[#1D4ED8] transition transform hover:-translate-y-1 shadow-xl shadow-blue-900/30"
         >
           Create Free Account →
         </Link>
 
-        <p className="mt-12 text-sm text-indigo-300">
+        <p className="mt-12 text-sm text-blue-300">
           © {new Date().getFullYear()} English Tutor • Built for Sri Lankan & global university students
         </p>
       </div>
