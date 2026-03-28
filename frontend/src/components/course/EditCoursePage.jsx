@@ -6,6 +6,7 @@ import CourseMetadataFields from "./CourseMetadataFields";
 import ThumbnailUploader from "./ThumbnailUploader";
 import PublishingPanel from "./PublishingPanel";
 import CourseFormActionBar from "./CourseFormActionBar";
+import CourseStructurePage from "./CourseStructurePage";
 import { tutorProfile } from "../../data/tutorDashboardData";
 import {
   validateField,
@@ -145,9 +146,7 @@ export default function EditCoursePage({ onBack }) {
             )}
 
             {activeTab === "structure" && (
-              <div className="flex items-center justify-center h-48 text-black text-sm bg-white rounded-2xl border border-gray-100">
-                Course Structure — coming soon
-              </div>
+              <CourseStructurePage onBack={() => setActiveTab("basic")} />
             )}
           </div>
         </div>
