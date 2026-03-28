@@ -1,21 +1,26 @@
-// src/components/Footer.jsx
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
+// 1. Import the icon from lucide-react
+import { GraduationCap } from "lucide-react"; 
 
 export default function Footer() {
   return (
     <footer className="bg-gradient-to-br from-[#0F172A] to-[#1E3A8A] text-white py-16">
       <div className="max-w-7xl mx-auto px-6 text-center">
+        
+        {/* Updated Icon Container */}
         <div className="flex justify-center mb-8">
-          <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-4xl backdrop-blur-sm">
-            📚
+          <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+            {/* 2. Added GraduationCap with specific color and size */}
+            <GraduationCap className="text-blue-400 w-8 h-8" />
           </div>
         </div>
 
-        <h2 className="text-4xl md:text-5xl font-bold mb-6">
+        <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
           Ready to speak like a pro?
         </h2>
 
-        <p className="text-xl text-blue-200 mb-10 max-w-lg mx-auto">
+        <p className="text-xl text-blue-200 mb-10 max-w-lg mx-auto font-medium">
           Join thousands of university students already improving their English every day.
         </p>
 
@@ -26,8 +31,9 @@ export default function Footer() {
           Create Free Account →
         </Link>
 
-        <p className="mt-12 text-sm text-blue-300">
-          © {new Date().getFullYear()} English Tutor • Built for Sri Lankan & global university students
+        {/* Updated Footer Text to reflect your specific SLIIT context */}
+        <p className="mt-12 text-sm text-blue-300 font-medium">
+          © {new Date().getFullYear()} English Tutor Dept • SLIIT Student Developers
         </p>
       </div>
     </footer>
