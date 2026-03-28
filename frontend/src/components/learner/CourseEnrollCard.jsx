@@ -38,12 +38,20 @@ export default function CourseEnrollCard({ course, onEnroll }) {
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
           <span className="text-sm font-semibold text-gray-700">
+    <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-5 flex flex-col gap-4 hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 bg-[#DBEAFE] text-[#2563EB] text-xs font-medium px-3 py-1.5 rounded-full">
+          {course.level}
+        </span>
+        <div className="flex items-center gap-1">
+          <img src={starImg} alt="Rating Star" className="w-4 h-4" />
+          <span className="text-sm font-semibold text-[#475569]">
             {course.rating}
           </span>
         </div>
       </div>
 
-      <h3 className="font-bold text-gray-900 text-lg leading-snug">
+      <h3 className="font-bold text-[#0F172A] text-lg leading-snug">
         {course.title}
       </h3>
 
@@ -58,9 +66,15 @@ export default function CourseEnrollCard({ course, onEnroll }) {
           </svg>
         </div>
         <span className="text-gray-600 text-sm">{course.instructor}</span>
+        <img
+          src={avatarImg}
+          alt="Instructor Avatar"
+          className="w-8 h-8 rounded-full object-cover"
+        />
+        <span className="text-[#475569] text-sm">{course.instructor}</span>
       </div>
 
-      <p className="text-gray-500 text-sm leading-relaxed">
+      <p className="text-[#475569] text-sm leading-relaxed">
         {course.description}
       </p>
 
@@ -79,22 +93,25 @@ export default function CourseEnrollCard({ course, onEnroll }) {
               d="M13 10V3L4 14h7v7l9-11h-7z"
             />
           </svg>
+      <div className="bg-[#EFF6FF] rounded-xl px-4 py-3">
+        <div className="flex items-center gap-1.5 text-[#2563EB] text-xs font-medium mb-1">
+          <img src={thunderboltImg} alt="Focus Area" className="w-3.5 h-3.5" />
           Focus Area
         </div>
-        <p className="text-blue-600 text-sm font-semibold">
+        <p className="text-[#2563EB] text-sm font-semibold">
           {course.focusArea}
         </p>
       </div>
 
-      <div className="flex items-center justify-between text-gray-400 text-sm">
+      <div className="flex items-center justify-between text-[#94A3B8] text-sm">
         <div className="flex items-center gap-1.5">
           <svg
-            className="w-4 h-4 text-blue-500 fill-blue-500"
+            className="w-4 h-4 text-[#2563EB] fill-[#2563EB]"
             viewBox="0 0 24 24"
           >
             <path d="M8 5v14l11-7z" />
           </svg>
-          <span className="text-gray-500">{course.totalLessons} Lessons</span>
+          <span className="text-[#475569]">{course.totalLessons} Lessons</span>
         </div>
         <div className="flex items-center gap-1.5">
           <svg
@@ -120,6 +137,8 @@ export default function CourseEnrollCard({ course, onEnroll }) {
           navigate(`/learning/${course.id}`);
         }}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl py-3.5 flex items-center justify-center gap-2 transition-colors duration-200 mt-auto"
+        onClick={() => onEnroll && onEnroll(course)}
+        className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold text-sm rounded-xl py-3.5 flex items-center justify-center gap-2 transition-colors duration-200 mt-auto"
       >
         <svg
           className="w-4 h-4"

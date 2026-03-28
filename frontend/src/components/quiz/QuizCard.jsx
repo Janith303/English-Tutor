@@ -1,26 +1,26 @@
 import { Play } from "lucide-react";
 
 const difficultyStyles = {
-  Easy: "bg-green-100 text-green-700",
-  Medium: "bg-yellow-100 text-yellow-700",
-  Hard: "bg-red-100 text-red-700",
+  Easy: "bg-green-100 text-green-600",
+  Medium: "bg-yellow-100 text-yellow-600",
+  Hard: "bg-red-100 text-red-600",
 };
 
 export default function QuizCard({ title, difficulty, description, questions, onPlay }) {
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 flex flex-col">
+    <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-[#E2E8F0] flex flex-col">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        <h3 className="text-lg font-semibold text-[#0F172A]">{title}</h3>
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${difficultyStyles[difficulty]}`}>
           {difficulty}
         </span>
       </div>
-      <p className="text-gray-500 text-sm mb-4 flex-grow">{description}</p>
+      <p className="text-[#475569] text-sm mb-4 flex-grow">{description}</p>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-400">{questions} Questions</span>
+        <span className="text-sm text-[#94A3B8]">{questions} Questions</span>
         <button
           onClick={onPlay}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
         >
           <Play className="w-4 h-4" />
           Play Now
