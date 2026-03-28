@@ -22,9 +22,7 @@ function CreateAtelierCard({ onClick }) {
         </svg>
       </div>
       <div className="text-center px-4">
-        <p className="font-semibold text-gray-700 text-sm">
-          Create New Atelier
-        </p>
+        <p className="font-semibold text-gray-700 text-sm">Create New Course</p>
         <p className="text-xs text-gray-400 mt-1 leading-relaxed">
           Design a new learning experience for your students.
         </p>
