@@ -32,7 +32,7 @@ import ReadingQuizGame from "./components/quiz/ReadingQuizGame";
 import ReadingQuizResult from "./components/quiz/ReadingQuizResult";
 import TutorQandA from "./components/qa/TutorQandA";
 import TutorDashboardPage from "./components/tutor/TutorDashboardPage";
-import TutorQandA from "./components/qa/TutorQandA";
+
 
 function App() {
   return (
