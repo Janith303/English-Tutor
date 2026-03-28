@@ -57,7 +57,10 @@ export default function TutorTopNav({
           </div>
 
           <button
-            onClick={onLogout}
+            onClick={() => {
+              onLogout && onLogout();
+              navigate("/");
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
             title="Logout"
           >
