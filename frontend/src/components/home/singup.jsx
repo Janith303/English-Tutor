@@ -23,7 +23,7 @@ const roles = [
     title: "Tutor",
     tagline:
       "An English expert or academic? Join our network to teach global scholars.",
-    img: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600",
+    img: "https://images.unsplash.com/photo-1758270704587-43339a801396?q=80&w=1031&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     path: "/tutor/stverify",
   },
 ];
