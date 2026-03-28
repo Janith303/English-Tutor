@@ -257,9 +257,6 @@ export default function Home() {
             <button className="px-12 py-6 bg-[#2563EB] text-white font-black text-xl rounded-2xl shadow-2xl shadow-blue-200 hover:bg-[#1D4ED8] hover:-translate-y-1 transition-all active:scale-95">
               Claim Your Account
             </button>
-            <button className="px-12 py-6 bg-white border-2 border-[#E2E8F0] text-[#475569] font-black text-xl rounded-2xl hover:bg-[#EFF6FF] transition-all active:scale-95">
-              Contact Faculty
-            </button>
           </div>
         </div>
       </section>

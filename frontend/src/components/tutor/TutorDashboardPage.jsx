@@ -4,6 +4,8 @@ import TutorTopNav from "./TutorTopNav";
 import TutorStatsGrid from "./TutorStatsGrid";
 import EnrollmentBarChart from "./EnrollmentBarChart";
 import TutorCoursesGrid from "./TutorCoursesGrid";
+import TutorQandA from "../qa/TutorQandA";
+
 import {
   tutorProfile,
   tutorStats,
@@ -23,6 +25,7 @@ export default function TutorDashboardPage({ onLogout }) {
 
   const handleNavigate = (page) => {
     setActivePage(page);
+    // Scrolling logic for the main dashboard sections
     if (page === "dashboard" && overviewRef.current) {
       setTimeout(() => {
         overviewRef.current.scrollIntoView({ behavior: "smooth" });
@@ -45,25 +48,32 @@ export default function TutorDashboardPage({ onLogout }) {
       />
 
       <div className="flex-1 overflow-y-auto">
-        <main className="max-w-5xl mx-auto px-8 py-8 flex flex-col gap-7">
-          <div ref={overviewRef}>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Academic Overview
-            </h1>
-          </div>
+        {/* 2. CHANGED: Conditional Rendering Logic */}
+        {activePage === "qa" ? (
+          /* When the activePage is 'qa', show your component */
+          <TutorQandA />
+        ) : (
+          /* Otherwise, show the original dashboard content */
+          <main className="max-w-5xl mx-auto px-8 py-8 flex flex-col gap-7">
+            <div ref={overviewRef}>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Academic Overview
+              </h1>
+            </div>
 
-          <TutorStatsGrid stats={tutorStats} />
+            <TutorStatsGrid stats={tutorStats} />
 
-          <EnrollmentBarChart data={enrollmentChartData} />
+            <EnrollmentBarChart data={enrollmentChartData} />
 
-          <div ref={coursesRef}>
-            <TutorCoursesGrid
-              courses={tutorCourses}
-              onEdit={(course) => navigate("/edit-course")}
-              onCreate={() => navigate("/edit-course")}
-            />
-          </div>
-        </main>
+            <div ref={coursesRef}>
+              <TutorCoursesGrid
+                courses={tutorCourses}
+                onEdit={(course) => navigate("/edit-course")}
+                onCreate={() => navigate("/edit-course")}
+              />
+            </div>
+          </main>
+        )}
       </div>
     </div>
   );

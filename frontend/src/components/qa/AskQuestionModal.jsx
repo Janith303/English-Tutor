@@ -36,7 +36,7 @@ const AskQuestionModal = ({ onClose }) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-xl font-bold">Ask a Question</h3>
+          <h3 className="text-xl font-bold text-slate-700">Ask a Question</h3>
           <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-full transition-colors">
             <X size={24} className="text-slate-400" />
           </button>

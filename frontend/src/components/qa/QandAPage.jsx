@@ -10,7 +10,7 @@ const DUMMY_QUESTIONS = [
     body: 'I always get confused between these two words. Can someone explain when to use "affect" versus "effect" with some clear examples?',
     votes: 42,
     tags: ['grammar', 'vocabulary', 'common-mistakes'],
-    author: 'Binosh Jayasinghe',
+    author: 'Anonymous Learner #001',
     answers: 8,
     time: '2 hours ago'
   },
@@ -20,7 +20,7 @@ const DUMMY_QUESTIONS = [
     body: 'I have a strong command of English grammar and vocabulary, but my pronunciation is still poor. Any tips or resources you can recommend?',
     votes: 28,
     tags: ['writing', 'speaking'],
-    author: 'Sheron Bandara',
+    author: 'Anonymous Learner #002',
     answers: 8,
     time: '3 hours ago'
   },
@@ -30,7 +30,7 @@ const DUMMY_QUESTIONS = [
     body: 'I often confuse the possessive form "its" with the contraction "it\'s". Could someone provide clear examples of when to use each?',
     votes: 35,
     tags: ['grammar', 'vocabulary'],
-    author: 'Chamika Thennakoon',
+    author: 'Anonymous Learner #003',
     answers: 8,
     time: '3 hours ago'
   },
@@ -40,7 +40,7 @@ const DUMMY_QUESTIONS = [
     body: 'I\'m preparing for a job interview and I\'m not sure how to effectively answer the classic question "Tell me about yourself." Any advice or tips?',
     votes: 40,
     tags: ['Interview', 'Speaking'],
-    author: 'Kapila Perera',
+    author: 'Anonymous Learner #004',
     answers: 5,
     time: '4 hours ago'
   }
@@ -118,7 +118,7 @@ const QandAPage = () => {
                 <ChevronDown className="cursor-pointer" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold mb-2 group-hover:text-blue-600 transition-colors">{q.title}</h3>
+                <h3 className="text-xl font-bold mb-2 text-slate-600 group-hover:text-blue-600 transition-colors">{q.title}</h3>
                 <p className="text-slate-600 line-clamp-2 mb-4 leading-relaxed">{q.body}</p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {q.tags.map(tag => (

@@ -30,8 +30,11 @@ import GrammarQuizResult from "./components/quiz/GrammarQuizResult";
 import ReadingQuizStart from "./components/quiz/ReadingQuizStart";
 import ReadingQuizGame from "./components/quiz/ReadingQuizGame";
 import ReadingQuizResult from "./components/quiz/ReadingQuizResult";
+import TutorQandA from "./components/qa/TutorQandA";
 import TutorDashboardPage from "./components/tutor/TutorDashboardPage";
 import EditCoursePage from "./components/course/EditCoursePage";
+import TutorCreateQuizPage from "./components/tutor/TutorCreateQuizPage";
+
 
 function App() {
   return (
@@ -56,6 +59,7 @@ function App() {
         {/* Features */}
         <Route path="/quiz" element={<QuizHome />} />
         <Route path="/qa" element={<QandAPage />} />
+        <Route path="/tutor-qa" element={<TutorQandA />} />
 
         {/* Student Signup Flow */}
         <Route path="/signup/sverify" element={<StudentSignUp />} />
@@ -69,6 +73,7 @@ function App() {
         <Route path="/tutor/stverify" element={<TutorSignup />} />
         <Route path="/tutor/dashboard" element={<TutorDashboardPage />} />
         <Route path="/edit-course" element={<EditCoursePage />} />
+        <Route path="/tutor/create-quiz" element={<TutorCreateQuizPage />} />
 
         <Route path="/daily-quiz" element={<DailyQuizStart />} />
         <Route path="/daily-quiz/play" element={<DailyQuizGame />} />
