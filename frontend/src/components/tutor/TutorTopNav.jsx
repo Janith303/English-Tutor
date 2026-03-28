@@ -12,18 +12,27 @@ export default function TutorTopNav({
   const navItems = [
     { key: "dashboard", label: "Dashboard" },
     { key: "courses", label: "Courses" },
+    { key: "qa", label: "Q&A wall" },
+
   ];
+
+  const handleNavClick = (item) => {
+    if (item.key === "dashboard") {
+      navigate("/tutor/dashboard");
+    }
+    onNavigate && onNavigate(item.key);
+  };
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
-        <img src={logo} alt="English Tutor Logo" className="h-12 w-auto" />
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <img src={logo} alt="English Tutor Logo" className="h-17" />
 
         <div className="flex-1 hidden md:flex items-center justify-center gap-8">
           {navItems.map((item) => (
             <button
               key={item.key}
-              onClick={() => onNavigate && onNavigate(item.key)}
+              onClick={() => handleNavClick(item)}
               className={`text-sm font-medium pb-1 transition-colors whitespace-nowrap ${
                 activePage === item.key
                   ? "text-blue-600 border-b-2 border-blue-600"
@@ -59,7 +68,10 @@ export default function TutorTopNav({
           </div>
 
           <button
-            onClick={onLogout}
+            onClick={() => {
+              onLogout && onLogout();
+              navigate("/");
+            }}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
             title="Logout"
           >

@@ -4,11 +4,11 @@ function CreateAtelierCard({ onClick }) {
   return (
     <div
       onClick={onClick}
-      className="border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-3 min-h-[320px] cursor-pointer hover:border-blue-300 hover:bg-blue-50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
+      className="bg-blue-100 border border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-3 min-h-[320px] cursor-pointer hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
     >
-      <div className="w-12 h-12 bg-gray-100 group-hover:bg-blue-100 rounded-full flex items-center justify-center transition-colors">
+      <div className="w-12 h-12 bg-blue-200 group-hover:bg-blue-100 rounded-full flex items-center justify-center transition-colors">
         <svg
-          className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors"
+          className="w-5 h-5 text-gray-600 group-hover:text-blue-500 transition-colors"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -22,10 +22,8 @@ function CreateAtelierCard({ onClick }) {
         </svg>
       </div>
       <div className="text-center px-4">
-        <p className="font-semibold text-gray-700 text-sm">
-          Create New Atelier
-        </p>
-        <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+        <p className="font-semibold text-black text-sm">Create New Course</p>
+        <p className="text-xs text-black mt-1 leading-relaxed">
           Design a new learning experience for your students.
         </p>
       </div>
