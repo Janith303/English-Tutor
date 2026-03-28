@@ -4,16 +4,16 @@ export default function RecommendedCoursesGrid({ courses, onEnroll }) {
   return (
     <section>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Recommended Courses</h2>
-        <button className="text-blue-600 text-sm font-medium hover:underline">
+        <h2 className="text-xl font-bold text-[#0F172A]">Recommended Courses</h2>
+        <button className="text-[#2563EB] text-sm font-medium hover:underline">
           View All
         </button>
       </div>
 
       {courses.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-[#94A3B8]">
           <svg
-            className="w-12 h-12 mx-auto mb-3 text-gray-200"
+            className="w-12 h-12 mx-auto mb-3 text-[#DBEAFE]"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

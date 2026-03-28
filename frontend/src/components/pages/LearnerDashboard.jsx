@@ -17,7 +17,7 @@ export default function LearnerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#EFF6FF]">
       <LearnerTopNav student={student} />
 
       <main className="max-w-7xl mx-auto px-6 py-8 flex flex-col gap-8">
