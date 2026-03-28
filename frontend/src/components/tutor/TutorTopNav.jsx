@@ -12,6 +12,8 @@ export default function TutorTopNav({
   const navItems = [
     { key: "dashboard", label: "Dashboard" },
     { key: "courses", label: "Courses" },
+    { key: "qa", label: "Q&A wall" },
+
   ];
 
   return (
