@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Search, Bell, ChevronUp, ChevronDown, MessageSquare, Clock, CheckCircle, Send, X } from 'lucide-react';
-import logo from '../images/logo.jpg';
 
 const DUMMY_QUESTIONS = [
   {
@@ -43,34 +42,7 @@ const TutorQandA = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-slate-900">
-      {/* Navbar - Matches Student View */}
-      <nav className="bg-white border-b px-8 py-3 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <img src={logo} alt="EnglishTutor Logo" className="h-15 w-auto object-contain" />
-        </div>
-
-        <div className="flex-1 max-w-xl mx-12 relative">
-          <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search questions to answer..." 
-            className="w-full bg-slate-100 border-none rounded-md py-2 pl-10 focus:ring-2 focus:ring-blue-500 outline-none"
-          />
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
-            Tutor Mode
-          </div>
-          <Bell className="text-slate-500 cursor-pointer" />
-          <div className="flex items-center gap-2 cursor-pointer">
-            <img src="https://ui-avatars.com/api/?name=Lecturer+User&background=000&color=fff" alt="User" className="w-8 h-8 rounded-full" />
-            <span className="font-medium text-sm text-slate-700">Lecturer Portal</span>
-          </div>
-        </div>
-      </nav>
-
+    <div className="bg-gray-50 font-sans text-slate-900">
       <main className="max-w-5xl mx-auto py-10 px-6">
         <header className="mb-8">
           <h2 className="text-slate-700 text-3xl font-bold mb-2">Manage Questions</h2>
@@ -129,7 +101,7 @@ const TutorQandA = () => {
                    )}
                 </div>
 
-                {/* Reply Form - Integrated into the Card style */}
+                {/* Reply Form */}
                 {replyId === q.id && (
                   <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100 animate-in fade-in duration-300">
                     <div className="flex justify-between items-center mb-2">
