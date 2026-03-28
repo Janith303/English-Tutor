@@ -1,3 +1,4 @@
+import { PlusCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "../images/logo.jpg";
 
@@ -11,6 +12,8 @@ export default function TutorTopNav({
   const navItems = [
     { key: "dashboard", label: "Dashboard" },
     { key: "courses", label: "Courses" },
+    { key: "qa", label: "Q&A wall" },
+
   ];
 
   const handleNavClick = (item) => {
@@ -42,6 +45,14 @@ export default function TutorTopNav({
         </div>
 
         <div className="flex items-center gap-4 ml-auto">
+          <button
+            onClick={() => navigate("/tutor/create-quiz")}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <PlusCircle size={16} />
+            Add Quiz
+          </button>
+
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
             {tutor?.avatar ? (
               <img

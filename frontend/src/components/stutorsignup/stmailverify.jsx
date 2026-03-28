@@ -11,7 +11,10 @@ import {
   ExternalLink,
   Sparkles,
   KeyRound,
-  Edit3
+  Edit3,
+  Lock, 
+  Eye,  
+  EyeOff 
 } from "lucide-react";
 import Navbar from "../Topnav";
 import { useNavigate } from "react-router-dom";
@@ -28,11 +31,17 @@ export default function TutorStepThree({ onBack }) {
   const [emailVerified, setEmailVerified] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // --- ADDED MISSING STATES ---
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const passwordsMatch = password === confirmPassword && password !== "";
+  // ----------------------------
+
   // File & Agreement States
   const [idFile, setIdFile] = useState(null);
   const [agreed, setAgreed] = useState(false);
 
-  // Phase 1: Simulate sending OTP to typed email
   const handleSendOtp = () => {
     if (!email.includes("@sliit.lk") && !email.includes("@my.sliit.lk")) {
       alert("Please enter a valid SLIIT email address");
@@ -45,7 +54,6 @@ export default function TutorStepThree({ onBack }) {
     }, 1500);
   };
 
-  // Phase 2: Simulate OTP Verification
   const handleVerifyOtp = () => {
     setLoading(true);
     setTimeout(() => {
@@ -55,6 +63,15 @@ export default function TutorStepThree({ onBack }) {
   };
 
   const handleFinalSubmit = () => {
+    // Additional validation for password before submission
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
+    if (!passwordsMatch) {
+      alert("Passwords do not match");
+      return;
+    }
     setIsSubmitted(true);
   };
 
@@ -62,7 +79,6 @@ export default function TutorStepThree({ onBack }) {
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden font-sans">
       <Navbar />
 
-      {/* --- MESH BACKGROUND --- */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-cyan-400/20 rounded-full blur-[130px] animate-pulse" />
         <div className="absolute top-[-10%] right-[-15%] w-[700px] h-[700px] bg-fuchsia-400/10 rounded-full blur-[160px]" />
@@ -71,14 +87,11 @@ export default function TutorStepThree({ onBack }) {
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 mt-16">
         
-        {/* Progress Bar Container */}
         <div className="w-full max-w-4xl mb-12">
           <ProgressBar currentStep={3} />
         </div>
 
-        {/* --- DYNAMIC CARD CONTENT --- */}
         {isSubmitted ? (
-          /* SUCCESS / PENDING STATE */
           <div className="w-full max-w-2xl bg-white/95 backdrop-blur-2xl border border-white rounded-[3rem] shadow-2xl p-10 md:p-16 text-center animate-in fade-in zoom-in duration-700">
             <div className="relative inline-block mb-8">
               <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-25" />
@@ -120,7 +133,6 @@ export default function TutorStepThree({ onBack }) {
             </button>
           </div>
         ) : (
-          /* FORM STATE (Identity Verification) */
           <div className="w-full max-w-2xl bg-white/95 backdrop-blur-2xl border border-white rounded-[3rem] shadow-2xl p-8 md:p-12 animate-in fade-in slide-in-from-right-8 duration-500">
             
             <div className="mb-10 text-center md:text-left">
@@ -135,7 +147,6 @@ export default function TutorStepThree({ onBack }) {
 
             <div className="space-y-6">
               
-              {/* Email Section */}
               <section className="space-y-4">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-2">
                   <Mail size={14} className="text-blue-500" /> University Email
@@ -161,7 +172,6 @@ export default function TutorStepThree({ onBack }) {
                 </div>
               </section>
 
-              {/* OTP Box (Appears after clicking Get OTP) */}
               {otpSent && !emailVerified && (
                 <section className="space-y-4 animate-in slide-in-from-top-4 duration-300">
                   <div className="p-6 bg-blue-50/50 border-2 border-blue-100 rounded-[2rem] space-y-4">
@@ -190,7 +200,6 @@ export default function TutorStepThree({ onBack }) {
                 </section>
               )}
 
-              {/* Verified Success Badge */}
               {emailVerified && (
                 <div className="flex items-center gap-3 p-5 bg-green-50 border border-green-100 rounded-2xl text-green-600 animate-in zoom-in">
                   <CheckCircle2 size={24} />
@@ -198,7 +207,37 @@ export default function TutorStepThree({ onBack }) {
                 </div>
               )}
 
-              {/* University ID Upload */}
+              {/* Password Fields - FIXED */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1">
+                    <Lock size={12} /> Password
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••" 
+                      className="w-full px-5 py-3 bg-slate-50 border border-slate-100 text-slate-700 rounded-2xl outline-none focus:border-blue-500 transition-all" 
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600">
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase ml-1">Confirm Password</label>
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••" 
+                    className={`w-full px-5 py-3 bg-slate-50 border text-slate-700 rounded-2xl outline-none transition-all ${confirmPassword && !passwordsMatch ? "border-red-400 ring-4 ring-red-50" : "border-slate-100 focus:border-blue-500"}`}
+                  />
+                </div>
+              </div>
+
               <section className="space-y-4 pt-2">
                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-2">
                   <CreditCard size={14} className="text-blue-500" /> Proof of Identity
@@ -220,7 +259,6 @@ export default function TutorStepThree({ onBack }) {
                 </label>
               </section>
 
-              {/* Agreement */}
               <label className="flex items-start gap-4 p-5 bg-blue-50/30 rounded-[2rem] border border-blue-100 cursor-pointer hover:bg-blue-50 transition-colors">
                 <input 
                   type="checkbox" 
@@ -238,7 +276,6 @@ export default function TutorStepThree({ onBack }) {
 
             </div>
 
-            {/* Navigation Footer */}
             <div className="mt-10 pt-8 border-t border-slate-100 flex flex-col md:flex-row gap-4">
               <button 
                 onClick={() => navigate("/stsignup/stexperiance")}
@@ -248,7 +285,7 @@ export default function TutorStepThree({ onBack }) {
               </button>
               <button 
                 onClick={handleFinalSubmit}
-                disabled={!emailVerified || !idFile || !agreed}
+                disabled={!emailVerified || !idFile || !agreed || !passwordsMatch || password.length < 6}
                 className="flex-[2] py-5 bg-blue-600 text-white rounded-[1.8rem] font-black text-xl shadow-2xl shadow-blue-100 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-20 disabled:cursor-not-allowed group active:scale-95"
               >
                 Finish & Submit Application
@@ -257,7 +294,6 @@ export default function TutorStepThree({ onBack }) {
           </div>
         )}
 
-        {/* Footer Credit */}
         <div className="mt-12 flex items-center gap-4 opacity-40 grayscale">
              <div className="h-px w-12 bg-slate-300" />
              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Academic Excellence</span>
