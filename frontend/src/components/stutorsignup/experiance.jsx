@@ -22,7 +22,7 @@ export default function TutorStepTwo({ onNext, onBack }) {
   const [bio, setBio] = useState("");
   const [availability, setAvailability] = useState({}); // Example: { Monday: ["Morning", "Evening"] }
 
-  const teachingAreas = ["Grammar", "Academic Writing", "Speaking", "Listening", "Vocabulary", "IELTS Prep", "Public Speaking"];
+  const teachingAreas = ["Grammar", "Academic Writing",  "Vocabulary", "IELTS Prep", "Presentation Skills", "Career Interview Prep"];
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
   const timeSlots = ["Morning (8am-12pm)", "Afternoon (12pm-4pm)", "Evening (4pm-8pm)"];
 

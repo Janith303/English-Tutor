@@ -281,10 +281,9 @@ function StepContent({
         "Grammar",
         "IELTS Prep",
         "Academic Writing",
-        "Public Speaking",
-        "Listening",
+        "Presentation Skills", 
+        "Career Interview Prep",
         "Vocabulary",
-        "Speaking",
       ];
       return (
         <motion.div {...variants} className="space-y-6">
