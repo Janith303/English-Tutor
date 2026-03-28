@@ -86,27 +86,19 @@ export default function TutorSignup() {
     return (
       <div className="min-h-screen bg-white font-sans">
         <Navbar />
-        <div className="pt-40 flex items-center justify-center px-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-lg w-full text-center p-12 bg-slate-50 rounded-[3rem] border border-slate-100 shadow-xl"
-          >
-            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-              <CheckCircle size={40} />
-            </div>
-            <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">
-              Application Sent!
-            </h2>
-            <p className="text-slate-500 font-medium mb-8">
-              Your profile is now under review by the English Department.
-            </p>
-            <button
-              onClick={() => navigate("/tutor/dashboard")}
-              className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
-            >
-              <Home size={18} /> Go to Dashboard
-            </button>
+         {/* --- MESH BACKGROUND --- */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-400/20 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-300/20 rounded-full blur-[120px]" />
+      </div>
+
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-10 mt-12"></main>
+        <div className="pt-10 flex items-center justify-center px-6">
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-lg w-full text-center p-12 bg-slate-50 rounded-[3rem] border border-slate-300 shadow-xl">
+            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><CheckCircle size={40} /></div>
+            <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Application Sent!</h2>
+            <p className="text-slate-500 font-medium mb-8">Your profile is now under review by the English Department.</p>
+            <button onClick={() => navigate("/")} className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"><Home size={18} /> Return to Home</button>
           </motion.div>
         </div>
       </div>
