@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import TutorSidebar from "./TutorSidebar";
+import TutorTopNav from "./TutorTopNav";
 import TutorStatsGrid from "./TutorStatsGrid";
 import EnrollmentBarChart from "./EnrollmentBarChart";
 import TutorCoursesGrid from "./TutorCoursesGrid";
@@ -14,6 +14,7 @@ import {
 export default function TutorDashboardPage({ onLogout }) {
   const [activePage, setActivePage] = useState("dashboard");
   const navigate = useNavigate();
+  const overviewRef = useRef(null);
   const coursesRef = useRef(null);
 
   const handleLogout = () => {
@@ -22,6 +23,11 @@ export default function TutorDashboardPage({ onLogout }) {
 
   const handleNavigate = (page) => {
     setActivePage(page);
+    if (page === "dashboard" && overviewRef.current) {
+      setTimeout(() => {
+        overviewRef.current.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    }
     if (page === "courses" && coursesRef.current) {
       setTimeout(() => {
         coursesRef.current.scrollIntoView({ behavior: "smooth" });
@@ -30,8 +36,8 @@ export default function TutorDashboardPage({ onLogout }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <TutorSidebar
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <TutorTopNav
         activePage={activePage}
         onNavigate={handleNavigate}
         tutor={tutorProfile}
@@ -40,7 +46,7 @@ export default function TutorDashboardPage({ onLogout }) {
 
       <div className="flex-1 overflow-y-auto">
         <main className="max-w-5xl mx-auto px-8 py-8 flex flex-col gap-7">
-          <div>
+          <div ref={overviewRef}>
             <h1 className="text-3xl font-bold text-gray-900">
               Academic Overview
             </h1>
@@ -53,8 +59,8 @@ export default function TutorDashboardPage({ onLogout }) {
           <div ref={coursesRef}>
             <TutorCoursesGrid
               courses={tutorCourses}
-              onEdit={(course) => alert(`Editing: ${course.title}`)}
-              onCreate={() => alert("Create course clicked")}
+              onEdit={(course) => navigate("/edit-course")}
+              onCreate={() => navigate("/edit-course")}
             />
           </div>
         </main>
