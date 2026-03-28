@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { 
   BookOpen, 
   Upload, 
@@ -9,20 +9,26 @@ import {
   Check,
   ArrowRight,
   ArrowLeft,
-  Calendar
+  Calendar,
+  FileVideo,
+  AlertCircle
 } from "lucide-react";
 import Navbar from "../Topnav";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ProgressBar from "../stprogressbar/stpro";
 
-export default function TutorStepTwo({ onNext, onBack }) {
-  // --- States ---
+export default function TutorStepTwo() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+
+  // --- States ---
   const [selectedAreas, setSelectedAreas] = useState([]);
   const [bio, setBio] = useState("");
-  const [availability, setAvailability] = useState({}); // Example: { Monday: ["Morning", "Evening"] }
+  const [availability, setAvailability] = useState({});
+  const [videoFile, setVideoFile] = useState(null);
+  const [fileError, setFileError] = useState("");
 
-  const teachingAreas = ["Grammar", "Academic Writing",  "Vocabulary", "IELTS Prep", "Presentation Skills", "Career Interview Prep"];
+  const teachingAreas = ["Grammar", "Academic Writing", "Vocabulary", "IELTS Prep", "Presentation Skills", "Career Interview Prep"];
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
   const timeSlots = ["Morning (8am-12pm)", "Afternoon (12pm-4pm)", "Evening (4pm-8pm)"];
 
@@ -41,6 +47,42 @@ export default function TutorStepTwo({ onNext, onBack }) {
         : [...daySlots, slot];
       return { ...prev, [day]: newDaySlots };
     });
+  };
+
+  // --- File Validation Logic ---
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setFileError(""); // Reset error
+
+    if (!file) return;
+
+    // Validate Format (MP4 only)
+    const allowedTypes = ["video/mp4"];
+    if (!allowedTypes.includes(file.type)) {
+      setFileError("Please upload a valid MP4 video.");
+      setVideoFile(null);
+      return;
+    }
+
+    // Validate Size (20MB = 20 * 1024 * 1024 bytes)
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setFileError("File is too large. Maximum size is 20MB.");
+      setVideoFile(null);
+      return;
+    }
+
+    setVideoFile(file);
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current.click();
+  };
+
+  const removeFile = (e) => {
+    e.stopPropagation();
+    setVideoFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
@@ -70,7 +112,7 @@ export default function TutorStepTwo({ onNext, onBack }) {
 
           <div className="space-y-12">
             
-            {/* 1. Teaching Areas (Tag Cloud) */}
+            {/* 1. Teaching Areas */}
             <section className="space-y-4">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Check size={14} className="text-blue-500" /> Select Teaching Areas
@@ -93,7 +135,7 @@ export default function TutorStepTwo({ onNext, onBack }) {
               </div>
             </section>
 
-            {/* 2. Short Bio / Motivation */}
+            {/* 2. Short Bio */}
             <section className="space-y-4">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <MessageSquare size={14} className="text-blue-500" /> Teaching Motivation
@@ -148,18 +190,58 @@ export default function TutorStepTwo({ onNext, onBack }) {
               </div>
             </section>
 
-            {/* 4. Supporting Documents */}
+            {/* 4. Supporting Documents (With Validation UI) */}
             <section className="space-y-4">
               <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Upload size={14} className="text-blue-500" /> Short teaching video 
               </label>
-              <div className="p-8 border-2 border-dashed border-slate-200 rounded-[2rem] bg-slate-50 flex flex-col items-center justify-center group hover:bg-blue-50 hover:border-blue-300 transition-all cursor-pointer">
-                <div className="p-4 bg-white rounded-2xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
-                   <Upload className="text-blue-600" size={24} />
-                </div>
-                <p className="text-sm font-bold text-slate-600">Upload teaching video</p>
-                <p className="text-xs text-slate-400 mt-1 uppercase tracking-tighter"> MP4 (Max 20MB)</p>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                accept="video/mp4" 
+                className="hidden" 
+              />
+
+              <div 
+                onClick={triggerFileInput}
+                className={`p-8 border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center group transition-all cursor-pointer ${
+                  videoFile ? "border-green-400 bg-green-50" : fileError ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300"
+                }`}
+              >
+                {!videoFile ? (
+                  <>
+                    <div className="p-4 bg-white rounded-2xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                       <Upload className={fileError ? "text-red-500" : "text-blue-600"} size={24} />
+                    </div>
+                    <p className="text-sm font-bold text-slate-600">
+                      {fileError ? "Invalid File" : "Upload teaching video"}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-tighter">MP4 (Max 20MB)</p>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <div className="p-4 bg-white rounded-2xl shadow-sm mb-3">
+                      <FileVideo className="text-green-600" size={24} />
+                    </div>
+                    <p className="text-sm font-bold text-green-700 truncate max-w-[200px]">{videoFile.name}</p>
+                    <button 
+                      onClick={removeFile}
+                      className="mt-2 text-xs font-black text-red-500 uppercase tracking-widest flex items-center gap-1 hover:underline"
+                    >
+                      <X size={12} /> Remove
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {fileError && (
+                <div className="flex items-center gap-2 text-red-500 mt-2 animate-bounce">
+                  <AlertCircle size={14} />
+                  <p className="text-xs font-bold uppercase">{fileError}</p>
+                </div>
+              )}
             </section>
 
           </div>
@@ -174,7 +256,7 @@ export default function TutorStepTwo({ onNext, onBack }) {
             </button>
             <button 
               onClick={() => navigate("/stsignup/mailverify")}
-              disabled={selectedAreas.length === 0 || !bio}
+              disabled={selectedAreas.length === 0 || !bio || !videoFile}
               className="flex-[2] py-5 bg-slate-900 text-white rounded-[1.8rem] font-black text-lg shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-30 group"
             >
               Submit Application
