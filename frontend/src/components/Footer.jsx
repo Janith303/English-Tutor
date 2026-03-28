@@ -33,7 +33,7 @@ export default function Footer() {
 
         {/* Updated Footer Text to reflect your specific SLIIT context */}
         <p className="mt-12 text-sm text-blue-300 font-medium">
-          © {new Date().getFullYear()} SpeakUni English Dept • SLIIT Student Developers
+          © {new Date().getFullYear()} English Tutor Dept • SLIIT Student Developers
         </p>
       </div>
     </footer>
