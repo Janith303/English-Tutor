@@ -8,48 +8,39 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-1 flex items-center justify-between">
         {/* Logo Section */}
         <Link to="/" className="flex items-center gap-2 group">
-          {/* h-10 (40px) or h-12 (48px) is usually perfect for navbars. 
-             object-contain ensures the logo isn't stretched.
-          */}
-          <Link to="/" className="flex items-center gap-2 group">
-            {/* h-10 (40px) or h-12 (48px) is usually perfect for navbars. 
-             object-contain ensures the logo isn't stretched.
-          */}
-      
-                <img src={logo} alt="logo" className="h-15" />
-          </Link>
+          <img src={logo} alt="logo" className="h-15" />
         </Link>
-
         {/* Navigation Links - Desktop */}
         <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
-          <Link
-            to="/"
+          {/* Force a hard refresh */}
+          <a
+            href="/"
             className="text-gray-600 hover:text-blue-600 transition-colors"
           >
             Home
-          </Link>
-          <Link
-            to="/becometutor"
+          </a>
+          <a
+            href="/becometutor"
             className="text-gray-600 hover:text-blue-600 transition-colors"
           >
-           become a tutor
-          </Link>
+            become a tutor
+          </a>
         </div>
 
         {/* Authentication Buttons */}
         <div className="flex items-center gap-3">
-          <Link
-            to="/signup"
+          <a
+            href="/signup"
             className="px-4 py-1.5 text-blue-600 text-sm font-bold hover:bg-blue-100 rounded-lg transition-all"
           >
             Sign Up
-          </Link>
-          <Link
-            to="/login"
+          </a>
+          <a
+            href="/login"
             className="px-5 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-all active:scale-95 shadow-sm"
           >
             Login
-          </Link>
+          </a>
         </div>
       </div>
     </nav>
