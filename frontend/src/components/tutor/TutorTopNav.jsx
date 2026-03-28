@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import logo from "../images/logo.jpg";
 
 export default function TutorTopNav({
@@ -6,10 +7,18 @@ export default function TutorTopNav({
   tutor,
   onLogout,
 }) {
+  const navigate = useNavigate();
   const navItems = [
     { key: "dashboard", label: "Dashboard" },
     { key: "courses", label: "Courses" },
   ];
+
+  const handleNavClick = (item) => {
+    if (item.key === "dashboard") {
+      navigate("/tutor/dashboard");
+    }
+    onNavigate && onNavigate(item.key);
+  };
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -20,7 +29,7 @@ export default function TutorTopNav({
           {navItems.map((item) => (
             <button
               key={item.key}
-              onClick={() => onNavigate && onNavigate(item.key)}
+              onClick={() => handleNavClick(item)}
               className={`text-sm font-medium pb-1 transition-colors whitespace-nowrap ${
                 activePage === item.key
                   ? "text-blue-600 border-b-2 border-blue-600"
