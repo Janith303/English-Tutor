@@ -32,6 +32,7 @@ import ReadingQuizGame from "./components/quiz/ReadingQuizGame";
 import ReadingQuizResult from "./components/quiz/ReadingQuizResult";
 import TutorQandA from "./components/qa/TutorQandA";
 import TutorDashboardPage from "./components/tutor/TutorDashboardPage";
+import TutorCreateQuizPage from "./components/tutor/TutorCreateQuizPage";
 
 function App() {
   return (
@@ -69,6 +70,7 @@ function App() {
         <Route path="/stsignup/mailverify" element={<Stmailverify />} />
         <Route path="/tutor/stverify" element={<TutorSignup />} />
         <Route path="/tutor/dashboard" element={<TutorDashboardPage />} />
+        <Route path="/tutor/create-quiz" element={<TutorCreateQuizPage />} />
 
         <Route path="/daily-quiz" element={<DailyQuizStart />} />
         <Route path="/daily-quiz/play" element={<DailyQuizGame />} />
