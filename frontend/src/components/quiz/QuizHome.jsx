@@ -20,7 +20,7 @@ export default function QuizHome() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-blue-100 to-indigo-200">
       <QuizNavbar />
 
       <main>

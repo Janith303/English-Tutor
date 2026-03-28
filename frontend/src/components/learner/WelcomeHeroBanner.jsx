@@ -1,6 +1,6 @@
 export default function WelcomeHeroBanner({ student }) {
   return (
-    <div className="bg-blue-600 rounded-2xl px-8 py-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div className="bg-blue-600 rounded-2xl px-8 py-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
       <div>
         <h1 className="text-white text-2xl md:text-3xl font-bold mb-1">
           Welcome to your learning journey!
