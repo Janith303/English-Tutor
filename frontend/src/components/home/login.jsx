@@ -51,7 +51,6 @@ export default function Login() {
                   id="username"
                   placeholder="e.g., IT23194510@my.sliit.lk"
                   /* Pattern for SLIIT IT Students */
-                  pattern="^IT[0-9]{8}@my\.sliit\.lk$"
                   className="w-full px-5 py-4 border border-gray-200 rounded-xl outline-none transition
                focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20
                placeholder:text-gray-400 text-gray-900"

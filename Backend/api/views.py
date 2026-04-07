@@ -167,3 +167,24 @@ class PlacementTestView(APIView):
             "onboarding_status": user.onboarding_status,
             "status": "Onboarding Complete"
         }, status=status.HTTP_200_OK)
+        
+# Add this to api/views.py
+class CreateQuestionView(APIView):
+    # Usually, only Admins should be allowed to add questions
+    permission_classes = [IsAuthenticated] 
+
+    def post(self, request):
+        # We check if the input is a list (for bulk upload) or a single object
+        is_many = isinstance(request.data, list)
+        
+        # Use your existing QuestionSerializer
+        serializer = QuestionSerializer(data=request.data, many=is_many)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": f"Successfully added {len(serializer.data) if is_many else 1} question(s).",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
