@@ -47,6 +47,13 @@ class User(AbstractUser):
     is_verified = models.BooleanField(default=False)
     onboarding_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='REGISTERED')
     
+    # --- IDENTITY VERIFICATION FIELDS (For Tutor Application) ---
+    identity_proof = models.ImageField(upload_to='verification/student_ids/', null=True, blank=True)
+    agreed_to_tutor_terms = models.BooleanField(default=False)
+
+    # --- FIX: ADDED MISSING FIELD HERE ---
+    email_pre_verified = models.BooleanField(default=False, null=True, blank=True)
+
     # --- AUTHENTICATION SETTINGS ---
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'full_name']
@@ -95,3 +102,32 @@ class TestResult(models.Model):
     score = models.IntegerField()
     proficiency_level = models.CharField(max_length=50)
     completed_at = models.DateTimeField(auto_now_add=True)
+
+
+# --- NEW: STUDENT TUTOR APPLICATION PROFILE ---
+class StudentTutorProfile(models.Model):
+    APPLICATION_STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tutor_profile')
+    
+    # Store areas as a list of strings: ["Grammar", "Writing", "Speaking"]
+    teaching_areas = models.JSONField(default=list) 
+    
+    bio = models.TextField(help_text="Short teaching bio or motivation")
+    
+    # Store schedule as a dictionary: {"Monday": ["10:00-12:00", "14:00-16:00"]}
+    availability = models.JSONField(default=dict) 
+    
+    status = models.CharField(max_length=20, choices=APPLICATION_STATUS_CHOICES, default='PENDING')
+    applied_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    # In api/models.py (inside StudentTutorProfile)
+    video = models.FileField(upload_to='verification/tutor_videos/', null=True, blank=True)
+
+    def __str__(self):
+        return f"Tutor Profile: {self.user.email} - {self.status}"

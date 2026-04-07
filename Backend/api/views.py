@@ -1,12 +1,24 @@
 import random
+from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
-from .models import User, OTP, Interest, Question, TestResult
-from .serializers import RegisterSerializer, QuestionSerializer, InterestSerializer
+
+# Make sure to import the new models and serializers
+from .models import User, OTP, Interest, Question, TestResult, StudentTutorProfile
+from .serializers import (
+    RegisterSerializer, 
+    QuestionSerializer, 
+    InterestSerializer,
+    IdentityVerificationSerializer, 
+    StudentTutorApplicationSerializer
+)
+from .permissions import IsApprovedTutor
+
 
 # --- 1. REGISTRATION ---
 class RegisterView(APIView):
@@ -75,9 +87,6 @@ class VerifyOTPView(APIView):
 
 # --- 3. INTERESTS (GET and POST) ---
 class InterestListView(APIView):
-    """
-    Used by the frontend to fetch the list of interests to display
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -86,9 +95,6 @@ class InterestListView(APIView):
         return Response(serializer.data)
 
 class SubmitInterestsView(APIView):
-    """
-    Used to save selected interests and the target goal level
-    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -99,11 +105,9 @@ class SubmitInterestsView(APIView):
         if not interest_ids or not target_level:
             return Response({"error": "Interests and target level are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Update Target Proficiency
         user.target_proficiency = target_level
-        
-        # 2. Update Interests
         user.interests.clear()
+        
         for i_id in interest_ids:
             try:
                 interest = Interest.objects.get(id=i_id)
@@ -125,7 +129,6 @@ class PlacementTestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Fetch 15 random questions across all categories
         questions = Question.objects.all().order_by('?')[:15]
         serializer = QuestionSerializer(questions, many=True)
         return Response(serializer.data)
@@ -141,13 +144,11 @@ class PlacementTestView(APIView):
         for ans in answers:
             try:
                 q = Question.objects.get(id=ans.get('id'))
-                # Handle case-insensitive comparison
                 if str(q.correct_option).strip().upper() == str(ans.get('choice')).strip().upper():
                     score += 1
             except Question.DoesNotExist:
                 continue
 
-        # Logic for Level Calculation
         total = len(answers)
         percent = (score / total) * 100 if total > 0 else 0
         
@@ -155,7 +156,6 @@ class PlacementTestView(APIView):
         elif percent < 75: level = "Intermediate"
         else: level = "Advanced"
 
-        # Save result for history
         TestResult.objects.create(student=user, score=score, proficiency_level=level)
         
         user.onboarding_status = 'COMPLETED'
@@ -167,17 +167,13 @@ class PlacementTestView(APIView):
             "onboarding_status": user.onboarding_status,
             "status": "Onboarding Complete"
         }, status=status.HTTP_200_OK)
-        
-# Add this to api/views.py
+
+
 class CreateQuestionView(APIView):
-    # Usually, only Admins should be allowed to add questions
     permission_classes = [IsAuthenticated] 
 
     def post(self, request):
-        # We check if the input is a list (for bulk upload) or a single object
         is_many = isinstance(request.data, list)
-        
-        # Use your existing QuestionSerializer
         serializer = QuestionSerializer(data=request.data, many=is_many)
         
         if serializer.is_valid():
@@ -188,3 +184,110 @@ class CreateQuestionView(APIView):
             }, status=status.HTTP_201_CREATED)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- 5. TUTOR APPLICATION WORKFLOW ---
+
+class IdentityVerificationView(APIView):
+    """
+    Handles the Identity Verification step of the Tutor Application 
+    (Uploading Student ID and agreeing to terms)
+    """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser] # Required for image uploads
+
+    def put(self, request):
+        user = request.user
+        serializer = IdentityVerificationSerializer(user, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "Identity verification documents uploaded successfully.",
+                "identity_proof_url": user.identity_proof.url if user.identity_proof else None
+            }, status=status.HTTP_200_OK)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubmitApplicationView(APIView):
+    """
+    Handles submitting teaching areas, bio, and availability
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Check application status"""
+        try:
+            profile = StudentTutorProfile.objects.get(user=request.user)
+            serializer = StudentTutorApplicationSerializer(profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except StudentTutorProfile.DoesNotExist:
+            return Response(
+                {"message": "No application submitted yet.", "status": "NOT_APPLIED"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    def post(self, request):
+        """Submit a new student tutor application"""
+        # Ensure they have completed identity verification first
+        if not request.user.identity_proof or not request.user.agreed_to_tutor_terms:
+             return Response(
+                {"error": "You must complete Identity Verification before submitting this application."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if StudentTutorProfile.objects.filter(user=request.user).exists():
+            return Response(
+                {"error": "You have already submitted an application."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = StudentTutorApplicationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, status='PENDING')
+            return Response(
+                {"message": "Application submitted successfully. It is currently under review.", "data": serializer.data}, 
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ReviewApplicationView(APIView):
+    """Admin-only view to approve or reject student tutor applications"""
+    permission_classes = [IsAuthenticated] 
+
+    def patch(self, request, profile_id):
+        if request.user.role != 'ADMIN':
+            return Response({"error": "Unauthorized. Admins only."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            profile = StudentTutorProfile.objects.get(id=profile_id)
+        except StudentTutorProfile.DoesNotExist:
+            return Response({"error": "Application not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        new_status = request.data.get('status')
+        if new_status not in dict(StudentTutorProfile.APPLICATION_STATUS_CHOICES):
+            return Response({"error": "Invalid status."}, status=status.HTTP_400_BAD_REQUEST)
+
+        profile.status = new_status
+        profile.reviewed_at = timezone.now()
+        profile.save()
+
+        # Update the User's role based on Admin approval
+        if new_status == 'APPROVED':
+            profile.user.role = 'STUDENT_TUTOR'
+            profile.user.save()
+        elif new_status == 'REJECTED' and profile.user.role == 'STUDENT_TUTOR':
+            profile.user.role = 'STUDENT'
+            profile.user.save()
+
+        return Response({"message": f"Application marked as {new_status}."}, status=status.HTTP_200_OK)
+
+
+class TutorDashboardView(APIView):
+    """Protected endpoint for approved tutors only"""
+    permission_classes = [IsApprovedTutor]
+
+    def get(self, request):
+        return Response({"message": "Welcome to the Tutor Dashboard! You have access to this because your application was approved."})

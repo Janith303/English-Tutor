@@ -1,6 +1,6 @@
 # api/serializers.py
 from rest_framework import serializers
-from .models import User, Question, Interest
+from .models import User, Question, Interest, StudentTutorProfile
 
 # 1. Serializer for Placement Test Questions
 class QuestionSerializer(serializers.ModelSerializer):
@@ -21,7 +21,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        # Added 'target_proficiency' and 'role' to match your latest model
         fields = [
             'full_name', 
             'email', 
@@ -47,3 +46,55 @@ class RegisterSerializer(serializers.ModelSerializer):
             target_proficiency=validated_data.get('target_proficiency'),
         )
         return user
+
+# --- NEW: TUTOR APPLICATION SERIALIZERS ---
+
+# 4. Serializer for Identity Verification (Step 1 of Application)
+class IdentityVerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['identity_proof', 'agreed_to_tutor_terms']
+
+    def validate_agreed_to_tutor_terms(self, value):
+        if not value:
+            raise serializers.ValidationError("You must agree to the Tutor Agreement to proceed.")
+        return value
+        
+    def validate_identity_proof(self, value):
+        if not value:
+            raise serializers.ValidationError("Please upload your Student ID.")
+        return value
+
+# 5. Serializer for Student Tutor Application (Step 2 of Application)
+class StudentTutorApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentTutorProfile
+        fields = ['id', 'teaching_areas', 'bio', 'availability', 'status', 'applied_at']
+        # Prevent users from directly changing their approval status or application date
+        read_only_fields = ['id', 'status', 'applied_at']
+        
+def create(self, validated_data):
+        # Using create_user ensures the password is automatically hashed
+        user = User.objects.create_user(
+            username=validated_data['email'], 
+            email=validated_data['email'],
+            password=validated_data['password'],
+            full_name=validated_data.get('full_name'),
+            role=validated_data.get('role', 'STUDENT'),
+            university=validated_data.get('university', 'SLIIT'),
+            faculty=validated_data.get('faculty'),
+            academic_year=validated_data.get('academic_year'),
+            target_proficiency=validated_data.get('target_proficiency'),
+            
+            # --- ADD THIS LINE TO FIX THE ERROR ---
+            email_pre_verified=False 
+        )
+        return user
+    
+# In api/serializers.py
+class StudentTutorApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentTutorProfile
+        # Add 'video' to the fields list
+        fields = ['id', 'teaching_areas', 'bio', 'availability', 'video', 'status', 'applied_at']
+        read_only_fields = ['id', 'status', 'applied_at']
