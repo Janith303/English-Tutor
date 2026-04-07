@@ -1,4 +1,5 @@
 import random
+import json
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -7,9 +8,10 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
+from django.db import transaction # Added for atomic transactions
 
 # Make sure to import the new models and serializers
-from .models import User, OTP, Interest, Question, TestResult, StudentTutorProfile
+from .models import User, OTP, Interest, Question, TestResult, StudentTutorProfile, TutorOTP
 from .serializers import (
     RegisterSerializer, 
     QuestionSerializer, 
@@ -18,6 +20,9 @@ from .serializers import (
     StudentTutorApplicationSerializer
 )
 from .permissions import IsApprovedTutor
+
+# --- ADDED THIS IMPORT TO FIX THE NameError ---
+from rest_framework.decorators import api_view, permission_classes
 
 
 # --- 1. REGISTRATION ---
@@ -285,9 +290,118 @@ class ReviewApplicationView(APIView):
         return Response({"message": f"Application marked as {new_status}."}, status=status.HTTP_200_OK)
 
 
+# --- 6. ISOLATED TUTOR SIGNUP LOGIC (New Additions) ---
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def send_tutor_otp(request):
+    email = request.data.get('email')
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+
+    otp_code = str(random.randint(100000, 999999))
+    
+    try:
+        # Check if this line is causing the crash
+        TutorOTP.objects.update_or_create(
+            email=email, 
+            defaults={'code': otp_code, 'created_at': timezone.now()}
+        )
+        
+        send_mail(
+            'SpeakUni Tutor Verification',
+            f'Your code: {otp_code}',
+            'noreply@speakuni.edu',
+            [email],
+            fail_silently=False, 
+        )
+        return Response({"message": "OTP sent!"}, status=200)
+
+    except Exception as e:
+        # THIS LINE IS KEY: It sends the real error message to your browser console
+        print(f"DEBUG ERROR: {str(e)}") 
+        return Response({"error": str(e)}, status=500)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_tutor_otp(request):
+    email = request.data.get('email'); code = request.data.get('otp')
+    try:
+        otp_record = TutorOTP.objects.get(email=email, code=code)
+        if otp_record.is_valid(): return Response({"message": "Verified"}, status=200)
+        return Response({"error": "Expired"}, status=400)
+    except TutorOTP.DoesNotExist: return Response({"error": "Invalid Code"}, status=400)
+
+class TutorRegisterView(APIView):
+    """
+    Handles the Multipart signup: User creation + Profile + Video Upload.
+    """
+    authentication_classes = [] # Fix for 401
+    permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        # 1. Prepare User Data
+        user_payload = {
+            "full_name": request.data.get("full_name"),
+            "email": request.data.get("email"),
+            "password": request.data.get("password"),
+            "role": "TUTOR",
+            "is_verified": True
+        }
+
+        try:
+            with transaction.atomic():
+                # 2. Create the User
+                user_serializer = RegisterSerializer(data=user_payload)
+                if not user_serializer.is_valid():
+                    return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+                user = user_serializer.save()
+
+                # 3. Handle Hourly Rate (CRITICAL: Fixes DecimalField crashes)
+                raw_rate = request.data.get('hourly_rate', '0')
+                try:
+                    # Convert to float/decimal; if it's empty or invalid, default to 0
+                    hourly_rate = float(raw_rate) if raw_rate else 0.0
+                except ValueError:
+                    hourly_rate = 0.0
+
+                # 4. Handle JSON fields (React sends strings via FormData)
+                try:
+                    areas = json.loads(request.data.get('teaching_areas', '[]'))
+                    avail = json.loads(request.data.get('availability', '{}'))
+                except (json.JSONDecodeError, TypeError):
+                    areas, avail = [], {}
+
+                # 5. Create the Tutor Profile
+                # video is pulled from request.FILES
+                StudentTutorProfile.objects.create(
+                    user=user,
+                    bio=request.data.get('bio', ''),
+                    hourly_rate=hourly_rate,
+                    teaching_areas=areas,
+                    availability=avail,
+                    video=request.FILES.get('video'),
+                    status='PENDING'
+                )
+                
+                # 6. Generate Tokens
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    "message": "Registration successful!",
+                    "access": str(refresh.access_token),
+                    "refresh": str(refresh)
+                }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            # This prints the REAL error to your Django terminal
+            print(f"--- REGISTRATION CRASH ERROR: {str(e)} ---")
+            return Response({"error": "An internal error occurred during registration."}, status=500)
+
 class TutorDashboardView(APIView):
     """Protected endpoint for approved tutors only"""
     permission_classes = [IsApprovedTutor]
 
     def get(self, request):
-        return Response({"message": "Welcome to the Tutor Dashboard! You have access to this because your application was approved."})
+        return Response({"message": "Welcome to the Tutor Dashboard!"})

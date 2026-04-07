@@ -9,7 +9,7 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('STUDENT', 'Student'),
         ('TUTOR', 'Tutor'),
-        ('STUDENT_TUTOR', 'Student Tutor'), # New Role added
+        ('STUDENT_TUTOR', 'Student Tutor'), 
         ('ADMIN', 'Admin'),
     ]
 
@@ -113,21 +113,30 @@ class StudentTutorProfile(models.Model):
     ]
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tutor_profile')
-    
-    # Store areas as a list of strings: ["Grammar", "Writing", "Speaking"]
     teaching_areas = models.JSONField(default=list) 
-    
     bio = models.TextField(help_text="Short teaching bio or motivation")
     
-    # Store schedule as a dictionary: {"Monday": ["10:00-12:00", "14:00-16:00"]}
-    availability = models.JSONField(default=dict) 
+    # --- ADD THIS LINE HERE ---
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
+    availability = models.JSONField(default=dict) 
     status = models.CharField(max_length=20, choices=APPLICATION_STATUS_CHOICES, default='PENDING')
     applied_at = models.DateTimeField(auto_now_add=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
-    
-    # In api/models.py (inside StudentTutorProfile)
     video = models.FileField(upload_to='verification/tutor_videos/', null=True, blank=True)
 
     def __str__(self):
         return f"Tutor Profile: {self.user.email} - {self.status}"
+
+# --- NEW MODEL: ADDED FOR TUTOR OTP VERIFICATION ---
+class TutorOTP(models.Model):
+    email = models.EmailField(unique=True)
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        # Valid for 10 minutes
+        return timezone.now() < self.created_at + datetime.timedelta(minutes=10)
+
+    def __str__(self):
+        return f"Tutor OTP for {self.email}"

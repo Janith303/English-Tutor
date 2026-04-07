@@ -1,5 +1,6 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from . import views
 
 # Cleaned up and merged all imports into one block
 from .views import (
@@ -12,7 +13,8 @@ from .views import (
     IdentityVerificationView,      # New: Step 1 of Tutor Application
     SubmitApplicationView,         # New: Step 2 of Tutor Application
     ReviewApplicationView,         # New: Admin Approval
-    TutorDashboardView             # New: Example Protected Route
+    TutorDashboardView,             # New: Example Protected Route
+    TutorRegisterView,             # New: Final Tutor Registration after OTP
 )
 
 urlpatterns = [
@@ -32,7 +34,10 @@ urlpatterns = [
     path('tutor/verify-identity/', IdentityVerificationView.as_view(), name='verify-identity'),
     path('tutor/application/', SubmitApplicationView.as_view(), name='tutor-application'),
     path('tutor/application/review/<int:profile_id>/', ReviewApplicationView.as_view(), name='review-tutor-application'),
-    
+
+    path('tutor/send-otp/', views.send_tutor_otp, name='tutor_send_otp'),
+    path('tutor/verify-otp/', views.verify_tutor_otp, name='tutor_verify_otp'),
+    path('tutor/register/', TutorRegisterView.as_view(), name='tutor_register'),
     # --- Tutor Protected Endpoint ---
     path('tutor/dashboard/', TutorDashboardView.as_view(), name='tutor-dashboard'),
 ]
