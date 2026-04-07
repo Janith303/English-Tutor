@@ -3,8 +3,8 @@ import { Check, UserCheck, BookOpen, ShieldCheck } from "lucide-react";
 
 const steps = [
   { id: 1, title: "Eligibility", icon: UserCheck },
-  { id: 2, title: "Skills & Experience", icon: BookOpen },
-  { id: 3, title: "Verification", icon: ShieldCheck },
+  { id: 2, title: "Verification", icon: ShieldCheck },
+  { id: 3, title: "Skills & Experience", icon: BookOpen },
 ];
 
 export default function TutorProgressBar({ currentStep }) {
