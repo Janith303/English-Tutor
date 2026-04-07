@@ -93,20 +93,20 @@ export default function Login() {
               </div>
             </form>
 
-            {/* Divider */}
+            {/* Divider*/}
             <div className="relative py-2">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-3 bg-white text-gray-500 font-medium">
-                  Or continue with
+                  Or 
                 </span>
               </div>
             </div>
 
             {/* Social Login */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-2 gap-4">
               {["Google", "Apple"].map((provider) => (
                 <button
                   key={provider}
@@ -122,7 +122,7 @@ export default function Login() {
                   </span>
                 </button>
               ))}
-            </div>
+            </div> */} 
 
             <p className="text-center text-gray-600">
               Don't have an account?{" "}
