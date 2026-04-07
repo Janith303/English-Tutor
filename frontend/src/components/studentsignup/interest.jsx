@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../Topnav";
+import privateApi from "../../api/axios";// FIX 1: Changed to privateApi
 import ProgressBar from "../progressbar/studentp";
 // 1. Import professional icons
 import {
@@ -13,35 +14,36 @@ import {
   Target,
   Compass,
   Zap,
+  Loader2,
 } from "lucide-react";
 
 const interestAreas = [
   {
-    id: "writing",
+    id: 1, 
     label: "Academic Writing",
     icon: PenTool,
     desc: "Essays & Research",
   },
   {
-    id: "speaking",
+    id: 2,
     label: "Presentation Skills",
     icon: Mic2,
     desc: "Public Speaking",
   },
   {
-    id: "career",
+    id: 3,
     label: "Interview Prep",
     icon: Briefcase,
     desc: "Job Readiness",
   },
   {
-    id: "grammar",
+    id: 4,
     label: "Grammar & Flow",
     icon: Puzzle,
     desc: "Sentence Structure",
   },
   {
-    id: "vocab",
+    id: 5,
     label: "Vocabulary",
     icon: BookText,
     desc: "Academic Lexicon",
@@ -49,15 +51,36 @@ const interestAreas = [
 ];
 
 const levels = [
-  { id: "beg", label: "Beginner", desc: "Basic communication" },
-  { id: "int", label: "Intermediate", desc: "Standard academic flow" },
-  { id: "adv", label: "Advanced", desc: "Complex research level" },
+  { id: "BEGINNER", label: "Beginner", desc: "Basic communication" },
+  { id: "INTERMEDIATE", label: "Intermediate", desc: "Standard academic flow" },
+  { id: "ADVANCED", label: "Advanced", desc: "Complex research level" },
 ];
 
 export default function StudentSignUpStep2() {
   const navigate = useNavigate();
   const [selectedInterest, setSelectedInterest] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // 6. ADD BACKEND SUBMISSION LOGIC
+  const handleSubmit = async () => {
+    if (!selectedInterest || !selectedLevel) return;
+
+    setLoading(true);
+    try {
+      await privateApi.post("interests/", {
+        interests: [selectedInterest.id], // Sends [1] or [2], etc.
+        target_level: selectedLevel.id,   // Sends "BEGINNER", "ADVANCED", etc.
+      });
+      // Move to next page if successful
+      navigate("/signup/test");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save. Please make sure your database has these Interest IDs (1-5).");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col relative overflow-hidden font-sans">
@@ -172,16 +195,22 @@ export default function StudentSignUpStep2() {
             </Link>
             
             <button 
-              disabled={!selectedInterest || !selectedLevel}
-              onClick={() => navigate("/signup/test")}
+              disabled={!selectedInterest || !selectedLevel || loading}
+              onClick={handleSubmit} // FIX 2: Now it actually calls the API function!
               className={`px-12 py-4 rounded-2xl font-black text-lg transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2 ${
                 selectedInterest && selectedLevel 
                 ? "bg-blue-600 text-white shadow-xl shadow-blue-200" 
                 : "bg-slate-200 text-slate-400 cursor-not-allowed"
               }`}
             >
-              Start Placement Test
-              <Zap className={`w-5 h-5 ${selectedInterest && selectedLevel ? "text-blue-200" : "text-slate-400"}`} />
+              {loading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  Start Placement Test
+                  <Zap className={`w-5 h-5 ${selectedInterest && selectedLevel ? "text-blue-200" : "text-slate-400"}`} />
+                </>
+              )}
             </button>
           </div>
         </div>

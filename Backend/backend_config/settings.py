@@ -39,6 +39,7 @@ INSTALLED_APPS = [
 # CRITICAL: Tell Django to use your custom User model
 AUTH_USER_MODEL = 'api.User'
 
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware', # Add this for React

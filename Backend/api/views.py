@@ -61,7 +61,7 @@ class VerifyOTPView(APIView):
                     "message": "Verification successful.",
                     "access": str(refresh.access_token),
                     "refresh": str(refresh),
-                    "role": user.role,  # React uses this to redirect (Student vs Tutor)
+                    "role": user.role,
                     "onboarding_status": user.onboarding_status
                 }, status=status.HTTP_200_OK)
             
@@ -73,32 +73,51 @@ class VerifyOTPView(APIView):
             return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# --- 3. INTEREST SELECTION ---
+# --- 3. INTERESTS (GET and POST) ---
+class InterestListView(APIView):
+    """
+    Used by the frontend to fetch the list of interests to display
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        interests = Interest.objects.all()
+        serializer = InterestSerializer(interests, many=True)
+        return Response(serializer.data)
+
 class SubmitInterestsView(APIView):
+    """
+    Used to save selected interests and the target goal level
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         user = request.user
-        
-        if not user.is_verified:
-            return Response({"error": "Email not verified."}, status=status.HTTP_403_FORBIDDEN)
-        
         interest_ids = request.data.get('interests', [])
-        if not interest_ids:
-            return Response({"error": "Please select interests."}, status=status.HTTP_400_BAD_REQUEST)
+        target_level = request.data.get('target_level')
 
-        # Update user interests
+        if not interest_ids or not target_level:
+            return Response({"error": "Interests and target level are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Update Target Proficiency
+        user.target_proficiency = target_level
+        
+        # 2. Update Interests
         user.interests.clear()
-        for interest_id in interest_ids:
+        for i_id in interest_ids:
             try:
-                interest = Interest.objects.get(id=interest_id)
+                interest = Interest.objects.get(id=i_id)
                 interest.students.add(user)
             except Interest.DoesNotExist:
                 continue
         
         user.onboarding_status = 'INTERESTS_SELECTED'
         user.save()
-        return Response({"message": "Interests saved.", "onboarding_status": user.onboarding_status})
+        
+        return Response({
+            "message": "Goals updated successfully!",
+            "onboarding_status": user.onboarding_status
+        }, status=status.HTTP_200_OK)
 
 
 # --- 4. PLACEMENT TEST ---
@@ -106,7 +125,7 @@ class PlacementTestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Fetch 15 random questions
+        # Fetch 15 random questions across all categories
         questions = Question.objects.all().order_by('?')[:15]
         serializer = QuestionSerializer(questions, many=True)
         return Response(serializer.data)
@@ -122,12 +141,13 @@ class PlacementTestView(APIView):
         for ans in answers:
             try:
                 q = Question.objects.get(id=ans.get('id'))
-                if str(q.correct_option).upper() == str(ans.get('choice')).upper():
+                # Handle case-insensitive comparison
+                if str(q.correct_option).strip().upper() == str(ans.get('choice')).strip().upper():
                     score += 1
-            except:
+            except Question.DoesNotExist:
                 continue
 
-        # Logic for Level
+        # Logic for Level Calculation
         total = len(answers)
         percent = (score / total) * 100 if total > 0 else 0
         
@@ -135,7 +155,7 @@ class PlacementTestView(APIView):
         elif percent < 75: level = "Intermediate"
         else: level = "Advanced"
 
-        # Save result
+        # Save result for history
         TestResult.objects.create(student=user, score=score, proficiency_level=level)
         
         user.onboarding_status = 'COMPLETED'
@@ -144,5 +164,6 @@ class PlacementTestView(APIView):
         return Response({
             "score": score,
             "level": level,
-            "onboarding_status": user.onboarding_status
-        })
+            "onboarding_status": user.onboarding_status,
+            "status": "Onboarding Complete"
+        }, status=status.HTTP_200_OK)
