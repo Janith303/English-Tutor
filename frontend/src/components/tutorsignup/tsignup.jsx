@@ -155,6 +155,16 @@ export default function TutorSignup() {
           <div className="hidden md:w-1/3 bg-blue-600 p-12 text-white md:flex flex-col justify-between">
             <h2 className="text-3xl font-black leading-tight">Empower the <br />next generation.</h2>
             <div className="w-32 h-32 bg-blue-400 rounded-full blur-3xl opacity-50" />
+            <div className="relative z-10 mt-8 group">
+              <svg viewBox="0 0 200 200" className="w-full h-auto drop-shadow-2xl transform group-hover:rotate-2 transition-transform duration-500">
+                <circle cx="100" cy="70" r="30" fill="white" fillOpacity="0.2" />
+                <rect x="70" y="50" width="60" height="80" rx="10" fill="white" />
+                <rect x="80" y="65" width="40" height="4" rx="2" fill="#2563eb" />
+                <rect x="80" y="75" width="30" height="4" rx="2" fill="#2563eb" />
+                <circle cx="150" cy="60" r="20" fill="#93c5fd" />
+                <path d="M145 60 L155 60 M150 55 L150 65" stroke="white" strokeWidth="3" />
+              </svg>
+            </div>
           </div>
           <div className="flex-1 p-8 md:p-12">
             <TutorProgressBar currentStep={step} />
@@ -251,7 +261,7 @@ function StepContent({ step, formData, handleInputChange, toggleSelection, error
         </motion.div>
       );
     case 1:
-      const skills = ["Grammar", "IELTS Prep", "Academic Writing", "Presentation Skills", "Interview Prep", "Vocabulary"];
+      const skills = ["Grammar", "IELTS Prep", "Academic Writting", "Presentation Skills", "Interview Prep", "Vocabulary"];
       return (
         <motion.div {...variants} className="space-y-6">
           <h3 className="text-2xl font-black text-slate-900">Expertise</h3>
