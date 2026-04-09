@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import LearnerTopNav from "../learner/LearnerTopNav";
 import { useNavigate } from "react-router-dom";
 import CourseProgressCard from "./CourseProgressCard";
@@ -12,15 +13,58 @@ import {
   weekSchedule,
 } from "../../data/myLearningData";
 import { mockStudent } from "../../data/mockCourses";
+import {
+  getPublishedCourses,
+  getStudentEnrollments,
+  toLearnerCourseCard,
+  toMyLearningCard,
+} from "../../api/courseApi";
 
 export default function MyLearningPage() {
   const navigate = useNavigate();
-  const inProgressCourses = enrolledCourses.filter(
-    (c) => c.status === "in_progress",
-  );
-  const completedCourses = enrolledCourses.filter(
-    (c) => c.status === "completed",
-  );
+  const [courses, setCourses] = useState([]);
+  const [recommended, setRecommended] = useState(recommendedCourses);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [enrollments, published] = await Promise.all([
+          getStudentEnrollments(),
+          getPublishedCourses(),
+        ]);
+
+        setCourses((enrollments || []).map(toMyLearningCard));
+        setRecommended((published || []).slice(0, 3).map(toLearnerCourseCard));
+      } catch (error) {
+        console.error("Failed to load my learning data:", error);
+        setCourses(enrolledCourses);
+        setRecommended(recommendedCourses);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const inProgressCourses = courses.filter((c) => c.status === "in_progress");
+  const completedCourses = courses.filter((c) => c.status === "completed");
+
+  const liveStats = useMemo(() => {
+    const completed = completedCourses.length;
+    const totalHours = courses.reduce((sum, c) => {
+      const pct = Number(c.progress || 0) / 100;
+      return sum + pct * 6;
+    }, 0);
+
+    return {
+      coursesCompleted: completed,
+      hoursStudied: Math.round(totalHours),
+      streakDays: Math.max(1, Math.min(14, inProgressCourses.length * 2)),
+    };
+  }, [courses, completedCourses.length, inProgressCourses.length]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -60,6 +104,11 @@ export default function MyLearningPage() {
               <h2 className="text-base font-bold text-gray-800 mb-3">
                 In Progress
               </h2>
+              {loading && (
+                <div className="text-sm text-gray-500 bg-white border border-gray-100 rounded-2xl p-6 mb-3">
+                  Loading your enrolled courses...
+                </div>
+              )}
               <div className="flex flex-col gap-4">
                 {inProgressCourses.length > 0 ? (
                   inProgressCourses.map((course) => (
@@ -92,10 +141,12 @@ export default function MyLearningPage() {
           </div>
 
           <aside className="w-72 flex-shrink-0 flex flex-col gap-6">
-            <LearningStatsPanel stats={learningProgress} />
+            <LearningStatsPanel
+              stats={loading ? learningProgress : liveStats}
+            />
 
             <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-              <SidebarRecommendations courses={recommendedCourses} />
+              <SidebarRecommendations courses={recommended} />
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">

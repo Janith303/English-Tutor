@@ -5,19 +5,38 @@ import TutorStatsGrid from "./TutorStatsGrid";
 import EnrollmentBarChart from "./EnrollmentBarChart";
 import TutorCoursesGrid from "./TutorCoursesGrid";
 import TutorQandA from "../qa/TutorQandA";
+import { getTutorCourses, toTutorCourseCard } from "../../api/courseApi";
 
 import {
   tutorProfile,
   tutorStats,
   enrollmentChartData,
-  tutorCourses,
 } from "../../data/tutorDashboardData";
 
 export default function TutorDashboardPage({ onLogout }) {
   const [activePage, setActivePage] = useState("dashboard");
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const navigate = useNavigate();
   const overviewRef = useRef(null);
   const coursesRef = useRef(null);
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      setLoadingCourses(true);
+      try {
+        const data = await getTutorCourses();
+        setCourses((data || []).map(toTutorCourseCard));
+      } catch (error) {
+        console.error("Failed to load tutor courses:", error);
+        setCourses([]);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+
+    loadCourses();
+  }, []);
 
   const handleLogout = () => {
     navigate("/");
@@ -66,9 +85,16 @@ export default function TutorDashboardPage({ onLogout }) {
             <EnrollmentBarChart data={enrollmentChartData} />
 
             <div ref={coursesRef}>
+              {loadingCourses && (
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 text-sm text-gray-500 mb-4">
+                  Loading your courses...
+                </div>
+              )}
               <TutorCoursesGrid
-                courses={tutorCourses}
-                onEdit={(course) => navigate("/edit-course")}
+                courses={courses}
+                onEdit={(course) =>
+                  navigate(`/edit-course?courseId=${course.id}`)
+                }
                 onCreate={() => navigate("/edit-course")}
               />
             </div>

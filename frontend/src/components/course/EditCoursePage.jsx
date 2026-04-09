@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import TutorTopNav from "../tutor/TutorTopNav";
 import CourseFormTabs from "./CourseFormTabs";
 import BasicInfoForm from "./BasicInfoForm";
@@ -8,6 +9,13 @@ import PublishingPanel from "./PublishingPanel";
 import CourseFormActionBar from "./CourseFormActionBar";
 import CourseStructurePage from "./CourseStructurePage";
 import { tutorProfile } from "../../data/tutorDashboardData";
+import {
+  createTutorCourse,
+  getTutorCourse,
+  toEditorFormData,
+  toPublishingState,
+  updateTutorCourse,
+} from "../../api/courseApi";
 import {
   validateField,
   validateCourseForm,
@@ -26,14 +34,59 @@ const INITIAL_FORM = {
 };
 
 export default function EditCoursePage({ onBack }) {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialCourseId = searchParams.get("courseId");
+
   const [activeTab, setActiveTab] = useState("basic");
   const [sidebarPage, setSidebarPage] = useState("courses");
   const [lastSaved, setLastSaved] = useState(null);
 
+  const [courseId, setCourseId] = useState(
+    initialCourseId ? Number(initialCourseId) : null,
+  );
+  const [loadingCourse, setLoadingCourse] = useState(!!initialCourseId);
+  const [savingCourse, setSavingCourse] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
   const [formData, setFormData] = useState(INITIAL_FORM);
+  const [publishing, setPublishing] = useState({
+    status: "DRAFT",
+    publicMarketplace: true,
+    searchIndexing: false,
+    autoEnroll: false,
+  });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
+
+  useEffect(() => {
+    const loadCourse = async () => {
+      if (!initialCourseId) {
+        setLoadingCourse(false);
+        return;
+      }
+
+      setLoadingCourse(true);
+      setLoadError("");
+      try {
+        const data = await getTutorCourse(initialCourseId);
+        setCourseId(data.id);
+        setFormData(toEditorFormData(data));
+        setPublishing(toPublishingState(data));
+      } catch (error) {
+        console.error("Failed to load course:", error);
+        setLoadError(
+          error?.response?.data?.error ||
+            "Could not load this course. Please try again.",
+        );
+      } finally {
+        setLoadingCourse(false);
+      }
+    };
+
+    loadCourse();
+  }, [initialCourseId]);
 
   const handleChange = useCallback(
     (field, value) => {
@@ -59,7 +112,27 @@ export default function EditCoursePage({ onBack }) {
     setFormData((prev) => ({ ...prev, thumbnail: file }));
   };
 
-  const handleSubmit = () => {
+  const handlePublishingChange = (field, value) => {
+    setPublishing((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const getPayload = () => ({
+    title: formData.title,
+    slug: formData.slug,
+    summary: formData.summary,
+    description: formData.description,
+    category: formData.category,
+    level: formData.level,
+    duration_hours: formData.duration,
+    price: formData.price,
+    thumbnail: formData.thumbnail || undefined,
+    status: publishing.status,
+    public_marketplace: publishing.publicMarketplace,
+    search_indexing: publishing.searchIndexing,
+    auto_enroll_existing_students: publishing.autoEnroll,
+  });
+
+  const handleSubmit = async () => {
     setSubmitAttempted(true);
     const { isValid, errors: allErrors } = validateCourseForm(formData);
 
@@ -77,11 +150,37 @@ export default function EditCoursePage({ onBack }) {
       return;
     }
 
-    const now = new Date();
-    setLastSaved(
-      `Last saved: ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
-    );
-    alert("✅ Course saved successfully!");
+    setSavingCourse(true);
+    try {
+      const payload = getPayload();
+      const response = courseId
+        ? await updateTutorCourse(courseId, payload, true)
+        : await createTutorCourse(payload);
+
+      if (!courseId && response?.id) {
+        setCourseId(response.id);
+        setSearchParams({ courseId: String(response.id) });
+      }
+
+      const now = new Date();
+      setLastSaved(
+        `Last saved: ${now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
+      );
+      alert(
+        courseId
+          ? "✅ Course updated successfully!"
+          : "✅ Course created successfully!",
+      );
+    } catch (error) {
+      console.error("Failed to save course:", error);
+      alert(
+        JSON.stringify(
+          error?.response?.data || "Failed to save course. Please try again.",
+        ),
+      );
+    } finally {
+      setSavingCourse(false);
+    }
   };
 
   const handleDiscard = () => {
@@ -107,7 +206,7 @@ export default function EditCoursePage({ onBack }) {
           if (key === "dashboard" && onBack) onBack();
         }}
         tutor={tutorProfile}
-        onLogout={() => alert("Logged out")}
+        onLogout={() => navigate("/")}
       />
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -115,7 +214,19 @@ export default function EditCoursePage({ onBack }) {
           <div className="max-w-5xl mx-auto px-8 pt-7 pb-4">
             <CourseFormTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-            {activeTab === "basic" && (
+            {loadingCourse && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-6 text-sm text-gray-600 mb-6">
+                Loading course details...
+              </div>
+            )}
+
+            {!loadingCourse && loadError && (
+              <div className="bg-red-50 text-red-700 rounded-2xl border border-red-100 p-6 text-sm mb-6">
+                {loadError}
+              </div>
+            )}
+
+            {!loadingCourse && activeTab === "basic" && (
               <div className="flex gap-7">
                 <div className="flex-1 min-w-0 flex flex-col gap-10">
                   <BasicInfoForm
@@ -139,14 +250,40 @@ export default function EditCoursePage({ onBack }) {
                     <ThumbnailUploader onFileChange={handleThumbnailChange} />
                   </div>
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                    <PublishingPanel />
+                    <PublishingPanel
+                      value={publishing}
+                      onChange={handlePublishingChange}
+                      disabled={savingCourse}
+                    />
                   </div>
                 </div>
               </div>
             )}
 
-            {activeTab === "structure" && (
-              <CourseStructurePage onBack={() => setActiveTab("basic")} />
+            {!loadingCourse && activeTab === "structure" && !courseId && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-7 text-center">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">
+                  Save basic info first
+                </h3>
+                <p className="text-sm text-gray-600 mb-5">
+                  Create the course once to unlock chapter and lesson
+                  management.
+                </p>
+                <button
+                  onClick={handleSubmit}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl py-2.5 px-5"
+                >
+                  Save and Continue
+                </button>
+              </div>
+            )}
+
+            {!loadingCourse && activeTab === "structure" && courseId && (
+              <CourseStructurePage
+                courseId={courseId}
+                courseName={formData.title || "Untitled Course"}
+                onBack={() => setActiveTab("basic")}
+              />
             )}
           </div>
         </div>
@@ -156,6 +293,8 @@ export default function EditCoursePage({ onBack }) {
           errorCount={errorCount}
           onDiscard={handleDiscard}
           onSubmit={handleSubmit}
+          submitLabel={courseId ? "Update Course" : "Create Course"}
+          submitting={savingCourse}
         />
       </div>
     </div>

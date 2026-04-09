@@ -1,29 +1,13 @@
-import { useState, useRef } from "react";
-import { mockStudent } from "../../data/mockCourses";
-
-let _id = 100;
-const uid = () => `id-${++_id}`;
-const INITIAL_CHAPTERS = [
-  {
-    id: "ch-1",
-    title: "Chapter One",
-    collapsed: false,
-    lessons: [
-      { id: "ls-1-1", title: "Lesson One" },
-      { id: "ls-1-2", title: "Lesson Two" },
-      { id: "ls-1-3", title: "Lesson Three" },
-    ],
-  },
-  {
-    id: "ch-2",
-    title: "Chapter Two",
-    collapsed: false,
-    lessons: [
-      { id: "ls-2-1", title: "Lesson One" },
-      { id: "ls-2-2", title: "Lesson Two" },
-    ],
-  },
-];
+import { useEffect, useMemo, useState } from "react";
+import {
+  createTutorChapter,
+  createTutorLesson,
+  deleteTutorChapter,
+  deleteTutorLesson,
+  getTutorChapters,
+  updateTutorChapter,
+  updateTutorLesson,
+} from "../../api/courseApi";
 
 function DragHandle({ className = "" }) {
   return (
@@ -80,7 +64,6 @@ function DocIcon() {
 
 function RenameModal({ label, defaultValue, onConfirm, onCancel }) {
   const [val, setVal] = useState(defaultValue);
-  const ref = useRef();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -89,7 +72,6 @@ function RenameModal({ label, defaultValue, onConfirm, onCancel }) {
           Rename {label}
         </h3>
         <input
-          ref={ref}
           autoFocus
           type="text"
           value={val}
@@ -121,16 +103,13 @@ function RenameModal({ label, defaultValue, onConfirm, onCancel }) {
   );
 }
 
-function LessonRow({ lesson, chapterId, onDelete, onRename, dragProps }) {
+function LessonRow({ lesson, chapterId, onDelete, onRename }) {
   return (
     <div
       className="flex items-center gap-3 px-5 py-3.5 bg-white hover:bg-gray-100 border-b border-gray-200 last:border-0 group transition-colors"
       style={{ cursor: "default" }}
     >
-      <span
-        {...dragProps}
-        className="cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-800 transition-colors flex-shrink-0"
-      >
+      <span className="cursor-grab active:cursor-grabbing text-gray-600 hover:text-gray-800 transition-colors flex-shrink-0">
         <DragHandle />
       </span>
 
@@ -155,11 +134,12 @@ function LessonRow({ lesson, chapterId, onDelete, onRename, dragProps }) {
   );
 }
 
-function AddLessonBtn({ onClick }) {
+function AddLessonBtn({ onClick, disabled }) {
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center justify-center gap-2 py-3.5 bg-white hover:bg-gray-100 text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors border-t border-gray-200"
+      disabled={disabled}
+      className="w-full flex items-center justify-center gap-2 py-3.5 bg-white hover:bg-gray-100 disabled:opacity-40 text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors border-t border-gray-200"
     >
       <svg
         className="w-4 h-4"
@@ -187,6 +167,7 @@ function ChapterBlock({
   onDeleteLesson,
   onRenameChapter,
   onRenameLesson,
+  disabled,
 }) {
   return (
     <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white">
@@ -229,7 +210,8 @@ function ChapterBlock({
 
         <button
           onClick={() => onDeleteChapter(chapter.id)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500"
+          disabled={disabled}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 disabled:opacity-20"
           title="Delete chapter"
         >
           <TrashIcon />
@@ -250,38 +232,111 @@ function ChapterBlock({
               chapterId={chapter.id}
               onDelete={onDeleteLesson}
               onRename={(l) => onRenameLesson(chapter.id, l)}
-              dragProps={{}}
             />
           ))}
-          <AddLessonBtn onClick={() => onAddLesson(chapter.id)} />
+          <AddLessonBtn
+            onClick={() => onAddLesson(chapter.id)}
+            disabled={disabled}
+          />
         </div>
       )}
     </div>
   );
 }
 
-export default function CourseStructurePage({
-  onBack,
-  courseName = "Advanced Business English & Negotiation",
-}) {
-  const [chapters, setChapters] = useState(INITIAL_CHAPTERS);
-  const [renaming, setRenaming] = useState(null);
+function normalizeChapters(raw = []) {
+  return raw.map((chapter) => ({
+    id: chapter.id,
+    title: chapter.title,
+    order: chapter.order,
+    collapsed: false,
+    lessons: (chapter.lessons || []).map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title,
+      order: lesson.order,
+      duration_minutes: lesson.duration_minutes,
+      credits_awarded: lesson.credits_awarded,
+      required_credits_to_unlock: lesson.required_credits_to_unlock,
+    })),
+  }));
+}
 
-  const addChapter = () => {
-    setChapters((prev) => [
-      ...prev,
-      {
-        id: uid(),
-        title: `Chapter ${prev.length + 1}`,
-        collapsed: false,
-        lessons: [],
-      },
-    ]);
+export default function CourseStructurePage({ onBack, courseName, courseId }) {
+  const [chapters, setChapters] = useState([]);
+  const [renaming, setRenaming] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const totalLessons = useMemo(
+    () => chapters.reduce((sum, c) => sum + c.lessons.length, 0),
+    [chapters],
+  );
+
+  useEffect(() => {
+    const load = async () => {
+      if (!courseId) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+      try {
+        const data = await getTutorChapters(courseId);
+        setChapters(normalizeChapters(data));
+      } catch (err) {
+        console.error("Failed to load chapters:", err);
+        setError(
+          err?.response?.data?.error || "Unable to load course structure.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [courseId]);
+
+  const refreshChapters = async () => {
+    const data = await getTutorChapters(courseId);
+    setChapters(normalizeChapters(data));
   };
 
-  const deleteChapter = (chapterId) => {
+  const addChapter = async () => {
+    if (!courseId) return;
+    setSaving(true);
+    try {
+      await createTutorChapter(courseId, {
+        title: `Chapter ${chapters.length + 1}`,
+      });
+      await refreshChapters();
+    } catch (err) {
+      alert(
+        JSON.stringify(
+          err?.response?.data || "Failed to create chapter. Please try again.",
+        ),
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteChapterById = async (chapterId) => {
     if (!window.confirm("Delete this chapter and all its lessons?")) return;
-    setChapters((prev) => prev.filter((c) => c.id !== chapterId));
+    setSaving(true);
+    try {
+      await deleteTutorChapter(courseId, chapterId);
+      await refreshChapters();
+    } catch (err) {
+      alert(
+        JSON.stringify(
+          err?.response?.data || "Failed to delete chapter. Please try again.",
+        ),
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleChapter = (chapterId) => {
@@ -295,66 +350,89 @@ export default function CourseStructurePage({
   const renameChapter = (chapter) =>
     setRenaming({ type: "chapter", item: chapter });
 
-  const confirmRenameChapter = (newTitle) => {
-    setChapters((prev) =>
-      prev.map((c) =>
-        c.id === renaming.item.id ? { ...c, title: newTitle } : c,
-      ),
-    );
-    setRenaming(null);
+  const confirmRenameChapter = async (newTitle) => {
+    setSaving(true);
+    try {
+      await updateTutorChapter(courseId, renaming.item.id, { title: newTitle });
+      await refreshChapters();
+      setRenaming(null);
+    } catch (err) {
+      alert(
+        JSON.stringify(
+          err?.response?.data || "Failed to rename chapter. Please try again.",
+        ),
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const addLesson = (chapterId) => {
-    setChapters((prev) =>
-      prev.map((c) =>
-        c.id === chapterId
-          ? {
-              ...c,
-              lessons: [
-                ...c.lessons,
-                { id: uid(), title: `Lesson ${c.lessons.length + 1}` },
-              ],
-            }
-          : c,
-      ),
-    );
+  const addLesson = async (chapterId) => {
+    const chapter = chapters.find((c) => c.id === chapterId);
+    const lessonCount = chapter?.lessons?.length || 0;
+
+    setSaving(true);
+    try {
+      await createTutorLesson(chapterId, {
+        title: `Lesson ${lessonCount + 1}`,
+        duration_minutes: 15,
+        credits_awarded: 10,
+        required_credits_to_unlock: 0,
+      });
+      await refreshChapters();
+    } catch (err) {
+      alert(
+        JSON.stringify(
+          err?.response?.data || "Failed to create lesson. Please try again.",
+        ),
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const deleteLesson = (chapterId, lessonId) => {
-    setChapters((prev) =>
-      prev.map((c) =>
-        c.id === chapterId
-          ? { ...c, lessons: c.lessons.filter((l) => l.id !== lessonId) }
-          : c,
-      ),
-    );
+  const deleteLessonById = async (chapterId, lessonId) => {
+    setSaving(true);
+    try {
+      await deleteTutorLesson(chapterId, lessonId);
+      await refreshChapters();
+    } catch (err) {
+      alert(
+        JSON.stringify(
+          err?.response?.data || "Failed to delete lesson. Please try again.",
+        ),
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renameLesson = (chapterId, lesson) =>
     setRenaming({ type: "lesson", chapterId, item: lesson });
 
-  const confirmRenameLesson = (newTitle) => {
-    setChapters((prev) =>
-      prev.map((c) =>
-        c.id === renaming.chapterId
-          ? {
-              ...c,
-              lessons: c.lessons.map((l) =>
-                l.id === renaming.item.id ? { ...l, title: newTitle } : l,
-              ),
-            }
-          : c,
-      ),
-    );
-    setRenaming(null);
+  const confirmRenameLesson = async (newTitle) => {
+    setSaving(true);
+    try {
+      await updateTutorLesson(renaming.chapterId, renaming.item.id, {
+        title: newTitle,
+      });
+      await refreshChapters();
+      setRenaming(null);
+    } catch (err) {
+      alert(
+        JSON.stringify(
+          err?.response?.data || "Failed to rename lesson. Please try again.",
+        ),
+      );
+    } finally {
+      setSaving(false);
+    }
   };
-
-  const totalLessons = chapters.reduce((sum, c) => sum + c.lessons.length, 0);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <main className="flex-1 w-full px-0 py-0 flex flex-col gap-0">
-        <div className="flex items-center gap-0">
+      <main className="flex-1 w-full px-0 py-0 flex flex-col gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={onBack}
             className="text-gray-700 hover:text-gray-900 transition-colors flex-shrink-0"
@@ -374,72 +452,36 @@ export default function CourseStructurePage({
               />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Course Structure</h1>
-        </div>
-
-        <div>
-          <button
-            onClick={addChapter}
-            className="flex items-center gap-2 bg-white hover:bg-gray-100 border border-gray-200 text-gray-900 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors flex-shrink-0"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            New chapter
-          </button>
-        </div>
-
-        {chapters.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 border-2 border-dashed border-gray-200 rounded-2xl">
-            <svg
-              className="w-10 h-10 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-              />
-            </svg>
-            <p className="text-gray-600 text-sm">
-              No chapters yet. Add your first chapter above.
-            </p>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Course Structure
+            </h1>
+            <p className="text-sm text-gray-500">{courseName}</p>
           </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {chapters.map((chapter) => (
-              <ChapterBlock
-                key={chapter.id}
-                chapter={chapter}
-                onToggle={toggleChapter}
-                onDeleteChapter={deleteChapter}
-                onAddLesson={addLesson}
-                onDeleteLesson={deleteLesson}
-                onRenameChapter={renameChapter}
-                onRenameLesson={renameLesson}
-              />
-            ))}
+        </div>
 
-            <button
-              onClick={addChapter}
-              className="w-full flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-200 hover:border-gray-300 rounded-2xl text-sm font-medium text-gray-600 hover:text-gray-800 transition-all group"
-            >
-              <span className="w-6 h-6 bg-gray-200 group-hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors">
+        {loading && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 text-sm text-gray-600">
+            Loading chapters and lessons...
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="bg-red-50 text-red-700 rounded-2xl border border-red-100 p-5 text-sm">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && (
+          <>
+            <div>
+              <button
+                onClick={addChapter}
+                disabled={saving}
+                className="flex items-center gap-2 bg-white hover:bg-gray-100 border border-gray-200 text-gray-900 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-40"
+              >
                 <svg
-                  className="w-3.5 h-3.5"
+                  className="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -447,30 +489,59 @@ export default function CourseStructurePage({
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2.5}
+                    strokeWidth={2}
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-              </span>
-              Add Chapter
-            </button>
-          </div>
+                New chapter
+              </button>
+            </div>
+
+            {chapters.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 border-2 border-dashed border-gray-200 rounded-2xl">
+                <p className="text-gray-600 text-sm">
+                  No chapters yet. Add your first chapter above.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {chapters.map((chapter) => (
+                  <ChapterBlock
+                    key={chapter.id}
+                    chapter={chapter}
+                    onToggle={toggleChapter}
+                    onDeleteChapter={deleteChapterById}
+                    onAddLesson={addLesson}
+                    onDeleteLesson={deleteLessonById}
+                    onRenameChapter={renameChapter}
+                    onRenameLesson={renameLesson}
+                    disabled={saving}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
 
-      <div className="border-t border-gray-200 bg-white px-8 py-4 flex items-center justify-end gap-3">
-        <button
-          onClick={onBack}
-          className="px-6 py-2.5 text-gray-700 hover:text-gray-900 font-medium transition-colors"
-        >
-          Discard
-        </button>
-        <button
-          onClick={() => alert("Course structure saved!")}
-          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-        >
-          Save
-        </button>
+      <div className="border-t border-gray-200 bg-white px-8 py-4 flex items-center justify-between gap-3 mt-6">
+        <span className="text-xs text-gray-500 font-medium">
+          {chapters.length} chapter(s) · {totalLessons} lesson(s)
+        </span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="px-6 py-2.5 text-gray-700 hover:text-gray-900 font-medium transition-colors"
+          >
+            Back
+          </button>
+          <button
+            onClick={onBack}
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            Done
+          </button>
+        </div>
       </div>
 
       {renaming && (
