@@ -94,18 +94,24 @@ export function toTutorCourseCard(course) {
 }
 
 export function toLearnerCourseCard(course) {
+  const lessonCount = Number(course.totalLessons || 0);
+  const durationWeeks = Number(course.durationWeeks || 1);
+  const baseRating = 4.2 + Math.min(lessonCount, 20) / 25;
+  const reviewsCount = Math.max(8, lessonCount * durationWeeks + 4);
+
   return {
     id: course.id,
     title: course.title,
     instructor: course.instructor || "English Tutor",
     level: levelToLabel(course.level),
-    rating: Number(course.rating || 4.8).toFixed(1),
+    rating: Number(course.rating || baseRating).toFixed(1),
+    reviews: course.reviews || `${reviewsCount}`,
     focusArea: (course.focusArea || course.category || "General").replace(
       /-/g,
       " ",
     ),
-    totalLessons: course.totalLessons || 0,
-    durationWeeks: course.durationWeeks || 1,
+    totalLessons: lessonCount,
+    durationWeeks,
     requiredCredits: 0,
     description: course.summary || course.description || "",
     thumbnail: course.thumbnail || null,
