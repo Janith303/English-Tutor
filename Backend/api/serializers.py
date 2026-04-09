@@ -1,6 +1,18 @@
 # api/serializers.py
 from rest_framework import serializers
 from .models import User, Question, Interest, StudentTutorProfile
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+# --- 1. AUTHENTICATION SERIALIZER ---
+# This fixes your navigation issue by adding 'role' to the login response
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        # Add custom fields to the JWT response
+        data['role'] = self.user.role
+        data['email'] = self.user.email
+        data['full_name'] = self.user.full_name
+        return data
 
 # 1. Serializer for Placement Test Questions
 class QuestionSerializer(serializers.ModelSerializer):
