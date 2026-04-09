@@ -104,7 +104,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="it23xxxxxx@my.sliit.lk"
+                  placeholder="it23xxxxxx@my.sliit.lk / james@gmail.com"
                   className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all font-bold text-gray-700"
                   required
                 />
