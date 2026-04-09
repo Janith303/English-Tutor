@@ -261,3 +261,33 @@ class TutorOTP(models.Model):
 
     def __str__(self):
         return f"Tutor OTP for {self.email}"
+
+# --- Q&A WALL MODELS ---
+class WallQuestion(models.Model):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='forum_questions')
+    
+    # NEW: The anonymity toggle
+    is_anonymous = models.BooleanField(default=False) 
+    
+    tags = models.CharField(max_length=200, blank=True, help_text="Comma-separated tags")
+    votes = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} {'(Anonymous)' if self.is_anonymous else ''}"
+
+class WallAnswer(models.Model):
+    question = models.ForeignKey(WallQuestion, on_delete=models.CASCADE, related_name='wall_answers')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='given_answers')
+    body = models.TextField()
+    
+    # This stays, but you'll set it in the View based on author.is_tutor
+    is_expert_answer = models.BooleanField(default=False) 
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        status = "Expert" if self.is_expert_answer else "Student"
+        return f"{status} Answer to {self.question.title} by {self.author.email}"
