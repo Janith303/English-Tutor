@@ -30,6 +30,15 @@ import GrammarQuizResult from "./components/quiz/GrammarQuizResult";
 import ReadingQuizStart from "./components/quiz/ReadingQuizStart";
 import ReadingQuizGame from "./components/quiz/ReadingQuizGame";
 import ReadingQuizResult from "./components/quiz/ReadingQuizResult";
+import IdiomsQuizStart from "./components/quiz/IdiomsQuizStart";
+import IdiomsQuizGame from "./components/quiz/IdiomsQuizGame";
+import IdiomsQuizResult from "./components/quiz/IdiomsQuizResult";
+import WritingQuizStart from "./components/quiz/WritingQuizStart";
+import WritingQuizGame from "./components/quiz/WritingQuizGame";
+import WritingQuizResult from "./components/quiz/WritingQuizResult";
+import SentenceQuizStart from "./components/quiz/SentenceQuizStart";
+import SentenceQuizGame from "./components/quiz/SentenceQuizGame";
+import SentenceQuizResult from "./components/quiz/SentenceQuizResult";
 import TutorQandA from "./components/qa/TutorQandA";
 import TutorDashboardPage from "./components/tutor/TutorDashboardPage";
 import EditCoursePage from "./components/course/EditCoursePage";
@@ -90,6 +99,15 @@ function App() {
         <Route path="/reading-quiz" element={<ReadingQuizStart />} />
         <Route path="/reading-quiz/play" element={<ReadingQuizGame />} />
         <Route path="/reading-quiz/result" element={<ReadingQuizResult />} />
+        <Route path="/idioms-quiz" element={<IdiomsQuizStart />} />
+        <Route path="/idioms-quiz/play" element={<IdiomsQuizGame />} />
+        <Route path="/idioms-quiz/result" element={<IdiomsQuizResult />} />
+        <Route path="/writing-quiz" element={<WritingQuizStart />} />
+        <Route path="/writing-quiz/play" element={<WritingQuizGame />} />
+        <Route path="/writing-quiz/result" element={<WritingQuizResult />} />
+        <Route path="/sentence-quiz" element={<SentenceQuizStart />} />
+        <Route path="/sentence-quiz/play" element={<SentenceQuizGame />} />
+        <Route path="/sentence-quiz/result" element={<SentenceQuizResult />} />
       </Routes>
     </Router>
   );
