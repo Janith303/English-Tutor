@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
+from decimal import Decimal
 import datetime
 
 class User(AbstractUser):
@@ -128,6 +130,125 @@ class StudentTutorProfile(models.Model):
     def __str__(self):
         return f"Tutor Profile: {self.user.email} - {self.status}"
 
+
+class Course(models.Model):
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('PUBLISHED', 'Published'),
+        ('ARCHIVED', 'Archived'),
+    ]
+
+    LEVEL_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    ]
+
+    tutor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='courses')
+    title = models.CharField(max_length=120)
+    slug = models.SlugField(max_length=150, unique=True)
+    summary = models.CharField(max_length=300)
+    description = models.TextField()
+    category = models.CharField(max_length=80)
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
+    duration_hours = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        validators=[MinValueValidator(Decimal('0.5')), MaxValueValidator(Decimal('500'))],
+    )
+    price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('9999'))],
+    )
+    thumbnail = models.ImageField(upload_to='courses/thumbnails/', null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    public_marketplace = models.BooleanField(default=True)
+    search_indexing = models.BooleanField(default=False)
+    auto_enroll_existing_students = models.BooleanField(default=False)
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.status})"
+
+
+class Chapter(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='chapters')
+    title = models.CharField(max_length=120)
+    order = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ('course', 'order')
+
+    def __str__(self):
+        return f"{self.course.title} - {self.title}"
+
+
+class Lesson(models.Model):
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='lessons')
+    title = models.CharField(max_length=120)
+    order = models.PositiveIntegerField(default=1, validators=[MinValueValidator(1)])
+    duration_minutes = models.PositiveIntegerField(default=10, validators=[MinValueValidator(1), MaxValueValidator(1000)])
+    credits_awarded = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(1000)])
+    required_credits_to_unlock = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(10000)])
+    content = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ('chapter', 'order')
+
+    def __str__(self):
+        return f"{self.chapter.title} - {self.title}"
+
+
+class Enrollment(models.Model):
+    STATUS_CHOICES = [
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+    ]
+
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='course_enrollments')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
+    progress_percent = models.PositiveSmallIntegerField(default=0, validators=[MinValueValidator(0), MaxValueValidator(100)])
+    earned_credits = models.PositiveIntegerField(default=0)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-enrolled_at']
+        unique_together = ('student', 'course')
+        indexes = [
+            models.Index(fields=['student', 'status']),
+            models.Index(fields=['course', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.student.email} -> {self.course.title}"
+
+
+class LessonCompletion(models.Model):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name='completions')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='completions')
+    credits_awarded = models.PositiveIntegerField(default=0)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-completed_at']
+        unique_together = ('enrollment', 'lesson')
+
+    def __str__(self):
+        return f"{self.enrollment.student.email} completed {self.lesson.title}"
 # --- NEW MODEL: ADDED FOR TUTOR OTP VERIFICATION ---
 class TutorOTP(models.Model):
     email = models.EmailField(unique=True)

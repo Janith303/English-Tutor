@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Star,
@@ -13,15 +13,37 @@ import {
   Flame,
 } from "lucide-react";
 import LearnerTopNav from "./LearnerTopNav";
-import { mockCourses, mockLessons } from "../../data/mockCourses";
+import {
+  createEnrollment,
+  getPublishedCourseDetail,
+  toLessonRowsFromCourseDetail,
+} from "../../api/courseApi";
 
 const TutorDetailsPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const course = mockCourses.find((c) => c.id === parseInt(courseId));
-  const courseLessons = mockLessons.filter(
-    (l) => l.courseId === parseInt(courseId),
-  );
+  const [course, setCourse] = useState(null);
+  const [courseLessons, setCourseLessons] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCourse = async () => {
+      setLoading(true);
+      try {
+        const data = await getPublishedCourseDetail(courseId);
+        setCourse(data);
+        setCourseLessons(toLessonRowsFromCourseDetail(data));
+      } catch (error) {
+        console.error("Failed to load course detail:", error);
+        setCourse(null);
+        setCourseLessons([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCourse();
+  }, [courseId]);
 
   const [selectedDate, setSelectedDate] = useState("Wed 17");
   const [selectedDuration, setSelectedDuration] = useState("25 mins");
@@ -78,6 +100,21 @@ const TutorDetailsPage = () => {
 
   const times = ["09:00", "11:30", "15:00", "18:30"];
 
+  const handleEnroll = async () => {
+    if (!course?.id) return;
+
+    try {
+      await createEnrollment(course.id);
+      navigate(`/learning/${course.id}`);
+    } catch (error) {
+      if (error?.response?.status === 400) {
+        navigate(`/learning/${course.id}`);
+        return;
+      }
+      alert("Enrollment failed. Please try again.");
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <LearnerTopNav />
@@ -131,7 +168,7 @@ const TutorDetailsPage = () => {
                 No payment required
               </p>
               <button
-                onClick={() => navigate(`/learning/${course?.id}`)}
+                onClick={handleEnroll}
                 className="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors"
               >
                 Enroll Now
@@ -143,7 +180,7 @@ const TutorDetailsPage = () => {
                 <div className="p-1 bg-gray-100 rounded">
                   <User size={16} />
                 </div>
-                <span>23 Lessons Completed</span>
+                <span>{courseLessons.length} Lessons Available</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="p-1 bg-gray-100 rounded">
@@ -163,6 +200,12 @@ const TutorDetailsPage = () => {
             </div>
           </div>
         </div>
+
+        {loading && (
+          <div className="mb-8 bg-white rounded-2xl p-6 border border-gray-100 text-sm text-gray-500">
+            Loading course details...
+          </div>
+        )}
 
         <div className="mb-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
           <div className="grid grid-cols-4 gap-4">

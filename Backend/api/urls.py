@@ -41,3 +41,26 @@ urlpatterns = [
     # --- Tutor Protected Endpoint ---
     path('tutor/dashboard/', TutorDashboardView.as_view(), name='tutor-dashboard'),
 ]
+
+
+from . import views as course_views
+
+urlpatterns += [
+    # --- Tutor Course Authoring ---
+    path('tutor/courses/', course_views.TutorCourseListCreateView.as_view(), name='tutor-courses'),
+    path('tutor/courses/<int:course_id>/', course_views.TutorCourseDetailView.as_view(), name='tutor-course-detail'),
+    path('tutor/courses/<int:course_id>/publish/', course_views.TutorCoursePublishView.as_view(), name='tutor-course-publish'),
+    path('tutor/courses/<int:course_id>/chapters/', course_views.TutorChapterListCreateView.as_view(), name='tutor-course-chapters'),
+    path('tutor/courses/<int:course_id>/chapters/reorder/', course_views.TutorChapterReorderView.as_view(), name='tutor-course-chapters-reorder'),
+    path('tutor/courses/<int:course_id>/chapters/<int:chapter_id>/', course_views.TutorChapterDetailView.as_view(), name='tutor-course-chapter-detail'),
+    path('tutor/chapters/<int:chapter_id>/lessons/', course_views.TutorLessonListCreateView.as_view(), name='tutor-chapter-lessons'),
+    path('tutor/chapters/<int:chapter_id>/lessons/reorder/', course_views.TutorLessonReorderView.as_view(), name='tutor-chapter-lessons-reorder'),
+    path('tutor/chapters/<int:chapter_id>/lessons/<int:lesson_id>/', course_views.TutorLessonDetailView.as_view(), name='tutor-chapter-lesson-detail'),
+
+    # --- Learner Course Access ---
+    path('courses/', course_views.PublishedCourseListView.as_view(), name='published-courses'),
+    path('courses/<int:course_id>/', course_views.CourseDetailView.as_view(), name='course-detail'),
+    path('students/enrollments/', course_views.StudentEnrollmentListCreateView.as_view(), name='student-enrollments'),
+    path('students/courses/<int:course_id>/lessons/<int:lesson_id>/complete/', course_views.StudentLessonCompleteView.as_view(), name='student-lesson-complete'),
+    path('students/courses/<int:course_id>/progress/', course_views.StudentCourseProgressView.as_view(), name='student-course-progress'),
+]
