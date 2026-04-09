@@ -1,16 +1,36 @@
-import { useState } from "react";
+const STATUS_LABELS = {
+  DRAFT: "Draft Mode",
+  PUBLISHED: "Published",
+  ARCHIVED: "Archived",
+};
 
-export default function PublishingPanel() {
-  const [publishMode, setPublishMode] = useState("Draft Mode");
-  const [visibility, setVisibility] = useState({
-    publicMarketplace: true,
-    searchIndexing: false,
-    autoEnroll: true,
-  });
+export default function PublishingPanel({ value, onChange, disabled = false }) {
+  const publishMode = value?.status || "DRAFT";
+  const visibility = {
+    publicMarketplace:
+      typeof value?.publicMarketplace === "boolean"
+        ? value.publicMarketplace
+        : true,
+    searchIndexing: !!value?.searchIndexing,
+    autoEnroll: !!value?.autoEnroll,
+  };
 
   const toggleVisibility = (key) => {
-    setVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+    if (disabled) return;
+    onChange && onChange(key, !visibility[key]);
   };
+
+  const updateStatus = (nextStatus) => {
+    if (disabled) return;
+    onChange && onChange("status", nextStatus);
+  };
+
+  const statusBadgeColor =
+    publishMode === "PUBLISHED"
+      ? "text-green-600 bg-green-50 border-green-100"
+      : publishMode === "ARCHIVED"
+        ? "text-gray-600 bg-gray-100 border-gray-200"
+        : "text-orange-700 bg-orange-50 border-orange-100";
 
   return (
     <div className="flex flex-col gap-6">
@@ -19,27 +39,32 @@ export default function PublishingPanel() {
           Publishing Status
         </p>
 
-        <div className="bg-orange-50 border border-orange-100 rounded-xl px-4 py-3 flex items-center justify-between mb-3">
+        <div
+          className={`border rounded-xl px-4 py-3 flex items-center justify-between mb-3 ${statusBadgeColor}`}
+        >
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />
             <span className="text-sm font-semibold text-orange-700">
               Live Status
             </span>
           </div>
-          <span className="text-xs font-bold text-orange-500 tracking-wider">
-            DRAFT
+          <span className="text-xs font-bold tracking-wider">
+            {publishMode}
           </span>
         </div>
 
         <div className="relative">
           <select
             value={publishMode}
-            onChange={(e) => setPublishMode(e.target.value)}
+            onChange={(e) => updateStatus(e.target.value)}
             className="w-full appearance-none bg-white border-2 border-black rounded-xl px-4 py-2.5 text-sm text-black font-medium focus:outline-none focus:border-black cursor-pointer"
+            disabled={disabled}
           >
-            <option>Draft Mode</option>
-            <option>Published</option>
-            <option>Archived</option>
+            {Object.entries(STATUS_LABELS).map(([code, label]) => (
+              <option key={code} value={code}>
+                {label}
+              </option>
+            ))}
           </select>
           <svg
             className="w-4 h-4 text-black absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"
