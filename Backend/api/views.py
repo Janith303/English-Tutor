@@ -291,3 +291,487 @@ class TutorDashboardView(APIView):
 
     def get(self, request):
         return Response({"message": "Welcome to the Tutor Dashboard! You have access to this because your application was approved."})
+
+
+# --- 6. COURSE CRUD WORKFLOW ---
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+
+from .models import Course, Chapter, Lesson, Enrollment, LessonCompletion
+from .serializers import (
+    CourseWriteSerializer,
+    CoursePublicSerializer,
+    CourseDetailSerializer,
+    ChapterWriteSerializer,
+    ChapterReadSerializer,
+    LessonWriteSerializer,
+    LessonReadSerializer,
+    EnrollmentCreateSerializer,
+    EnrollmentSerializer,
+    ReorderSerializer,
+)
+from .permissions import IsTutorAuthor
+
+
+def _normalize_chapter_orders(course):
+    chapters = course.chapters.order_by('order', 'id')
+    for index, chapter in enumerate(chapters, start=1):
+        if chapter.order != index:
+            Chapter.objects.filter(id=chapter.id).update(order=index)
+
+
+def _normalize_lesson_orders(chapter):
+    lessons = chapter.lessons.order_by('order', 'id')
+    for index, lesson in enumerate(lessons, start=1):
+        if lesson.order != index:
+            Lesson.objects.filter(id=lesson.id).update(order=index)
+
+
+def _build_course_context(user, course):
+    enrollment = Enrollment.objects.filter(student=user, course=course).first()
+    if not enrollment:
+        return {
+            'completed_lesson_ids': set(),
+            'earned_credits': 0,
+        }
+
+    completed_ids = set(
+        enrollment.completions.values_list('lesson_id', flat=True)
+    )
+    return {
+        'completed_lesson_ids': completed_ids,
+        'earned_credits': enrollment.earned_credits,
+    }
+
+
+def _parse_optional_bool(raw_value):
+    if isinstance(raw_value, bool):
+        return raw_value
+
+    if isinstance(raw_value, str):
+        normalized = raw_value.strip().lower()
+        if normalized in ['true', '1', 'yes', 'on']:
+            return True
+        if normalized in ['false', '0', 'no', 'off']:
+            return False
+        return None
+
+    if isinstance(raw_value, (int, float)):
+        return bool(raw_value)
+
+    return None
+
+
+class TutorCourseListCreateView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def get(self, request):
+        courses = Course.objects.filter(tutor=request.user).select_related('tutor')
+        serializer = CoursePublicSerializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = CourseWriteSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            course = serializer.save()
+            response_serializer = CourseDetailSerializer(course, context={'request': request})
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TutorCourseDetailView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def get_object(self, request, course_id):
+        return get_object_or_404(
+            Course.objects.select_related('tutor').prefetch_related('chapters__lessons'),
+            id=course_id,
+            tutor=request.user,
+        )
+
+    def get(self, request, course_id):
+        course = self.get_object(request, course_id)
+        serializer = CourseDetailSerializer(course, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, course_id):
+        course = self.get_object(request, course_id)
+        serializer = CourseWriteSerializer(course, data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(CourseDetailSerializer(course, context={'request': request}).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, course_id):
+        course = self.get_object(request, course_id)
+        serializer = CourseWriteSerializer(course, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(CourseDetailSerializer(course, context={'request': request}).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, course_id):
+        course = self.get_object(request, course_id)
+        course.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TutorCoursePublishView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def patch(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, tutor=request.user)
+
+        next_status = request.data.get('status')
+        if next_status and next_status not in dict(Course.STATUS_CHOICES):
+            return Response({'error': 'Invalid status value.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if next_status:
+            course.status = next_status
+            if next_status == 'PUBLISHED':
+                course.published_at = timezone.now()
+            else:
+                course.published_at = None
+
+        if 'public_marketplace' in request.data:
+            parsed = _parse_optional_bool(request.data.get('public_marketplace'))
+            if parsed is None:
+                return Response({'error': 'public_marketplace must be a boolean value.'}, status=status.HTTP_400_BAD_REQUEST)
+            course.public_marketplace = parsed
+        if 'search_indexing' in request.data:
+            parsed = _parse_optional_bool(request.data.get('search_indexing'))
+            if parsed is None:
+                return Response({'error': 'search_indexing must be a boolean value.'}, status=status.HTTP_400_BAD_REQUEST)
+            course.search_indexing = parsed
+        if 'auto_enroll_existing_students' in request.data:
+            parsed = _parse_optional_bool(request.data.get('auto_enroll_existing_students'))
+            if parsed is None:
+                return Response({'error': 'auto_enroll_existing_students must be a boolean value.'}, status=status.HTTP_400_BAD_REQUEST)
+            course.auto_enroll_existing_students = parsed
+
+        course.save()
+        return Response(
+            {
+                'message': 'Publishing settings updated successfully.',
+                'status': course.status,
+                'public_marketplace': course.public_marketplace,
+                'search_indexing': course.search_indexing,
+                'auto_enroll_existing_students': course.auto_enroll_existing_students,
+                'published_at': course.published_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class TutorChapterListCreateView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def get(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, tutor=request.user)
+        chapters = course.chapters.prefetch_related('lessons').all()
+        serializer = ChapterReadSerializer(chapters, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, tutor=request.user)
+
+        payload = request.data.copy()
+        if not payload.get('order'):
+            payload['order'] = course.chapters.count() + 1
+
+        serializer = ChapterWriteSerializer(data=payload)
+        if serializer.is_valid():
+            chapter = serializer.save(course=course)
+            return Response(ChapterReadSerializer(chapter).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TutorChapterDetailView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def patch(self, request, course_id, chapter_id):
+        course = get_object_or_404(Course, id=course_id, tutor=request.user)
+        chapter = get_object_or_404(Chapter, id=chapter_id, course=course)
+
+        serializer = ChapterWriteSerializer(chapter, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(ChapterReadSerializer(chapter).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, course_id, chapter_id):
+        course = get_object_or_404(Course, id=course_id, tutor=request.user)
+        chapter = get_object_or_404(Chapter, id=chapter_id, course=course)
+        chapter.delete()
+        _normalize_chapter_orders(course)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TutorChapterReorderView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def patch(self, request, course_id):
+        course = get_object_or_404(Course, id=course_id, tutor=request.user)
+        serializer = ReorderSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        ordered_ids = serializer.validated_data['ordered_ids']
+        existing_ids = list(course.chapters.values_list('id', flat=True))
+
+        if len(ordered_ids) != len(existing_ids) or set(ordered_ids) != set(existing_ids):
+            return Response(
+                {'error': 'ordered_ids must include each chapter in this course exactly once.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            for index, chapter_id in enumerate(ordered_ids, start=1):
+                Chapter.objects.filter(id=chapter_id, course=course).update(order=index)
+
+        return Response({'message': 'Chapters reordered successfully.'}, status=status.HTTP_200_OK)
+
+
+class TutorLessonListCreateView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def get_chapter(self, request, chapter_id):
+        chapter = get_object_or_404(
+            Chapter.objects.select_related('course__tutor').prefetch_related('lessons'),
+            id=chapter_id,
+        )
+        if chapter.course.tutor_id != request.user.id:
+            return None
+        return chapter
+
+    def get(self, request, chapter_id):
+        chapter = self.get_chapter(request, chapter_id)
+        if chapter is None:
+            return Response({'error': 'Unauthorized to access this chapter.'}, status=status.HTTP_403_FORBIDDEN)
+
+        lessons = chapter.lessons.all()
+        serializer = LessonWriteSerializer(lessons, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, chapter_id):
+        chapter = self.get_chapter(request, chapter_id)
+        if chapter is None:
+            return Response({'error': 'Unauthorized to modify this chapter.'}, status=status.HTTP_403_FORBIDDEN)
+
+        payload = request.data.copy()
+        if not payload.get('order'):
+            payload['order'] = chapter.lessons.count() + 1
+
+        serializer = LessonWriteSerializer(data=payload)
+        if serializer.is_valid():
+            lesson = serializer.save(chapter=chapter)
+            return Response(LessonWriteSerializer(lesson).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TutorLessonDetailView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def get_lesson(self, request, chapter_id, lesson_id):
+        lesson = get_object_or_404(
+            Lesson.objects.select_related('chapter__course__tutor'),
+            id=lesson_id,
+            chapter_id=chapter_id,
+        )
+        if lesson.chapter.course.tutor_id != request.user.id:
+            return None
+        return lesson
+
+    def patch(self, request, chapter_id, lesson_id):
+        lesson = self.get_lesson(request, chapter_id, lesson_id)
+        if lesson is None:
+            return Response({'error': 'Unauthorized to modify this lesson.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = LessonWriteSerializer(lesson, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(LessonWriteSerializer(lesson).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, chapter_id, lesson_id):
+        lesson = self.get_lesson(request, chapter_id, lesson_id)
+        if lesson is None:
+            return Response({'error': 'Unauthorized to delete this lesson.'}, status=status.HTTP_403_FORBIDDEN)
+
+        chapter = lesson.chapter
+        lesson.delete()
+        _normalize_lesson_orders(chapter)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TutorLessonReorderView(APIView):
+    permission_classes = [IsTutorAuthor]
+
+    def patch(self, request, chapter_id):
+        chapter = get_object_or_404(Chapter.objects.select_related('course__tutor'), id=chapter_id)
+        if chapter.course.tutor_id != request.user.id:
+            return Response({'error': 'Unauthorized to reorder this chapter.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ReorderSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        ordered_ids = serializer.validated_data['ordered_ids']
+        existing_ids = list(chapter.lessons.values_list('id', flat=True))
+
+        if len(ordered_ids) != len(existing_ids) or set(ordered_ids) != set(existing_ids):
+            return Response(
+                {'error': 'ordered_ids must include each lesson in this chapter exactly once.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            for index, lesson_id in enumerate(ordered_ids, start=1):
+                Lesson.objects.filter(id=lesson_id, chapter=chapter).update(order=index)
+
+        return Response({'message': 'Lessons reordered successfully.'}, status=status.HTTP_200_OK)
+
+
+class PublishedCourseListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        courses = Course.objects.filter(
+            status='PUBLISHED',
+            public_marketplace=True,
+        ).select_related('tutor')
+        serializer = CoursePublicSerializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CourseDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, course_id):
+        course = get_object_or_404(
+            Course.objects.select_related('tutor').prefetch_related('chapters__lessons'),
+            id=course_id,
+            status='PUBLISHED',
+        )
+
+        enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
+        context = {'request': request}
+        context.update(_build_course_context(request.user, course))
+        serializer = CourseDetailSerializer(course, context=context)
+
+        data = serializer.data
+        data['isEnrolled'] = bool(enrollment)
+        data['earnedCredits'] = context['earned_credits']
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class StudentEnrollmentListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        enrollments = Enrollment.objects.filter(student=request.user).select_related('course__tutor')
+        serializer = EnrollmentSerializer(enrollments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = EnrollmentCreateSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            enrollment = serializer.save()
+            return Response(EnrollmentSerializer(enrollment).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StudentLessonCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, course_id, lesson_id):
+        enrollment = get_object_or_404(
+            Enrollment.objects.select_related('course'),
+            student=request.user,
+            course_id=course_id,
+        )
+        lesson = get_object_or_404(
+            Lesson.objects.select_related('chapter__course'),
+            id=lesson_id,
+            chapter__course_id=course_id,
+        )
+
+        already_done = LessonCompletion.objects.filter(enrollment=enrollment, lesson=lesson).exists()
+        if already_done:
+            return Response({'message': 'Lesson already completed.'}, status=status.HTTP_200_OK)
+
+        if enrollment.earned_credits < lesson.required_credits_to_unlock:
+            return Response(
+                {
+                    'error': 'Lesson is still locked for this student.',
+                    'required_credits_to_unlock': lesson.required_credits_to_unlock,
+                    'earned_credits': enrollment.earned_credits,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        with transaction.atomic():
+            LessonCompletion.objects.create(
+                enrollment=enrollment,
+                lesson=lesson,
+                credits_awarded=lesson.credits_awarded,
+            )
+
+            enrollment.earned_credits += lesson.credits_awarded
+            total_lessons = Lesson.objects.filter(chapter__course=enrollment.course).count()
+            completed_count = LessonCompletion.objects.filter(enrollment=enrollment).count()
+            enrollment.progress_percent = round((completed_count / total_lessons) * 100) if total_lessons else 0
+
+            if enrollment.progress_percent >= 100:
+                enrollment.status = 'completed'
+                enrollment.completed_at = timezone.now()
+
+            enrollment.save()
+
+        return Response(
+            {
+                'message': 'Lesson marked as completed.',
+                'earned_credits': enrollment.earned_credits,
+                'progress': enrollment.progress_percent,
+                'status': enrollment.status,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class StudentCourseProgressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, course_id):
+        enrollment = get_object_or_404(
+            Enrollment.objects.select_related('course__tutor'),
+            student=request.user,
+            course_id=course_id,
+        )
+
+        total_lessons = Lesson.objects.filter(chapter__course_id=course_id).count()
+        completed_qs = LessonCompletion.objects.filter(enrollment=enrollment)
+        completed_lessons = completed_qs.count()
+        progress = round((completed_lessons / total_lessons) * 100) if total_lessons else 0
+
+        if progress >= 100 and enrollment.status != 'completed':
+            enrollment.status = 'completed'
+            enrollment.completed_at = timezone.now()
+            enrollment.progress_percent = progress
+            enrollment.save(update_fields=['status', 'completed_at', 'progress_percent'])
+        elif enrollment.progress_percent != progress:
+            enrollment.progress_percent = progress
+            enrollment.save(update_fields=['progress_percent'])
+
+        return Response(
+            {
+                'course': CoursePublicSerializer(enrollment.course).data,
+                'status': enrollment.status,
+                'progress': progress,
+                'earned_credits': enrollment.earned_credits,
+                'completed_lessons': completed_lessons,
+                'total_lessons': total_lessons,
+                'completed_lesson_ids': list(completed_qs.values_list('lesson_id', flat=True)),
+            },
+            status=status.HTTP_200_OK,
+        )
