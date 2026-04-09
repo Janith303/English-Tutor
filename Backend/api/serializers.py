@@ -1,6 +1,7 @@
 # api/serializers.py
 from rest_framework import serializers
-from .models import User, Question, Interest, StudentTutorProfile
+from django.contrib.humanize.templatetags.humanize import naturaltime
+from .models import User, Question, Interest, StudentTutorProfile, WallQuestion, WallAnswer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 # --- 1. AUTHENTICATION SERIALIZER ---
@@ -426,3 +427,41 @@ class EnrollmentSerializer(serializers.ModelSerializer):
             'enrolled_at',
             'completed_at',
         ]
+
+        # --- NEW: Q&A WALL SERIALIZERS ---
+class WallAnswerSerializer(serializers.ModelSerializer):
+    author_name = serializers.ReadOnlyField(source='author.full_name')
+    author_role = serializers.ReadOnlyField(source='author.role')
+    created_at_human = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WallAnswer
+        fields = ['id', 'body', 'author_name', 'author_role', 'is_expert_answer', 'created_at', 'created_at_human']
+
+    # This MUST be indented inside the class
+    def get_created_at_human(self, obj):
+        return naturaltime(obj.created_at)       
+
+class WallQuestionSerializer(serializers.ModelSerializer):
+    author_name = serializers.SerializerMethodField()
+    tags = serializers.SerializerMethodField()
+    created_at_human = serializers.SerializerMethodField()
+    answers = WallAnswerSerializer(many=True, read_only=True, source='wall_answers')
+
+    class Meta:
+        model = WallQuestion
+        fields = ['id', 'title', 'body', 'author_name', 'is_anonymous', 'tags', 'votes', 'answers', 'created_at', 'created_at_human']
+
+    def get_author_name(self, obj):
+        if obj.is_anonymous:
+            return "Anonymous Student"
+        return obj.author.full_name or obj.author.username
+    
+    # Ensure the code below is indented correctly
+    def get_tags(self, obj):
+        if not obj.tags:
+            return []
+        return [tag.strip() for tag in obj.tags.split(',') if tag.strip()]
+
+    def get_created_at_human(self, obj):
+        return naturaltime(obj.created_at)

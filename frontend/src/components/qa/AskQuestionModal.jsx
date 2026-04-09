@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Send } from 'lucide-react';
+import axios from 'axios';
 
-const AskQuestionModal = ({ onClose }) => {
-  const [formData, setFormData] = useState({ title: '', body: '', tags: '' });
+const AskQuestionModal = ({ onClose, onQuestionAdded }) => {
+  const [formData, setFormData] = useState({ 
+    title: '', 
+    body: '', 
+    tags: '', 
+    is_anonymous: false // Added for your anonymity requirement
+  });
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = () => {
     let newErrors = {};
@@ -23,12 +30,34 @@ const AskQuestionModal = ({ onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validate()) {
-      console.log("Submitted:", formData);
-      alert("Question posted successfully! (Frontend Only)");
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+    
+    try {
+      // Get the token from wherever you store it (localStorage is common)
+      const token = localStorage.getItem('access_token');
+      
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/wall-questions/", 
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      // On success, update the UI and close
+      if (onQuestionAdded) onQuestionAdded(response.data);
       onClose();
+    } catch (err) {
+      console.error("Post failed:", err.response?.data);
+      setErrors({ server: "Failed to post question. Please check your connection." });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -43,9 +72,14 @@ const AskQuestionModal = ({ onClose }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {errors.server && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium">
+              {errors.server}
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-semibold mb-1 text-slate-700">Title</label>
-            <p className="text-xs text-slate-500 mb-2">Be specific and imagine you’re asking a question to a lecturer.</p>
             <input 
               type="text" 
               className={`w-full border rounded-lg p-3 outline-none transition-all ${errors.title ? 'border-red-500 ring-1 ring-red-100' : 'focus:ring-2 focus:ring-blue-500 border-slate-200'}`}
@@ -59,7 +93,7 @@ const AskQuestionModal = ({ onClose }) => {
           <div>
             <label className="block text-sm font-semibold mb-1 text-slate-700">Details</label>
             <textarea 
-              rows="6"
+              rows="4"
               className={`w-full border rounded-lg p-3 outline-none transition-all ${errors.body ? 'border-red-500 ring-1 ring-red-100' : 'focus:ring-2 focus:ring-blue-500 border-slate-200'}`}
               placeholder="Include all the information someone would need to answer your question..."
               value={formData.body}
@@ -73,15 +107,37 @@ const AskQuestionModal = ({ onClose }) => {
             <input 
               type="text" 
               className="w-full border border-slate-200 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g. grammar, tenses, essay-writing (comma separated)"
+              placeholder="e.g. grammar, tenses (comma separated)"
               value={formData.tags}
               onChange={(e) => setFormData({...formData, tags: e.target.value})}
             />
           </div>
 
-          <div className="pt-4 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-6 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors">Cancel</button>
-            <button type="submit" className="px-8 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md transition-all active:scale-95">Post Question</button>
+          {/* Anonymity Toggle */}
+          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+            <input 
+              type="checkbox"
+              id="is_anonymous"
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+              checked={formData.is_anonymous}
+              onChange={(e) => setFormData({...formData, is_anonymous: e.target.checked})}
+            />
+            <label htmlFor="is_anonymous" className="text-sm font-medium text-slate-600 cursor-pointer select-none">
+              Post anonymously (Lecturers can still see your ID for safety)
+            </label>
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3 border-t">
+            <button type="button" onClick={onClose} className="px-6 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="px-8 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md transition-all active:scale-95 disabled:bg-slate-400 flex items-center gap-2"
+            >
+              {isSubmitting ? "Posting..." : <><Send size={18}/> Post Question</>}
+            </button>
           </div>
         </form>
       </div>
