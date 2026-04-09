@@ -900,7 +900,7 @@ class WallQuestionViewSet(viewsets.ModelViewSet):
     """
     queryset = WallQuestion.objects.all().order_by('-created_at')
     serializer_class = WallQuestionSerializer
-    permission_classes = [IsAuthenticated] # Ensures only logged-in users participate
+    permission_classes = [AllowAny] # Ensures only logged-in users participate
 
     def perform_create(self, serializer):
         # Automatically sets the author to the student currently logged in
@@ -914,7 +914,7 @@ class WallAnswerViewSet(viewsets.ModelViewSet):
     """
     queryset = WallAnswer.objects.all()
     serializer_class = WallAnswerSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         user = self.request.user
