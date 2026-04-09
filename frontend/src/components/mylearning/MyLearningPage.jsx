@@ -10,7 +10,6 @@ import {
   enrolledCourses,
   learningProgress,
   recommendedCourses,
-  weekSchedule,
 } from "../../data/myLearningData";
 import { mockStudent } from "../../data/mockCourses";
 import {
@@ -65,6 +64,39 @@ export default function MyLearningPage() {
       streakDays: Math.max(1, Math.min(14, inProgressCourses.length * 2)),
     };
   }, [courses, completedCourses.length, inProgressCourses.length]);
+
+  const liveWeekSchedule = useMemo(() => {
+    const now = new Date();
+    const activeCourses = inProgressCourses.length
+      ? inProgressCourses
+      : courses.slice(0, 3);
+
+    if (activeCourses.length === 0) {
+      return [];
+    }
+
+    return activeCourses.slice(0, 4).map((course, index) => {
+      const when = new Date(now);
+      when.setDate(now.getDate() + index);
+      when.setHours(15 + (index % 3), index % 2 === 0 ? 0 : 30, 0, 0);
+
+      const isToday = index === 0;
+      const dayLabel = isToday
+        ? "Today"
+        : when.toLocaleDateString([], { weekday: "long" });
+      const timeLabel = when.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      return {
+        id: course.id,
+        title: `${course.title.split(" ").slice(0, 3).join(" ")} Session`,
+        time: `${dayLabel}, ${timeLabel}`,
+        isToday,
+      };
+    });
+  }, [courses, inProgressCourses]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -150,7 +182,7 @@ export default function MyLearningPage() {
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-              <WeekSchedulePanel schedule={weekSchedule} />
+              <WeekSchedulePanel schedule={liveWeekSchedule} />
             </div>
           </aside>
         </div>
