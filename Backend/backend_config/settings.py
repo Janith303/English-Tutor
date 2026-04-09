@@ -123,3 +123,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Add this at the bottom
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
