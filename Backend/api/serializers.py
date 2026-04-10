@@ -113,7 +113,6 @@ class StudentTutorApplicationSerializer(serializers.ModelSerializer):
 
 
 # --- COURSE SYSTEM SERIALIZERS ---
-import re
 from decimal import Decimal
 from django.utils import timezone
 from .models import Course, Chapter, Lesson, Enrollment
@@ -125,18 +124,13 @@ class CourseWriteSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
-            'slug',
             'summary',
-            'description',
             'category',
             'level',
             'duration_hours',
             'price',
             'thumbnail',
             'status',
-            'public_marketplace',
-            'search_indexing',
-            'auto_enroll_existing_students',
             'published_at',
             'created_at',
             'updated_at',
@@ -151,25 +145,12 @@ class CourseWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Course Title must be 120 characters or less')
         return value
 
-    def validate_slug(self, value):
-        value = value.strip().lower()
-        pattern = r'^[a-z0-9]+(?:-[a-z0-9]+)*$'
-        if not re.fullmatch(pattern, value):
-            raise serializers.ValidationError('Only lowercase letters, numbers, and hyphens are allowed')
-        return value
-
     def validate_summary(self, value):
         value = value.strip()
         if len(value) < 10:
             raise serializers.ValidationError('Summary must be at least 10 characters')
         if len(value) > 300:
             raise serializers.ValidationError('Summary must be 300 characters or less')
-        return value
-
-    def validate_description(self, value):
-        value = value.strip()
-        if len(value) < 10:
-            raise serializers.ValidationError('Full Description must be at least 10 characters')
         return value
 
     def validate_duration_hours(self, value):
@@ -305,9 +286,7 @@ class CoursePublicSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
-            'slug',
             'summary',
-            'description',
             'category',
             'focusArea',
             'level',
@@ -346,18 +325,13 @@ class CourseDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'title',
-            'slug',
             'summary',
-            'description',
             'category',
             'level',
             'duration_hours',
             'price',
             'thumbnail',
             'status',
-            'public_marketplace',
-            'search_indexing',
-            'auto_enroll_existing_students',
             'published_at',
             'created_at',
             'updated_at',
@@ -426,3 +400,274 @@ class EnrollmentSerializer(serializers.ModelSerializer):
             'enrolled_at',
             'completed_at',
         ]
+
+
+# --- LESSON AUTHORING SERIALIZERS ---
+from .models import (
+    LessonAuthoringProfile,
+    LessonExerciseFile,
+    LessonQuiz,
+    LessonQuizQuestion,
+    LessonQuizAttempt,
+)
+
+
+class LessonExerciseFileSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LessonExerciseFile
+        fields = ['id', 'lesson', 'display_name', 'file', 'file_url', 'order', 'uploaded_at']
+        read_only_fields = ['id', 'lesson', 'file_url', 'uploaded_at']
+
+    def validate_display_name(self, value):
+        return value.strip()
+
+    def get_file_url(self, obj):
+        return obj.file.url if obj.file else None
+
+
+class LessonQuizQuestionWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LessonQuizQuestion
+        fields = [
+            'id',
+            'question_text',
+            'option_a',
+            'option_b',
+            'option_c',
+            'option_d',
+            'correct_option',
+            'order',
+            'explanation',
+        ]
+        read_only_fields = ['id']
+
+    def validate_question_text(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Question text is required')
+        return value
+
+    def validate(self, attrs):
+        option_fields = ['option_a', 'option_b', 'option_c', 'option_d']
+        for field in option_fields:
+            value = attrs.get(field)
+            if value is None:
+                continue
+            if not str(value).strip():
+                raise serializers.ValidationError({field: 'Option cannot be empty'})
+            attrs[field] = str(value).strip()
+        return attrs
+
+
+class LessonQuizSerializer(serializers.ModelSerializer):
+    questions = LessonQuizQuestionWriteSerializer(many=True, required=False)
+
+    class Meta:
+        model = LessonQuiz
+        fields = [
+            'id',
+            'title',
+            'instructions',
+            'passing_score',
+            'order',
+            'status',
+            'published_at',
+            'questions',
+        ]
+        read_only_fields = ['id', 'published_at']
+
+    def validate_title(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Quiz title is required')
+        if len(value) > 140:
+            raise serializers.ValidationError('Quiz title must be 140 characters or less')
+        return value
+
+    def _upsert_questions(self, quiz, questions_data):
+        existing_by_id = {question.id: question for question in quiz.questions.all()}
+        kept_ids = set()
+
+        for index, raw_question in enumerate(questions_data, start=1):
+            question_data = dict(raw_question)
+            question_id = question_data.pop('id', None)
+            if not question_data.get('order'):
+                question_data['order'] = index
+
+            if question_id:
+                question = existing_by_id.get(question_id)
+                if question is None:
+                    raise serializers.ValidationError({'questions': f'Invalid question id: {question_id}'})
+                for key, value in question_data.items():
+                    setattr(question, key, value)
+                question.save()
+                kept_ids.add(question.id)
+            else:
+                question = LessonQuizQuestion.objects.create(quiz=quiz, **question_data)
+                kept_ids.add(question.id)
+
+        quiz.questions.exclude(id__in=kept_ids).delete()
+
+    def create(self, validated_data):
+        questions_data = validated_data.pop('questions', [])
+        if validated_data.get('status') == 'PUBLISHED':
+            validated_data['published_at'] = timezone.now()
+
+        quiz = LessonQuiz.objects.create(**validated_data)
+        if questions_data:
+            self._upsert_questions(quiz, questions_data)
+        return quiz
+
+    def update(self, instance, validated_data):
+        questions_data = validated_data.pop('questions', None)
+
+        next_status = validated_data.get('status', instance.status)
+        if instance.status != 'PUBLISHED' and next_status == 'PUBLISHED':
+            validated_data['published_at'] = timezone.now()
+        elif next_status != 'PUBLISHED':
+            validated_data['published_at'] = None
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+        instance.save()
+
+        if questions_data is not None:
+            self._upsert_questions(instance, questions_data)
+
+        return instance
+
+
+class LessonAuthoringProfileSerializer(serializers.ModelSerializer):
+    lesson_id = serializers.IntegerField(source='lesson.id', read_only=True)
+    title = serializers.CharField(source='lesson.title', required=False)
+    content = serializers.CharField(source='lesson.content', required=False, allow_blank=True)
+    duration_minutes = serializers.IntegerField(source='lesson.duration_minutes', required=False, min_value=1)
+    credits_awarded = serializers.IntegerField(source='lesson.credits_awarded', required=False, min_value=0)
+    required_credits_to_unlock = serializers.IntegerField(
+        source='lesson.required_credits_to_unlock',
+        required=False,
+        min_value=0,
+    )
+    publish_at = serializers.DateTimeField(required=False, allow_null=True)
+    drip_delay_days = serializers.IntegerField(required=False, min_value=0)
+    require_quiz_pass_for_completion = serializers.BooleanField(required=False)
+    lesson_link_url = serializers.URLField(required=False, allow_blank=True)
+    lesson_image = serializers.ImageField(required=False, allow_null=True)
+    lesson_video_file = serializers.FileField(required=False, allow_null=True)
+    lesson_video_embed_url = serializers.URLField(required=False, allow_blank=True)
+    lesson_image_url = serializers.SerializerMethodField()
+    lesson_video_file_url = serializers.SerializerMethodField()
+    exercise_files = LessonExerciseFileSerializer(source='lesson.exercise_files', many=True, read_only=True)
+    quizzes = LessonQuizSerializer(source='lesson.quizzes', many=True, read_only=True)
+
+    class Meta:
+        model = LessonAuthoringProfile
+        fields = [
+            'lesson_id',
+            'title',
+            'description',
+            'content',
+            'duration_minutes',
+            'credits_awarded',
+            'required_credits_to_unlock',
+            'status',
+            'publish_at',
+            'drip_delay_days',
+            'require_quiz_pass_for_completion',
+            'lesson_link_url',
+            'lesson_image',
+            'lesson_image_url',
+            'lesson_video_file',
+            'lesson_video_file_url',
+            'lesson_video_embed_url',
+            'exercise_files',
+            'quizzes',
+            'updated_at',
+        ]
+        read_only_fields = ['lesson_id', 'exercise_files', 'quizzes', 'updated_at']
+
+    def validate_description(self, value):
+        return value.strip()
+
+    def get_lesson_image_url(self, obj):
+        if obj.lesson_image:
+            return obj.lesson_image.url
+        return None
+
+    def get_lesson_video_file_url(self, obj):
+        if obj.lesson_video_file:
+            return obj.lesson_video_file.url
+        return None
+
+    def update(self, instance, validated_data):
+        lesson_data = validated_data.pop('lesson', {})
+        if lesson_data:
+            lesson = instance.lesson
+            for field, value in lesson_data.items():
+                setattr(lesson, field, value)
+            lesson.save()
+
+        status_in_payload = 'status' in validated_data
+        next_status = validated_data.get('status', instance.status)
+        publish_at = validated_data.get('publish_at', instance.publish_at)
+        if next_status == 'PUBLISHED' and not publish_at:
+            validated_data['publish_at'] = timezone.now()
+        elif status_in_payload and next_status != 'PUBLISHED':
+            validated_data['publish_at'] = None
+
+        return super().update(instance, validated_data)
+
+
+class LearnerLessonQuizQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LessonQuizQuestion
+        fields = ['id', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d', 'order']
+
+
+class LearnerLessonQuizSerializer(serializers.ModelSerializer):
+    questions = LearnerLessonQuizQuestionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = LessonQuiz
+        fields = ['id', 'title', 'instructions', 'passing_score', 'order', 'questions']
+
+
+class LessonQuizSubmissionSerializer(serializers.Serializer):
+    answers = serializers.ListField(child=serializers.DictField(), allow_empty=False)
+
+    def validate_answers(self, value):
+        normalized_answers = []
+        option_map = {0: 'A', 1: 'B', 2: 'C', 3: 'D'}
+
+        for item in value:
+            question_id = item.get('question_id')
+            selected_option = item.get('selected_option')
+
+            if not isinstance(question_id, int):
+                raise serializers.ValidationError('Each answer requires an integer question_id')
+
+            if isinstance(selected_option, int):
+                selected_option = option_map.get(selected_option)
+            elif isinstance(selected_option, str):
+                selected_option = selected_option.strip().upper()
+
+            if selected_option not in ['A', 'B', 'C', 'D']:
+                raise serializers.ValidationError('selected_option must be A, B, C, D or 0-3')
+
+            normalized_answers.append(
+                {
+                    'question_id': question_id,
+                    'selected_option': selected_option,
+                }
+            )
+
+        return normalized_answers
+
+
+class LessonQuizAttemptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LessonQuizAttempt
+        fields = ['id', 'quiz', 'score_percent', 'passed', 'answers', 'submitted_at']
+        read_only_fields = ['id', 'quiz', 'score_percent', 'passed', 'answers', 'submitted_at']
