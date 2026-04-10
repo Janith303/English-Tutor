@@ -409,6 +409,355 @@ class EnrollmentSerializer(serializers.ModelSerializer):
         ]
 
 
+# ============================================
+# QUIZ SERIALIZERS
+# ============================================
+from .models import Quiz, QuizQuestion, QuizOption, QuizAttempt, QuizAnswer
+
+
+class QuizOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizOption
+        fields = ['id', 'option_text', 'is_correct']
+
+
+class QuizOptionCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizOption
+        fields = ['id', 'option_text', 'is_correct']
+
+    def validate(self, attrs):
+        question = self.context.get('question')
+        if question and not attrs.get('is_correct', False):
+            has_correct = QuizOption.objects.filter(
+                question=question,
+                is_correct=True
+            ).exists()
+            if not has_correct and not attrs.get('is_correct'):
+                raise serializers.ValidationError({
+                    'is_correct': 'Each question must have at least one correct answer.'
+                })
+        return attrs
+
+
+class QuizQuestionSerializer(serializers.ModelSerializer):
+    options = QuizOptionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = QuizQuestion
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options']
+
+
+class QuizQuestionCreateSerializer(serializers.ModelSerializer):
+    options = QuizOptionCreateSerializer(many=True)
+
+    class Meta:
+        model = QuizQuestion
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options']
+        extra_kwargs = {
+            'marks': {'default': 10},
+            'question_type': {'default': 'MULTIPLE_CHOICE'},
+        }
+
+    def validate(self, attrs):
+        options = attrs.get('options', [])
+        if len(options) < 2:
+            raise serializers.ValidationError({
+                'options': 'Each question must have at least 2 options.'
+            })
+
+        has_correct = any(opt.get('is_correct', False) for opt in options)
+        if not has_correct:
+            raise serializers.ValidationError({
+                'options': 'Each question must have exactly one correct answer.'
+            })
+
+        correct_count = sum(1 for opt in options if opt.get('is_correct', False))
+        if correct_count > 1:
+            raise serializers.ValidationError({
+                'options': 'Each question must have exactly one correct answer.'
+            })
+
+        return attrs
+
+    def create(self, validated_data):
+        options_data = validated_data.pop('options')
+        question = QuizQuestion.objects.create(**validated_data)
+        for option_data in options_data:
+            QuizOption.objects.create(question=question, **option_data)
+        return question
+
+
+class QuizListSerializer(serializers.ModelSerializer):
+    total_questions = serializers.SerializerMethodField()
+    total_marks = serializers.SerializerMethodField()
+    creator_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Quiz
+        fields = [
+            'id',
+            'title',
+            'description',
+            'category',
+            'difficulty',
+            'time_limit',
+            'passing_score',
+            'is_daily_quiz',
+            'is_active',
+            'total_questions',
+            'total_marks',
+            'creator_name',
+            'created_at',
+            'updated_at',
+        ]
+
+    def get_total_questions(self, obj):
+        return obj.questions.count()
+
+    def get_total_marks(self, obj):
+        return obj.get_total_marks()
+
+    def get_creator_name(self, obj):
+        if obj.created_by:
+            return obj.created_by.full_name or obj.created_by.email
+        return None
+
+
+class QuizDetailSerializer(serializers.ModelSerializer):
+    questions = QuizQuestionSerializer(many=True, read_only=True)
+    creator_name = serializers.SerializerMethodField()
+    total_questions = serializers.SerializerMethodField()
+    total_marks = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Quiz
+        fields = [
+            'id',
+            'title',
+            'description',
+            'category',
+            'difficulty',
+            'time_limit',
+            'passing_score',
+            'randomize_questions',
+            'immediate_results',
+            'is_daily_quiz',
+            'is_active',
+            'total_questions',
+            'total_marks',
+            'creator_name',
+            'created_at',
+            'updated_at',
+            'questions',
+        ]
+
+    def get_creator_name(self, obj):
+        if obj.created_by:
+            return obj.created_by.full_name or obj.created_by.email
+        return None
+
+    def get_total_questions(self, obj):
+        return obj.questions.count()
+
+    def get_total_marks(self, obj):
+        return obj.get_total_marks()
+
+
+class QuizCreateSerializer(serializers.ModelSerializer):
+    questions = QuizQuestionCreateSerializer(many=True)
+
+    class Meta:
+        model = Quiz
+        fields = [
+            'id',
+            'title',
+            'description',
+            'category',
+            'difficulty',
+            'time_limit',
+            'passing_score',
+            'randomize_questions',
+            'immediate_results',
+            'is_daily_quiz',
+            'is_active',
+            'questions',
+        ]
+        extra_kwargs = {
+            'time_limit': {'default': 5},
+            'passing_score': {'default': 70},
+            'randomize_questions': {'default': False},
+            'immediate_results': {'default': True},
+            'is_daily_quiz': {'default': False},
+            'is_active': {'default': True},
+        }
+
+    def validate_title(self, value):
+        value = value.strip()
+        if len(value) < 5:
+            raise serializers.ValidationError('Quiz title must be at least 5 characters.')
+        if len(value) > 100:
+            raise serializers.ValidationError('Quiz title must be 100 characters or less.')
+        return value
+
+    def validate_description(self, value):
+        value = value.strip()
+        if len(value) < 10:
+            raise serializers.ValidationError('Quiz description must be at least 10 characters.')
+        if len(value) > 300:
+            raise serializers.ValidationError('Quiz description must be 300 characters or less.')
+        return value
+
+    def validate_questions(self, value):
+        if not value or len(value) == 0:
+            raise serializers.ValidationError('Quiz must have at least one question.')
+        return value
+
+    def create(self, validated_data):
+        questions_data = validated_data.pop('questions')
+        request = self.context.get('request')
+
+        quiz = Quiz.objects.create(
+            created_by=request.user if request and hasattr(request, 'user') else None,
+            **validated_data
+        )
+
+        for i, question_data in enumerate(questions_data):
+            question_data['order'] = question_data.get('order', i + 1)
+            options_data = question_data.pop('options')
+            question = QuizQuestion.objects.create(quiz=quiz, **question_data)
+            for option_data in options_data:
+                QuizOption.objects.create(question=question, **option_data)
+
+        return quiz
+
+    def update(self, instance, validated_data):
+        questions_data = validated_data.pop('questions', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if questions_data is not None:
+            instance.questions.all().delete()
+            for i, question_data in enumerate(questions_data):
+                question_data['order'] = question_data.get('order', i + 1)
+                options_data = question_data.pop('options')
+                question = QuizQuestion.objects.create(quiz=instance, **question_data)
+                for option_data in options_data:
+                    QuizOption.objects.create(question=question, **option_data)
+
+        return instance
+
+
+class QuizAnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizAnswer
+        fields = ['id', 'question', 'selected_option', 'is_correct']
+
+
+class QuizAttemptSerializer(serializers.ModelSerializer):
+    quiz_title = serializers.CharField(source='quiz.title', read_only=True)
+    student_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuizAttempt
+        fields = [
+            'id',
+            'quiz',
+            'quiz_title',
+            'student',
+            'student_name',
+            'student_email',
+            'score',
+            'correct_answers',
+            'total_questions',
+            'time_used',
+            'percentage',
+            'passed',
+            'submitted_at',
+        ]
+
+    def get_student_email(self, obj):
+        if obj.student:
+            return obj.student.email
+        return None
+
+
+class QuizSubmitSerializer(serializers.Serializer):
+    student_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    time_used = serializers.IntegerField(min_value=0, default=0)
+    answers = serializers.ListField(
+        child=serializers.DictField(),
+        required=True,
+        allow_empty=True,
+    )
+
+    def validate_answers(self, value):
+        if not value:
+            return value
+
+        for answer in value:
+            if 'question_id' not in answer:
+                raise serializers.ValidationError('Each answer must have a question_id.')
+            if 'selected_option_id' not in answer:
+                raise serializers.ValidationError('Each answer must have a selected_option_id.')
+
+            try:
+                question_id = int(answer['question_id'])
+                selected_option_id = int(answer['selected_option_id'])
+            except (ValueError, TypeError):
+                raise serializers.ValidationError('question_id and selected_option_id must be integers.')
+
+        return value
+
+
+class QuizResultSerializer(serializers.ModelSerializer):
+    quiz_title = serializers.CharField(source='quiz.title', read_only=True)
+    category = serializers.CharField(source='quiz.category', read_only=True)
+    difficulty = serializers.CharField(source='quiz.difficulty', read_only=True)
+    passing_score = serializers.IntegerField(source='quiz.passing_score', read_only=True)
+
+    class Meta:
+        model = QuizAttempt
+        fields = [
+            'id',
+            'quiz_title',
+            'category',
+            'difficulty',
+            'passing_score',
+            'score',
+            'correct_answers',
+            'total_questions',
+            'time_used',
+            'percentage',
+            'passed',
+            'submitted_at',
+        ]
+
+
+class QuizAnswerDetailSerializer(serializers.ModelSerializer):
+    question_text = serializers.CharField(source='question.question_text', read_only=True)
+    correct_option_text = serializers.SerializerMethodField()
+    selected_option_text = serializers.CharField(source='selected_option.option_text', read_only=True)
+
+    class Meta:
+        model = QuizAnswer
+        fields = [
+            'id',
+            'question',
+            'question_text',
+            'selected_option',
+            'selected_option_text',
+            'is_correct',
+            'correct_option_text',
+        ]
+
+    def get_correct_option_text(self, obj):
+        correct_option = obj.question.options.filter(is_correct=True).first()
+        if correct_option:
+            return correct_option.option_text
+        return None
 # --- LESSON AUTHORING SERIALIZERS ---
 from .models import (
     LessonAuthoringProfile,

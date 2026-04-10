@@ -258,6 +258,45 @@ class TutorOTP(models.Model):
         return f"Tutor OTP for {self.email}"
 
 
+# ============================================
+# QUIZ MODELS
+# ============================================
+
+class Quiz(models.Model):
+    CATEGORY_CHOICES = [
+        ('VOCABULARY', 'Vocabulary'),
+        ('GRAMMAR', 'Grammar'),
+        ('READING', 'Reading'),
+        ('IDIOMS', 'English Idioms'),
+        ('WRITING', 'Writing Skills'),
+        ('SENTENCE', 'Sentence Structure'),
+        ('DAILY', 'Daily Quiz'),
+        ('CUSTOM', 'Custom Quiz'),
+    ]
+
+    DIFFICULTY_CHOICES = [
+        ('EASY', 'Easy'),
+        ('MEDIUM', 'Medium'),
+        ('HARD', 'Hard'),
+    ]
+
+    title = models.CharField(max_length=100)
+    description = models.TextField(max_length=300)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='CUSTOM')
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='MEDIUM')
+    time_limit = models.IntegerField(default=5, help_text="Time limit in minutes")
+    passing_score = models.IntegerField(default=70)
+    randomize_questions = models.BooleanField(default=False)
+    immediate_results = models.BooleanField(default=True)
+    is_daily_quiz = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_quizzes'
+    )
 class LessonAuthoringProfile(models.Model):
     STATUS_CHOICES = [
         ('DRAFT', 'Draft'),
@@ -285,6 +324,66 @@ class LessonAuthoringProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.category})"
+
+    def get_total_marks(self):
+        return sum(q.marks for q in self.questions.all())
+
+
+class QuizQuestion(models.Model):
+    QUESTION_TYPE_CHOICES = [
+        ('MULTIPLE_CHOICE', 'Multiple Choice'),
+        ('TRUE_FALSE', 'True/False'),
+    ]
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    marks = models.IntegerField(default=10)
+    question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES, default='MULTIPLE_CHOICE')
+    order = models.IntegerField(default=1)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"Q{self.order}: {self.question_text[:50]}..."
+
+    def get_correct_option(self):
+        correct_option = self.options.filter(is_correct=True).first()
+        return correct_option
+
+
+class QuizOption(models.Model):
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name='options')
+    option_text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.option_text} ({'Correct' if self.is_correct else 'Wrong'})"
+
+
+class QuizAttempt(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quiz_attempts'
+    )
+    student_name = models.CharField(max_length=100, blank=True, null=True)
+    score = models.IntegerField(default=0)
+    correct_answers = models.IntegerField(default=0)
+    total_questions = models.IntegerField(default=0)
+    time_used = models.IntegerField(default=0, help_text="Time used in seconds")
+    percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    passed = models.BooleanField(default=False)
         ordering = ['lesson_id']
 
     def __str__(self):
@@ -381,6 +480,27 @@ class LessonQuizAttempt(models.Model):
 
     class Meta:
         ordering = ['-submitted_at']
+
+    def __str__(self):
+        return f"{self.student_name or 'Anonymous'} - {self.quiz.title} ({self.percentage}%)"
+
+    def calculate_percentage(self):
+        if self.total_questions > 0:
+            return (self.correct_answers / self.total_questions) * 100
+        return 0
+
+
+class QuizAnswer(models.Model):
+    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers')
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
+    selected_option = models.ForeignKey(QuizOption, on_delete=models.CASCADE)
+    is_correct = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('attempt', 'question')
+
+    def __str__(self):
+        return f"Answer for Q{self.question.order} in Attempt #{self.attempt.id}"
         unique_together = ('enrollment', 'quiz')
         indexes = [
             models.Index(fields=['enrollment', 'quiz']),

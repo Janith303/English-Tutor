@@ -936,6 +936,290 @@ class StudentCourseProgressView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+# ============================================
+# QUIZ VIEWS
+# ============================================
+from .models import Quiz, QuizQuestion, QuizOption, QuizAttempt, QuizAnswer
+from .serializers import (
+    QuizListSerializer,
+    QuizDetailSerializer,
+    QuizCreateSerializer,
+    QuizSubmitSerializer,
+    QuizResultSerializer,
+    QuizAttemptSerializer,
+    QuizAnswerDetailSerializer,
+    QuizOptionSerializer,
+)
+
+
+class QuizListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        quizzes = Quiz.objects.filter(is_active=True).select_related('created_by')
+        serializer = QuizListSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class QuizDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, quiz_id):
+        try:
+            quiz = Quiz.objects.select_related('created_by').prefetch_related('questions__options').get(id=quiz_id, is_active=True)
+        except Quiz.DoesNotExist:
+            return Response({'error': 'Quiz not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = QuizDetailSerializer(quiz)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class QuizCategoryListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, category):
+        quizzes = Quiz.objects.filter(category=category.upper(), is_active=True).select_related('created_by')
+        serializer = QuizListSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class QuizDailyView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        try:
+            daily_quiz = Quiz.objects.filter(is_daily_quiz=True, is_active=True).latest('created_at')
+        except Quiz.DoesNotExist:
+            return Response({'error': 'Daily quiz not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = QuizDetailSerializer(daily_quiz)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class QuizCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = QuizCreateSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            quiz = serializer.save()
+            return Response(
+                QuizDetailSerializer(quiz).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class QuizUpdateDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, quiz_id, user):
+        try:
+            return Quiz.objects.get(id=quiz_id, created_by=user)
+        except Quiz.DoesNotExist:
+            return None
+
+    def get(self, request, quiz_id):
+        quiz = self.get_object(quiz_id, request.user)
+        if quiz is None:
+            return Response({'error': 'Quiz not found or unauthorized.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = QuizDetailSerializer(quiz)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, quiz_id):
+        quiz = self.get_object(quiz_id, request.user)
+        if quiz is None:
+            return Response({'error': 'Quiz not found or unauthorized.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = QuizCreateSerializer(quiz, data=request.data, context={'request': request})
+        if serializer.is_valid():
+            quiz = serializer.save()
+            return Response(QuizDetailSerializer(quiz).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, quiz_id):
+        quiz = self.get_object(quiz_id, request.user)
+        if quiz is None:
+            return Response({'error': 'Quiz not found or unauthorized.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = QuizCreateSerializer(quiz, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            quiz = serializer.save()
+            return Response(QuizDetailSerializer(quiz).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, quiz_id):
+        quiz = self.get_object(quiz_id, request.user)
+        if quiz is None:
+            return Response({'error': 'Quiz not found or unauthorized.'}, status=status.HTTP_404_NOT_FOUND)
+        quiz.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class QuizSubmitView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, quiz_id):
+        try:
+            quiz = Quiz.objects.prefetch_related('questions__options').get(id=quiz_id, is_active=True)
+        except Quiz.DoesNotExist:
+            return Response({'error': 'Quiz not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = QuizSubmitSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        validated_data = serializer.validated_data
+        student_name = validated_data.get('student_name', '')
+        time_used = validated_data.get('time_used', 0)
+        answers_data = validated_data.get('answers', [])
+
+        answers_dict = {}
+        for ans in answers_data:
+            answers_dict[ans['question_id']] = ans['selected_option_id']
+
+        correct_answers = 0
+        total_questions = quiz.questions.count()
+        score = 0
+
+        attempt = QuizAttempt.objects.create(
+            quiz=quiz,
+            student=request.user if request.user.is_authenticated else None,
+            student_name=student_name or (request.user.full_name if request.user.is_authenticated else ''),
+            total_questions=total_questions,
+            time_used=time_used,
+        )
+
+        with transaction.atomic():
+            for question in quiz.questions.all():
+                selected_option_id = answers_dict.get(question.id)
+
+                if selected_option_id is not None:
+                    try:
+                        selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
+                        is_correct = selected_option.is_correct
+
+                        if is_correct:
+                            correct_answers += 1
+                            score += question.marks
+
+                        QuizAnswer.objects.create(
+                            attempt=attempt,
+                            question=question,
+                            selected_option=selected_option,
+                            is_correct=is_correct,
+                        )
+                    except QuizOption.DoesNotExist:
+                        pass
+
+            percentage = (correct_answers / total_questions * 100) if total_questions > 0 else 0
+            passed = percentage >= quiz.passing_score
+
+            attempt.correct_answers = correct_answers
+            attempt.score = score
+            attempt.percentage = round(percentage, 2)
+            attempt.passed = passed
+            attempt.save()
+
+        result_data = {
+            'quiz_id': quiz.id,
+            'quiz_title': quiz.title,
+            'correct_answers': correct_answers,
+            'total_questions': total_questions,
+            'score': score,
+            'total_marks': quiz.get_total_marks(),
+            'percentage': float(attempt.percentage),
+            'passing_score': quiz.passing_score,
+            'passed': passed,
+            'time_used': time_used,
+        }
+
+        if quiz.immediate_results:
+            result_data['answers'] = QuizAnswerDetailSerializer(attempt.answers.all(), many=True).data
+
+        return Response(result_data, status=status.HTTP_200_OK)
+
+
+class QuizAttemptListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        attempts = QuizAttempt.objects.filter(student=request.user).select_related('quiz').order_by('-submitted_at')
+        serializer = QuizAttemptSerializer(attempts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class QuizAttemptDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, attempt_id):
+        try:
+            attempt = QuizAttempt.objects.select_related('quiz').prefetch_related('answers__question', 'answers__selected_option').get(
+                id=attempt_id,
+                student=request.user
+            )
+        except QuizAttempt.DoesNotExist:
+            return Response({'error': 'Attempt not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        result_serializer = QuizResultSerializer(attempt)
+        answers_serializer = QuizAnswerDetailSerializer(attempt.answers.all(), many=True)
+
+        return Response({
+            'result': result_serializer.data,
+            'answers': answers_serializer.data,
+        }, status=status.HTTP_200_OK)
+
+
+class TutorQuizListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        quizzes = Quiz.objects.filter(created_by=request.user).select_related('created_by')
+        serializer = QuizListSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class QuizForPlayView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, quiz_id):
+        try:
+            quiz = Quiz.objects.select_related('created_by').prefetch_related('questions__options').get(id=quiz_id, is_active=True)
+        except Quiz.DoesNotExist:
+            return Response({'error': 'Quiz not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        questions_data = []
+        for question in quiz.questions.all():
+            questions_data.append({
+                'id': question.id,
+                'question_text': question.question_text,
+                'marks': question.marks,
+                'question_type': question.question_type,
+                'order': question.order,
+                'options': [
+                    {
+                        'id': option.id,
+                        'option_text': option.option_text,
+                    }
+                    for option in question.options.all()
+                ]
+            })
+
+        if quiz.randomize_questions:
+            import random
+            random.shuffle(questions_data)
+
+        return Response({
+            'id': quiz.id,
+            'title': quiz.title,
+            'description': quiz.description,
+            'category': quiz.category,
+            'difficulty': quiz.difficulty,
+            'time_limit': quiz.time_limit,
+            'passing_score': quiz.passing_score,
+            'immediate_results': quiz.immediate_results,
+            'questions': questions_data,
+        }, status=status.HTTP_200_OK)
         return Response({"message": "Welcome to the Tutor Dashboard!"})
 
 

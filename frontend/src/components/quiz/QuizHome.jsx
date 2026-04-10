@@ -22,6 +22,12 @@ export default function QuizHome() {
       navigate("/grammar-quiz");
     } else if (categoryId === 3) {
       navigate("/reading-quiz");
+    } else if (categoryId === 4) {
+      navigate("/idioms-quiz");
+    } else if (categoryId === 5) {
+      navigate("/writing-quiz");
+    } else if (categoryId === 6) {
+      navigate("/sentence-quiz");
     }
   };
 

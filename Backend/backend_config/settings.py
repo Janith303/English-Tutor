@@ -71,11 +71,36 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend_config.wsgi.application'
 
 # 2. Database Configuration (PostgreSQL/Neon)
+def get_database_config():
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if not database_url:
+        raise ImproperlyConfigured(
+            "DATABASE_URL environment variable is not set. "
+            "Please ensure your .env file contains a valid DATABASE_URL."
+        )
+    
+    if database_url.startswith("'"):
+        database_url = database_url.strip("'")
+    if database_url.startswith('"'):
+        database_url = database_url.strip('"')
+    
+    config = dj_database_url.parse(database_url, conn_max_age=600)
+    
+    if 'postgres' in database_url:
+        config['OPTIONS'] = {
+            'sslmode': 'require',
+        }
+    
+    return config
+
+
+class ImproperlyConfigured(Exception):
+    pass
+
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-    )
+    'default': get_database_config()
 }
 
 # Password validation
