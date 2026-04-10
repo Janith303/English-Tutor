@@ -116,6 +116,7 @@ function AppRoutes() {
             element={<TutorLessonPreviewPage />}
           />
           <Route path="/tutor/create-quiz" element={<TutorCreateQuizPage />} />
+          <Route path="/tutor/edit-quiz/:id" element={<TutorCreateQuizPage />} />
 
           <Route path="/daily-quiz" element={<DailyQuizStart />} />
           <Route path="/daily-quiz/play" element={<DailyQuizGame />} />
