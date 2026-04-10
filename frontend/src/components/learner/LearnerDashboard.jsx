@@ -5,39 +5,51 @@ import RecommendedCoursesGrid from "./RecommendedCoursesGrid";
 import { mockStudent, mockCourses } from "../../data/mockCourses";
 import {
   createEnrollment,
+  filterCoursesForStudentPreferences,
   getPublishedCourses,
-  levelToLabel,
+  getStudentProfile,
   toLearnerCourseCard,
+  toLearnerStudentProfile,
 } from "../../api/courseApi";
 
 export default function LearnerDashboard({ onEnroll }) {
-  const student = mockStudent;
+  const [student, setStudent] = useState(mockStudent);
   const [recommendedCourses, setRecommendedCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadCourses = async () => {
+    const loadDashboard = async () => {
       setLoading(true);
       try {
-        const data = await getPublishedCourses();
-        const studentLevel = (student?.level || "").toLowerCase();
-        const mapped = (data || []).map(toLearnerCourseCard);
-        const filtered = mapped.filter(
-          (course) => course.level.toLowerCase() === studentLevel,
+        const [profileData, coursesData] = await Promise.all([
+          getStudentProfile(),
+          getPublishedCourses(),
+        ]);
+
+        const resolvedStudent = toLearnerStudentProfile(
+          profileData,
+          mockStudent,
         );
-        setRecommendedCourses(filtered.length ? filtered : mapped);
-      } catch (error) {
-        console.error("Failed to load published courses:", error);
+
+        setStudent(resolvedStudent);
+
+        const mapped = (coursesData || []).map(toLearnerCourseCard);
         setRecommendedCourses(
-          mockCourses.filter((c) => c.level === levelToLabel(student.level)),
+          filterCoursesForStudentPreferences(mapped, resolvedStudent),
+        );
+      } catch (error) {
+        console.error("Failed to load learner dashboard data:", error);
+        setStudent(mockStudent);
+        setRecommendedCourses(
+          filterCoursesForStudentPreferences(mockCourses, mockStudent),
         );
       } finally {
         setLoading(false);
       }
     };
 
-    loadCourses();
-  }, [student.level]);
+    loadDashboard();
+  }, []);
 
   const handleEnroll = async (course) => {
     try {
