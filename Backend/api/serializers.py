@@ -3,6 +3,7 @@ from rest_framework import serializers
 from django.contrib.humanize.templatetags.humanize import naturaltime
 from .models import User, Question, Interest, StudentTutorProfile, WallQuestion, WallAnswer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.db.models import Sum
 
 # --- 1. AUTHENTICATION SERIALIZER ---
 # This fixes your navigation issue by adding 'role' to the login response

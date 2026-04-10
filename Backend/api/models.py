@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 import datetime
+from django.db.models import Sum
 
 class User(AbstractUser):
     # --- ROLE CHOICES ---
@@ -297,6 +298,18 @@ class Quiz(models.Model):
         blank=True,
         related_name='created_quizzes'
     )
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+    
+    def get_total_marks(self):
+        # This looks at all related QuizQuestions and adds up their 'marks' field
+        # 'questions' should match the related_name on your QuizQuestion model
+        total = self.questions.aggregate(Sum('marks'))['marks__sum']
+        return total if total else 0
+
+    def __str__(self):
+        return self.title
+    
 class LessonAuthoringProfile(models.Model):
     STATUS_CHOICES = [
         ('DRAFT', 'Draft'),
@@ -384,10 +397,15 @@ class QuizAttempt(models.Model):
     time_used = models.IntegerField(default=0, help_text="Time used in seconds")
     percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     passed = models.BooleanField(default=False)
-        ordering = ['lesson_id']
+    submitted_at = models.DateTimeField(auto_now_add=True, null=True)
 
+    # 1. FIXED: Meta must be indented once, and ordering inside it indented twice
+    class Meta:
+        ordering = ['-pk'] # Or ['quiz_id'] if you want to group by quiz
+
+    # 2. FIXED: Changed self.lesson.title to self.quiz.title
     def __str__(self):
-        return f"Lesson Profile: {self.lesson.title} ({self.status})"
+        return f"Attempt by {self.student_name or 'Unknown'}: {self.quiz.title} ({self.score})"
 
 
 class LessonExerciseFile(models.Model):
