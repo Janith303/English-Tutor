@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 
@@ -16,9 +17,20 @@ from .views import (
     ReviewApplicationView,         # New: Admin Approval
     TutorDashboardView,             # New: Example Protected Route
     TutorRegisterView,             # New: Final Tutor Registration after OTP
+    WallQuestionViewSet,
+    WallAnswerViewSet
 )
 
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'wall-questions', WallQuestionViewSet)
+router.register(r'wall-answers', WallAnswerViewSet)
+
 urlpatterns = [
+    # --- Router URLs (The missing piece of Step 4) ---
+    path('', include(router.urls)),
+    
     # --- Identity & Auth ---
     path('register/', RegisterView.as_view(), name='register'),
     path('verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),

@@ -6,7 +6,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncDate
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -14,13 +14,13 @@ from django.core.mail import send_mail
 from django.db import transaction # Added for atomic transactions
 
 # Make sure to import the new models and serializers
-from .models import User, OTP, Interest, Question, TestResult, StudentTutorProfile, TutorOTP
+from .models import User, OTP, Interest, Question, TestResult, StudentTutorProfile, TutorOTP, WallQuestion, WallAnswer
 from .serializers import (
     RegisterSerializer, 
     QuestionSerializer, 
     InterestSerializer,
     IdentityVerificationSerializer, 
-    StudentTutorApplicationSerializer
+    StudentTutorApplicationSerializer, WallQuestionSerializer, WallAnswerSerializer
 )
 from .permissions import IsApprovedTutor
 
@@ -1505,3 +1505,33 @@ class StudentLessonCompleteWithRulesView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+# --- 7. Q&A WALL LOGIC ---
+
+class WallQuestionViewSet(viewsets.ModelViewSet):
+    """
+    Handles the community Q&A wall. 
+    Students can ask, and everyone can view.
+    """
+    queryset = WallQuestion.objects.all().order_by('-created_at')
+    serializer_class = WallQuestionSerializer
+    permission_classes = [AllowAny] # Ensures only logged-in users participate
+
+    def perform_create(self, serializer):
+        # Automatically sets the author to the student currently logged in
+        serializer.save(author=self.request.user)
+
+
+class WallAnswerViewSet(viewsets.ModelViewSet):
+    """
+    Handles responses to questions. 
+    Checks user role to flag 'Expert' answers.
+    """
+    queryset = WallAnswer.objects.all()
+    serializer_class = WallAnswerSerializer
+    permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        # Logic: If user is a TUTOR or ADMIN, mark the answer as an expert response
+        is_expert = user.role in ['TUTOR', 'ADMIN', 'STUDENT_TUTOR']
+        serializer.save(author=user, is_expert_answer=is_expert)
