@@ -35,6 +35,16 @@ import GrammarQuizResult from "./components/quiz/GrammarQuizResult";
 import ReadingQuizStart from "./components/quiz/ReadingQuizStart";
 import ReadingQuizGame from "./components/quiz/ReadingQuizGame";
 import ReadingQuizResult from "./components/quiz/ReadingQuizResult";
+import IdiomsQuizStart from "./components/quiz/IdiomsQuizStart";
+import IdiomsQuizGame from "./components/quiz/IdiomsQuizGame";
+import IdiomsQuizResult from "./components/quiz/IdiomsQuizResult";
+import WritingQuizStart from "./components/quiz/WritingQuizStart";
+import WritingQuizGame from "./components/quiz/WritingQuizGame";
+import WritingQuizResult from "./components/quiz/WritingQuizResult";
+import SentenceQuizStart from "./components/quiz/SentenceQuizStart";
+import SentenceQuizGame from "./components/quiz/SentenceQuizGame";
+import SentenceQuizResult from "./components/quiz/SentenceQuizResult";
+import QuizPlay from "./components/quiz/QuizPlay";
 import TutorQandA from "./components/qa/TutorQandA";
 import TutorDashboardPage from "./components/tutor/TutorDashboardPage";
 import EditCoursePage from "./components/course/EditCoursePage";
@@ -79,6 +89,7 @@ function AppRoutes() {
 
           {/* Features */}
           <Route path="/quiz" element={<QuizHome />} />
+          <Route path="/quiz/:id/play" element={<QuizPlay />} />
           <Route path="/qa" element={<QandAPage />} />
           <Route path="/tutor-qa" element={<TutorQandA />} />
 
@@ -125,10 +136,39 @@ function AppRoutes() {
           <Route path="/waiting-approval" element={<Waitingapproval />} />
           <Route path="/admin/dashboard" element={<Admin />} />
 
-           <Route path="/admin/requests" element={<Admin />} />
+          <Route path="/daily-quiz" element={<DailyQuizStart />} />
+          <Route path="/daily-quiz/play" element={<DailyQuizGame />} />
+          <Route path="/daily-quiz/result" element={<DailyQuizResult />} />
+          <Route path="/vocabulary-quiz" element={<VocabularyQuizStart />} />
+          <Route
+            path="/vocabulary-quiz/play"
+            element={<VocabularyQuizGame />}
+          />
+          <Route
+            path="/vocabulary-quiz/result"
+            element={<VocabularyQuizResult />}
+          />
+          <Route path="/grammar-quiz" element={<GrammarQuizStart />} />
+          <Route path="/grammar-quiz/play" element={<GrammarQuizGame />} />
+          <Route path="/grammar-quiz/result" element={<GrammarQuizResult />} />
+          <Route path="/reading-quiz" element={<ReadingQuizStart />} />
+          <Route path="/reading-quiz/play" element={<ReadingQuizGame />} />
+          <Route path="/reading-quiz/result" element={<ReadingQuizResult />} />
+          <Route path="/idioms-quiz" element={<IdiomsQuizStart />} />
+          <Route path="/idioms-quiz/play" element={<IdiomsQuizGame />} />
+          <Route path="/idioms-quiz/result" element={<IdiomsQuizResult />} />
+          <Route path="/writing-quiz" element={<WritingQuizStart />} />
+          <Route path="/writing-quiz/play" element={<WritingQuizGame />} />
+          <Route path="/writing-quiz/result" element={<WritingQuizResult />} />
+          <Route path="/sentence-quiz" element={<SentenceQuizStart />} />
+          <Route path="/sentence-quiz/play" element={<SentenceQuizGame />} />
+          <Route
+            path="/sentence-quiz/result"
+            element={<SentenceQuizResult />}
+          />
+          <Route path="/admin/requests" element={<Admin />} />
           <Route path="/admin/student-tutors" element={<Admin />} />
           <Route path="/admin/users" element={<Admin />} />
- 
         </Routes>
       </div>
     </div>

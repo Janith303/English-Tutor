@@ -88,6 +88,18 @@ urlpatterns += [
     path('students/courses/<int:course_id>/lessons/<int:lesson_id>/complete/', course_views.StudentLessonCompleteView.as_view(), name='student-lesson-complete'),
     path('students/courses/<int:course_id>/progress/', course_views.StudentCourseProgressView.as_view(), name='student-course-progress'),
 
+    # --- Quiz Endpoints ---
+    path('quizzes/', course_views.QuizListView.as_view(), name='quiz-list'),
+    path('quizzes/category/<str:category>/', course_views.QuizCategoryListView.as_view(), name='quiz-category-list'),
+    path('quizzes/daily/', course_views.QuizDailyView.as_view(), name='quiz-daily'),
+    path('quizzes/create/', course_views.QuizCreateView.as_view(), name='quiz-create'),
+    path('quizzes/<int:quiz_id>/', course_views.QuizDetailView.as_view(), name='quiz-detail'),
+    path('quizzes/<int:quiz_id>/play/', course_views.QuizForPlayView.as_view(), name='quiz-play'),
+    path('quizzes/<int:quiz_id>/submit/', course_views.QuizSubmitView.as_view(), name='quiz-submit'),
+    path('quizzes/<int:quiz_id>/edit/', course_views.QuizUpdateDeleteView.as_view(), name='quiz-update'),
+    path('attempts/', course_views.QuizAttemptListView.as_view(), name='quiz-attempts'),
+    path('attempts/<int:attempt_id>/', course_views.QuizAttemptDetailView.as_view(), name='quiz-attempt-detail'),
+    path('tutor/quizzes/', course_views.TutorQuizListView.as_view(), name='tutor-quiz-list'),
     # --- Tutor Lesson Authoring ---
     path('tutor/chapters/<int:chapter_id>/lessons/<int:lesson_id>/authoring/', course_views.TutorLessonAuthoringDetailView.as_view(), name='tutor-lesson-authoring-detail'),
     path('tutor/lessons/<int:lesson_id>/files/', course_views.TutorLessonExerciseFileListCreateView.as_view(), name='tutor-lesson-files'),

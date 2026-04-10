@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 import datetime
+from django.db.models import Sum
 
 class User(AbstractUser):
     # --- ROLE CHOICES ---
@@ -258,6 +259,57 @@ class TutorOTP(models.Model):
         return f"Tutor OTP for {self.email}"
 
 
+# ============================================
+# QUIZ MODELS
+# ============================================
+
+class Quiz(models.Model):
+    CATEGORY_CHOICES = [
+        ('VOCABULARY', 'Vocabulary'),
+        ('GRAMMAR', 'Grammar'),
+        ('READING', 'Reading'),
+        ('IDIOMS', 'English Idioms'),
+        ('WRITING', 'Writing Skills'),
+        ('SENTENCE', 'Sentence Structure'),
+        ('DAILY', 'Daily Quiz'),
+        ('CUSTOM', 'Custom Quiz'),
+    ]
+
+    DIFFICULTY_CHOICES = [
+        ('EASY', 'Easy'),
+        ('MEDIUM', 'Medium'),
+        ('HARD', 'Hard'),
+    ]
+
+    title = models.CharField(max_length=100)
+    description = models.TextField(max_length=300)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='CUSTOM')
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='MEDIUM')
+    time_limit = models.IntegerField(default=5, help_text="Time limit in minutes")
+    passing_score = models.IntegerField(default=70)
+    randomize_questions = models.BooleanField(default=False)
+    immediate_results = models.BooleanField(default=True)
+    is_daily_quiz = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_quizzes'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+    
+    def get_total_marks(self):
+        # This looks at all related QuizQuestions and adds up their 'marks' field
+        # 'questions' should match the related_name on your QuizQuestion model
+        total = self.questions.aggregate(Sum('marks'))['marks__sum']
+        return total if total else 0
+
+    def __str__(self):
+        return self.title
+    
 class LessonAuthoringProfile(models.Model):
     STATUS_CHOICES = [
         ('DRAFT', 'Draft'),
@@ -285,10 +337,75 @@ class LessonAuthoringProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['lesson_id']
+        ordering = ['-created_at']
 
     def __str__(self):
-        return f"Lesson Profile: {self.lesson.title} ({self.status})"
+        return f"{self.title} ({self.category})"
+
+    def get_total_marks(self):
+        return sum(q.marks for q in self.questions.all())
+
+
+class QuizQuestion(models.Model):
+    QUESTION_TYPE_CHOICES = [
+        ('MULTIPLE_CHOICE', 'Multiple Choice'),
+        ('TRUE_FALSE', 'True/False'),
+    ]
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    marks = models.IntegerField(default=10)
+    question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES, default='MULTIPLE_CHOICE')
+    order = models.IntegerField(default=1)
+
+    class Meta:
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"Q{self.order}: {self.question_text[:50]}..."
+
+    def get_correct_option(self):
+        correct_option = self.options.filter(is_correct=True).first()
+        return correct_option
+
+
+class QuizOption(models.Model):
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name='options')
+    option_text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.option_text} ({'Correct' if self.is_correct else 'Wrong'})"
+
+
+class QuizAttempt(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quiz_attempts'
+    )
+    student_name = models.CharField(max_length=100, blank=True, null=True)
+    score = models.IntegerField(default=0)
+    correct_answers = models.IntegerField(default=0)
+    total_questions = models.IntegerField(default=0)
+    time_used = models.IntegerField(default=0, help_text="Time used in seconds")
+    percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    passed = models.BooleanField(default=False)
+    submitted_at = models.DateTimeField(auto_now_add=True, null=True)
+
+    # 1. FIXED: Meta must be indented once, and ordering inside it indented twice
+    class Meta:
+        ordering = ['-pk'] # Or ['quiz_id'] if you want to group by quiz
+
+    # 2. FIXED: Changed self.lesson.title to self.quiz.title
+    def __str__(self):
+        return f"Attempt by {self.student_name or 'Unknown'}: {self.quiz.title} ({self.score})"
 
 
 class LessonExerciseFile(models.Model):
@@ -381,6 +498,27 @@ class LessonQuizAttempt(models.Model):
 
     class Meta:
         ordering = ['-submitted_at']
+
+    def __str__(self):
+        return f"{self.student_name or 'Anonymous'} - {self.quiz.title} ({self.percentage}%)"
+
+    def calculate_percentage(self):
+        if self.total_questions > 0:
+            return (self.correct_answers / self.total_questions) * 100
+        return 0
+
+
+class QuizAnswer(models.Model):
+    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers')
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
+    selected_option = models.ForeignKey(QuizOption, on_delete=models.CASCADE)
+    is_correct = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('attempt', 'question')
+
+    def __str__(self):
+        return f"Answer for Q{self.question.order} in Attempt #{self.attempt.id}"
         unique_together = ('enrollment', 'quiz')
         indexes = [
             models.Index(fields=['enrollment', 'quiz']),
