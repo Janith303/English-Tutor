@@ -42,20 +42,20 @@ export default function Login() {
           return; 
         }
 
-        // 2. Strict Student Check: Must have completed placement test
-        if (role === "STUDENT" && onboarding_status !== "COMPLETED") {
-          // We save the token so they can actually perform the onboarding actions
-          localStorage.setItem("access_token", access);
-          localStorage.setItem("role", role);
+        // // 2. Strict Student Check: Must have completed placement test
+        // if (role === "STUDENT" && onboarding_status !== "COMPLETED") {
+        //   // We save the token so they can actually perform the onboarding actions
+        //   localStorage.setItem("access_token", access);
+        //   localStorage.setItem("role", role);
           
-          // Route them to the correct step based on where they left off
-          if (onboarding_status === "REGISTERED") {
-            navigate("/onboarding/interests");
-          } else {
-            navigate("/onboarding/placement-test");
-          }
-          return;
-        }
+        //   // Route them to the correct step based on where they left off
+        //   if (onboarding_status === "REGISTERED") {
+        //     navigate("/onboarding/interests");
+        //   } else {
+        //     navigate("/onboarding/placement-test");
+        //   }
+        //   return;
+        // }
 
         // 2. Persist session data (Reached by Admins and Fully Registered Users)
         localStorage.setItem("access_token", access);
