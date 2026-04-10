@@ -17,6 +17,11 @@ from .models import (
 	QuizOption,
 	QuizAttempt,
 	QuizAnswer,
+	LessonAuthoringProfile,
+	LessonExerciseFile,
+	LessonQuiz,
+	LessonQuizQuestion,
+	LessonQuizAttempt,
 )
 
 admin.site.register(User)
@@ -80,3 +85,8 @@ class QuizAttemptAdmin(admin.ModelAdmin):
 class QuizAnswerAdmin(admin.ModelAdmin):
     list_display = ['id', 'attempt', 'question', 'selected_option', 'is_correct']
     list_filter = ['is_correct']
+admin.site.register(LessonAuthoringProfile)
+admin.site.register(LessonExerciseFile)
+admin.site.register(LessonQuiz)
+admin.site.register(LessonQuizQuestion)
+admin.site.register(LessonQuizAttempt)

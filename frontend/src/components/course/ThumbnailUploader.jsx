@@ -58,9 +58,7 @@ export default function ThumbnailUploader({
 
   return (
     <div>
-      <p className="text-xs font-semibold text-black tracking-widest uppercase mb-3">
-        Thumbnail Image
-      </p>
+      <p className="text-base font-semibold text-black mb-3">Thumbnail Image</p>
 
       <div
         onDragOver={(e) => {
@@ -70,12 +68,12 @@ export default function ThumbnailUploader({
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current.click()}
-        className={`relative rounded-xl border-2 border-dashed cursor-pointer transition-all overflow-hidden
-          ${dragging ? "border-blue-400 bg-blue-50 scale-[1.01]" : ""}
+        className={`relative rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200 overflow-hidden
+          ${dragging ? "border-indigo-500 bg-indigo-50 scale-[1.01] shadow-sm" : ""}
           ${hasError && !dragging ? "border-red-300 bg-red-50" : ""}
-          ${!hasError && !dragging ? "border-gray-200 bg-gray-50 hover:border-blue-300 hover:bg-blue-50" : ""}
+          ${!hasError && !dragging ? "border-slate-300 bg-slate-50 hover:border-indigo-400 hover:bg-indigo-50 hover:-translate-y-0.5 hover:shadow-sm" : ""}
         `}
-        style={{ minHeight: "150px" }}
+        style={{ minHeight: "164px" }}
       >
         <input
           ref={inputRef}
@@ -90,12 +88,12 @@ export default function ThumbnailUploader({
             <img
               src={preview}
               alt="Thumbnail preview"
-              className="w-full h-36 object-cover"
+              className="w-full h-40 object-cover"
             />
             <button
               type="button"
               onClick={handleRemove}
-              className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow transition-colors"
+              className="absolute top-3 right-3 w-7 h-7 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow transition-colors"
               title="Remove image"
             >
               <svg
@@ -112,17 +110,17 @@ export default function ThumbnailUploader({
                 />
               </svg>
             </button>
-            <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-2 py-1 truncate">
+            <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-sm px-3 py-1.5 truncate">
               {file.name}
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-8 gap-2 px-3">
+          <div className="flex flex-col items-center justify-center py-9 gap-2.5 px-4">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${hasError ? "bg-red-100" : "bg-blue-100"}`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${hasError ? "bg-red-100" : "bg-indigo-100"}`}
             >
               <svg
-                className={`w-5 h-5 ${hasError ? "text-red-400" : "text-blue-500"}`}
+                className={`w-5 h-5 ${hasError ? "text-red-500" : "text-indigo-600"}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -135,17 +133,17 @@ export default function ThumbnailUploader({
                 />
               </svg>
             </div>
-            <p className="text-xs font-semibold text-black text-center">
+            <p className="text-sm font-semibold text-black text-center tracking-wide">
               DRAG & DROP
             </p>
-            <p className="text-xs text-black text-center leading-relaxed">
+            <p className="text-sm text-slate-600 text-center leading-relaxed">
               or click to browse files from your computer
             </p>
           </div>
         )}
       </div>
 
-      <p className="text-xs text-black mt-1.5 text-center">
+      <p className="text-sm text-slate-600 mt-2 text-center">
         JPG, PNG, WebP · Max {MAX_SIZE_MB}MB · Recommended 1280×720px
       </p>
 

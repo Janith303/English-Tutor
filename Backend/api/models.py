@@ -146,9 +146,7 @@ class Course(models.Model):
 
     tutor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='courses')
     title = models.CharField(max_length=120)
-    slug = models.SlugField(max_length=150, unique=True)
     summary = models.CharField(max_length=300)
-    description = models.TextField()
     category = models.CharField(max_length=80)
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
     duration_hours = models.DecimalField(
@@ -163,9 +161,6 @@ class Course(models.Model):
     )
     thumbnail = models.ImageField(upload_to='courses/thumbnails/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
-    public_marketplace = models.BooleanField(default=True)
-    search_indexing = models.BooleanField(default=False)
-    auto_enroll_existing_students = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -302,6 +297,29 @@ class Quiz(models.Model):
         blank=True,
         related_name='created_quizzes'
     )
+class LessonAuthoringProfile(models.Model):
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('PUBLISHED', 'Published'),
+    ]
+
+    lesson = models.OneToOneField(
+        Lesson,
+        on_delete=models.CASCADE,
+        related_name='authoring_profile',
+    )
+    description = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    publish_at = models.DateTimeField(null=True, blank=True)
+    drip_delay_days = models.PositiveIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(365)],
+    )
+    require_quiz_pass_for_completion = models.BooleanField(default=True)
+    lesson_link_url = models.URLField(blank=True, default='')
+    lesson_image = models.ImageField(upload_to='lessons/images/', null=True, blank=True)
+    lesson_video_file = models.FileField(upload_to='lessons/videos/', null=True, blank=True)
+    lesson_video_embed_url = models.URLField(blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -366,6 +384,98 @@ class QuizAttempt(models.Model):
     time_used = models.IntegerField(default=0, help_text="Time used in seconds")
     percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     passed = models.BooleanField(default=False)
+        ordering = ['lesson_id']
+
+    def __str__(self):
+        return f"Lesson Profile: {self.lesson.title} ({self.status})"
+
+
+class LessonExerciseFile(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='exercise_files')
+    display_name = models.CharField(max_length=150, blank=True, default='')
+    file = models.FileField(upload_to='lessons/exercises/')
+    order = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)],
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ('lesson', 'order')
+
+    def __str__(self):
+        label = self.display_name or self.file.name
+        return f"{self.lesson.title} - {label}"
+
+
+class LessonQuiz(models.Model):
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('PUBLISHED', 'Published'),
+    ]
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='quizzes')
+    title = models.CharField(max_length=140)
+    instructions = models.TextField(blank=True, default='')
+    passing_score = models.PositiveSmallIntegerField(
+        default=70,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    order = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)],
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ('lesson', 'order')
+
+    def __str__(self):
+        return f"{self.lesson.title} - Quiz {self.order}: {self.title}"
+
+
+class LessonQuizQuestion(models.Model):
+    CORRECT_OPTION_CHOICES = [
+        ('A', 'Option A'),
+        ('B', 'Option B'),
+        ('C', 'Option C'),
+        ('D', 'Option D'),
+    ]
+
+    quiz = models.ForeignKey(LessonQuiz, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    option_a = models.CharField(max_length=255)
+    option_b = models.CharField(max_length=255)
+    option_c = models.CharField(max_length=255)
+    option_d = models.CharField(max_length=255)
+    correct_option = models.CharField(max_length=1, choices=CORRECT_OPTION_CHOICES)
+    order = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)],
+    )
+    explanation = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ('quiz', 'order')
+
+    def __str__(self):
+        return f"Quiz {self.quiz_id} Q{self.order}"
+
+
+class LessonQuizAttempt(models.Model):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name='quiz_attempts')
+    quiz = models.ForeignKey(LessonQuiz, on_delete=models.CASCADE, related_name='attempts')
+    score_percent = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    passed = models.BooleanField(default=False)
+    answers = models.JSONField(default=list, blank=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -391,3 +501,40 @@ class QuizAnswer(models.Model):
 
     def __str__(self):
         return f"Answer for Q{self.question.order} in Attempt #{self.attempt.id}"
+        unique_together = ('enrollment', 'quiz')
+        indexes = [
+            models.Index(fields=['enrollment', 'quiz']),
+            models.Index(fields=['quiz', 'submitted_at']),
+        ]
+
+    def __str__(self):
+        return f"Attempt {self.enrollment_id}-{self.quiz_id}: {self.score_percent}%"
+# --- Q&A WALL MODELS ---
+class WallQuestion(models.Model):
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='forum_questions')
+    
+    # NEW: The anonymity toggle
+    is_anonymous = models.BooleanField(default=False) 
+    
+    tags = models.CharField(max_length=200, blank=True, help_text="Comma-separated tags")
+    votes = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} {'(Anonymous)' if self.is_anonymous else ''}"
+
+class WallAnswer(models.Model):
+    question = models.ForeignKey(WallQuestion, on_delete=models.CASCADE, related_name='wall_answers')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='given_answers')
+    body = models.TextField()
+    
+    # This stays, but you'll set it in the View based on author.is_tutor
+    is_expert_answer = models.BooleanField(default=False) 
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        status = "Expert" if self.is_expert_answer else "Student"
+        return f"{status} Answer to {self.question.title} by {self.author.email}"

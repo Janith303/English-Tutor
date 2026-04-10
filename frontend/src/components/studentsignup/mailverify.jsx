@@ -184,7 +184,7 @@ export default function StudentSignUp() {
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Mail size={12} /> University Email</label>
               <div className="relative">
-                <input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="ITXXXXXX@my.sliit.lk" className={`w-full px-5 py-3 bg-slate-50 border rounded-2xl outline-none transition-all ${error && formData.email ? "border-red-400" : "border-slate-100 focus:border-blue-500"}`} />
+                <input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="itXXXXXX@my.sliit.lk" className={`w-full px-5 py-3 bg-slate-50 border rounded-2xl outline-none transition-all ${error && formData.email ? "border-red-400" : "border-slate-100 focus:border-blue-500"}`} />
                 {formData.email && !error && formData.email.includes("@my.sliit.lk") && <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500" size={20} />}
               </div>
             </div>
