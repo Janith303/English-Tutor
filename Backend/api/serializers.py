@@ -1031,6 +1031,7 @@ class LessonQuizAttemptSerializer(serializers.ModelSerializer):
         model = LessonQuizAttempt
         fields = ['id', 'quiz', 'score_percent', 'passed', 'answers', 'submitted_at']
         read_only_fields = ['id', 'quiz', 'score_percent', 'passed', 'answers', 'submitted_at']
+
         # --- NEW: Q&A WALL SERIALIZERS ---
 class WallAnswerSerializer(serializers.ModelSerializer):
     author_name = serializers.ReadOnlyField(source='author.full_name')
@@ -1039,7 +1040,7 @@ class WallAnswerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WallAnswer
-        fields = ['id', 'body', 'author_name', 'author_role', 'is_expert_answer', 'created_at', 'created_at_human']
+        fields = ['id', 'question', 'body', 'author_name', 'author_role', 'is_expert_answer', 'created_at', 'created_at_human']
 
     # This MUST be indented inside the class
     def get_created_at_human(self, obj):
@@ -1050,17 +1051,34 @@ class WallQuestionSerializer(serializers.ModelSerializer):
     tags = serializers.SerializerMethodField()
     created_at_human = serializers.SerializerMethodField()
     answers = WallAnswerSerializer(many=True, read_only=True, source='wall_answers')
+    
+    # Existing logic for votes
+    votes = serializers.SerializerMethodField()
+    is_upvoted = serializers.SerializerMethodField()
+
+    # NEW: Tells the frontend if the logged-in user owns this question
+    is_owner = serializers.SerializerMethodField()
 
     class Meta:
         model = WallQuestion
-        fields = ['id', 'title', 'body', 'author_name', 'is_anonymous', 'tags', 'votes', 'answers', 'created_at', 'created_at_human']
+        fields = [
+            'id', 'title', 'body', 'author_name', 'is_anonymous', 
+            'tags', 'votes', 'is_upvoted', 'is_owner', 'answers', 
+            'created_at', 'created_at_human'
+        ]
+
+    def get_is_owner(self, obj):
+        """Checks if the current logged-in user is the author of the question."""
+        user = self.context.get('request').user
+        if user and user.is_authenticated:
+            return obj.author == user
+        return False
 
     def get_author_name(self, obj):
         if obj.is_anonymous:
             return "Anonymous Student"
         return obj.author.full_name or obj.author.username
-    
-    # Ensure the code below is indented correctly
+
     def get_tags(self, obj):
         if not obj.tags:
             return []
@@ -1068,3 +1086,14 @@ class WallQuestionSerializer(serializers.ModelSerializer):
 
     def get_created_at_human(self, obj):
         return naturaltime(obj.created_at)
+
+    def get_votes(self, obj):
+        """Returns the total count of unique users who upvoted."""
+        return obj.upvoted_by.count()
+
+    def get_is_upvoted(self, obj):
+        """Tells the frontend if the logged-in user has already voted for this."""
+        user = self.context.get('request').user
+        if user and user.is_authenticated:
+            return obj.upvoted_by.filter(id=user.id).exists()
+        return False

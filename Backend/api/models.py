@@ -527,21 +527,32 @@ class QuizAnswer(models.Model):
 
     def __str__(self):
         return f"Attempt {self.enrollment_id}-{self.quiz_id}: {self.score_percent}%"
+    
 # --- Q&A WALL MODELS ---
 class WallQuestion(models.Model):
     title = models.CharField(max_length=255)
     body = models.TextField()
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='forum_questions')
-    
-    # NEW: The anonymity toggle
     is_anonymous = models.BooleanField(default=False) 
-    
     tags = models.CharField(max_length=200, blank=True, help_text="Comma-separated tags")
-    votes = models.IntegerField(default=0)
+    
+    # REPLACED: votes = models.IntegerField(default=0)
+    # This tracks exactly WHICH users have upvoted this question
+    upvoted_by = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, 
+        related_name='upvoted_questions', 
+        blank=True
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.title} {'(Anonymous)' if self.is_anonymous else ''}"
+
+    @property
+    def vote_count(self):
+        """Helper property to return the total number of upvotes"""
+        return self.upvoted_by.count()
 
 class WallAnswer(models.Model):
     question = models.ForeignKey(WallQuestion, on_delete=models.CASCADE, related_name='wall_answers')
