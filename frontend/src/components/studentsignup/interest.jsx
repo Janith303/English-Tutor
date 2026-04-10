@@ -19,11 +19,11 @@ import {
 } from "lucide-react";
 
 const interestAreas = [
-  { id: 1, label: "Academic Writing", icon: PenTool, desc: "Essays & Research" },
+  { id: 1, label: "Grammar & Flow", icon: PenTool, desc: "Essays & Research" },
   { id: 2, label: "Presentation Skills", icon: Mic2, desc: "Public Speaking" },
-  { id: 3, label: "Interview Prep", icon: Briefcase, desc: "Job Readiness" },
-  { id: 4, label: "Grammar & Flow", icon: Puzzle, desc: "Sentence Structure" },
-  { id: 5, label: "Vocabulary", icon: BookText, desc: "Academic Lexicon" },
+  { id: 3, label: "Vocabulary", icon: Briefcase, desc: "Job Readiness" },
+  { id: 4, label: "Academic Writing", icon: Puzzle, desc: "Sentence Structure" },
+  { id: 5, label: "IELTS Prep", icon: BookText, desc: "Academic Lexicon" },
 ];
 
 const levels = [

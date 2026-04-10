@@ -87,7 +87,7 @@ const QandAPage = () => {
               alt="User"
               className="w-8 h-8 rounded-full"
             />
-            <span className="font-medium text-sm text-slate-700">Sanooda Abeysinghe</span>
+            <span className="font-medium text-sm text-slate-700"></span>
           </div>
         </div>
       </nav>
