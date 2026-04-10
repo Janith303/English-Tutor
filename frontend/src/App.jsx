@@ -43,6 +43,7 @@ import TutorLessonEditorPage from "./components/lesson/TutorLessonEditorPage";
 import TutorLessonPreviewPage from "./components/lesson/TutorLessonPreviewPage";
 import LessonReaderPage from "./components/lesson/LessonReaderPage";
 import VibrantMeshBackground from "./components/ui/VibrantMeshBackground";
+import Waitingapproval from "./components/home/waitingtoverify";
 
 function AppRoutes() {
   const location = useLocation();
@@ -120,6 +121,7 @@ function AppRoutes() {
           <Route path="/reading-quiz" element={<ReadingQuizStart />} />
           <Route path="/reading-quiz/play" element={<ReadingQuizGame />} />
           <Route path="/reading-quiz/result" element={<ReadingQuizResult />} />
+          <Route path="/waiting-approval" element={<Waitingapproval />} />
         </Routes>
       </div>
     </div>

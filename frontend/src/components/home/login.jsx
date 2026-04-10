@@ -21,19 +21,32 @@ export default function Login() {
     setError("");
 
     try {
-      // 1. Hit the login endpoint
+      // 1. Request tokens and user metadata from backend
       const res = await axios.post("http://127.0.0.1:8000/api/login/", {
         email: email,
         password: password,
       });
 
       if (res.status === 200) {
-        const { access, refresh, role } = res.data;
+        // NOTE: Ensure your Django Serializer sends 'is_verified' and 'full_name'
+        const { access, refresh, role, is_verified, full_name } = res.data;
 
-        // 2. Persist session data
+        // --- NEW LOGIC: CONDITIONAL VERIFICATION CHECK ---
+        const isTutorRole = role === "TUTOR" || role === "STUDENT_TUTOR";
+
+        // If they are a tutor but NOT yet verified by admin, block entry
+        if (isTutorRole && !is_verified) {
+          setError("Account Pending: Your Tutor profile is under review. You will be able to log in once verified.");
+          setLoading(false);
+          navigate("/waiting-approval");
+          return; // Stop the login process here
+        }
+
+        // 2. Persist session data (Reached by Admins, Students, and Verified Tutors)
         localStorage.setItem("access_token", access);
         localStorage.setItem("refresh_token", refresh);
         localStorage.setItem("role", role);
+        localStorage.setItem("full_name", full_name || "User");
 
         // 3. Multi-role Navigation Logic
         switch (role) {
@@ -52,8 +65,8 @@ export default function Login() {
         }
       }
     } catch (err) {
-      // Handles 401 Unauthorized or 500 Server Errors
-      const msg = err.response?.data?.detail || "Invalid credentials. Please try again.";
+      // Handles 401 Unauthorized or Connection Errors
+      const msg = err.response?.data?.detail || "Invalid email or password. Please try again.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -75,8 +88,8 @@ export default function Login() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/30 to-transparent" />
           <div className="absolute bottom-12 left-12 right-12 text-white">
-            <h1 className="text-4xl font-black mb-4">Welcome Back to SpeakUni.</h1>
-            <p className="text-blue-100 text-lg">Connect with expert tutors and master your English communication skills today.</p>
+            <h1 className="text-4xl font-black mb-4">Welcome Back to English Tutor.</h1>
+            <p className="text-blue-100 text-lg">Your gateway to mastering professional English communication.</p>
           </div>
         </div>
 
@@ -85,15 +98,15 @@ export default function Login() {
           <div className="w-full max-w-md space-y-8">
             <div className="flex flex-col items-center text-center">
               <img src={topIcon} alt="Icon" className="h-16 w-auto mb-6 object-contain" />
-              <h2 className="text-4xl font-black text-blue-900 tracking-tight">Account Login</h2>
-              <p className="mt-2 text-gray-500 font-medium">Please enter your SLIIT credentials.</p>
+              <h2 className="text-4xl font-black text-blue-900 tracking-tight">Portal Login</h2>
+              <p className="mt-2 text-gray-500 font-medium">Enter your credentials to access your dashboard.</p>
             </div>
 
-            {/* Error Alert */}
+            {/* Error Alert for Invalid Login or Verification Pending */}
             {error && (
               <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl animate-shake">
-                <AlertCircle size={20} />
-                <span className="text-sm font-bold">{error}</span>
+                <AlertCircle size={20} className="shrink-0" />
+                <span className="text-sm font-bold leading-tight">{error}</span>
               </div>
             )}
 
@@ -104,7 +117,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="it23xxxxxx@my.sliit.lk / james@gmail.com"
+                  placeholder="it23xxxxxx@my.sliit.lk / tutor@example.com"
                   className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all font-bold text-gray-700"
                   required
                 />
