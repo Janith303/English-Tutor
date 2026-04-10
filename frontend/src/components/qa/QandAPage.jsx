@@ -9,6 +9,8 @@ import {
   ChevronDown,
   MessageSquare,
   Clock,
+  CheckCircle,
+  Trash2, // Added Trash2 icon
 } from "lucide-react";
 import AskQuestionModal from "./AskQuestionModal";
 import logo from "../images/logo.jpg";
@@ -18,15 +20,19 @@ const QandAPage = () => {
   const [activeTab, setActiveTab] = useState("All Questions");
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
 
-  // 1. Fetch questions from Backend on load
+  // 1. Fetch questions with Auth Token
   useEffect(() => {
     fetchQuestions();
   }, []);
 
   const fetchQuestions = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/wall-questions/");
+      const token = localStorage.getItem('access_token');
+      const response = await axios.get("http://127.0.0.1:8000/api/wall-questions/", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setQuestions(response.data);
     } catch (error) {
       console.error("Error fetching questions:", error);
@@ -35,21 +41,57 @@ const QandAPage = () => {
     }
   };
 
-  // 2. Handle Upvoting
+  // 2. Handle Upvoting with Auth Token
   const handleUpvote = async (id, e) => {
-    e.stopPropagation(); // Prevents navigating to question detail if you have that
+    e.stopPropagation();
+    const token = localStorage.getItem('access_token');
+    
+    if (!token) {
+      alert("You must be logged in to upvote!");
+      return;
+    }
+
     try {
-      const response = await axios.post(`http://127.0.0.1:8000/api/wall-questions/${id}/upvote/`);
-      // Update local state so UI updates instantly
+      const response = await axios.post(
+        `http://127.0.0.1:8000/api/wall-questions/${id}/upvote/`, 
+        {}, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
       setQuestions(questions.map(q => 
-        q.id === id ? { ...q, votes: response.data.current_votes } : q
+        q.id === id ? { 
+          ...q, 
+          votes: response.data.current_votes, 
+          is_upvoted: response.data.is_upvoted 
+        } : q
       ));
     } catch (error) {
       console.error("Upvote failed:", error);
     }
   };
 
-  // 3. Handle adding a new question from the Modal
+  // 3. NEW: Handle Deleting Question
+  const handleDelete = async (id, e) => {
+    e.stopPropagation(); // Prevents the accordion from toggling
+    
+    if (!window.confirm("Are you sure you want to delete this question? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('access_token');
+      await axios.delete(`http://127.0.0.1:8000/api/wall-questions/${id}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Update UI by removing the question from state
+      setQuestions(questions.filter(q => q.id !== id));
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Failed to delete the question. You might not have permission.");
+    }
+  };
+
   const handleNewQuestion = (newQuestion) => {
     setQuestions([newQuestion, ...questions]);
   };
@@ -87,16 +129,15 @@ const QandAPage = () => {
               alt="User"
               className="w-8 h-8 rounded-full"
             />
-            <span className="font-medium text-sm text-slate-700"></span>
+            <span className="font-medium text-sm text-slate-700">Sanooda Abeysinghe</span>
           </div>
         </div>
       </nav>
 
-      {/* Content */}
       <main className="max-w-5xl mx-auto py-10 px-6">
         <header className="mb-8">
           <h2 className="text-slate-700 text-3xl font-bold mb-2">Q & A Wall</h2>
-          <p className="text-slate-500">Ask questions, share knowledge, and learn English together</p>
+          <p className="text-slate-500">Ask questions and get feedback from peers and expert tutors</p>
         </header>
 
         {/* Filters */}
@@ -122,56 +163,95 @@ const QandAPage = () => {
             questions.map((q) => (
               <div
                 key={q.id}
-                className="bg-white border rounded-xl p-6 flex gap-6 hover:shadow-md transition-shadow cursor-pointer group"
+                className="bg-white border rounded-xl overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => setExpandedId(expandedId === q.id ? null : q.id)}
               >
-                {/* Upvote Section */}
-                <div className="flex flex-col items-center gap-1 text-slate-400 bg-slate-50 rounded-lg px-3 py-2 h-fit group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                  <ChevronUp 
-                    className="cursor-pointer hover:scale-125 transition-transform" 
-                    onClick={(e) => handleUpvote(q.id, e)}
-                  />
-                  <span className="font-bold text-lg text-slate-800">{q.votes}</span>
-                  <ChevronDown className="cursor-pointer" />
+                <div className="p-6 flex gap-6">
+                  {/* Upvote Section */}
+                  <div className="flex flex-col items-center gap-1 text-slate-400 bg-slate-50 rounded-lg px-3 py-2 h-fit">
+                    <ChevronUp 
+                      className={`cursor-pointer transition-colors ${q.is_upvoted ? 'text-blue-600 scale-110' : 'hover:text-blue-600'}`} 
+                      onClick={(e) => handleUpvote(q.id, e)}
+                    />
+                    <span className="font-bold text-lg text-slate-800">{q.votes}</span>
+                    <ChevronDown className="cursor-pointer hover:text-red-400" />
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold mb-2 text-slate-600">
+                      {q.title}
+                    </h3>
+                    <p className="text-slate-600 line-clamp-2 mb-4 leading-relaxed">{q.body}</p>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {q.tags && q.tags.map((tag) => (
+                        <span key={tag} className="text-blue-600 text-xs font-semibold px-2 py-1 rounded bg-blue-50 border border-blue-100 capitalize">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between text-slate-500 text-sm">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={`https://ui-avatars.com/api/?name=${q.author_name}&background=random`}
+                          alt={q.author_name}
+                          className="w-6 h-6 rounded-full"
+                        />
+                        <span className="font-medium text-slate-700">{q.author_name}</span>
+                        
+                        {/* DELETE BUTTON: Only visible to the owner */}
+                        {q.is_owner && (
+                          <button 
+                            onClick={(e) => handleDelete(q.id, e)}
+                            className="ml-3 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                            title="Delete Question"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex gap-4">
+                        <span className="flex items-center gap-1">
+                          <MessageSquare size={14} /> {q.answers ? q.answers.length : 0} answers
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock size={14} /> {q.created_at_human}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2 text-slate-600 group-hover:text-blue-600 transition-colors">
-                    {q.title}
-                  </h3>
-                  <p className="text-slate-600 line-clamp-2 mb-4 leading-relaxed">{q.body}</p>
-                  
-                  {/* Tags Section */}
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {q.tags && q.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-blue-600 text-xs font-semibold px-2 py-1 rounded bg-blue-50 border border-blue-100 capitalize"
+                {/* --- EXPERT ANSWERS SECTION --- */}
+                {expandedId === q.id && q.answers && q.answers.length > 0 && (
+                  <div className="bg-slate-50 border-t p-6 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Responses</h4>
+                    {q.answers.map((ans) => (
+                      <div 
+                        key={ans.id} 
+                        className={`p-4 rounded-lg border shadow-sm ${
+                          ans.is_expert_answer 
+                          ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-100' 
+                          : 'bg-white border-slate-200'
+                        }`}
                       >
-                        {tag}
-                      </span>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-slate-800">{ans.author_name}</span>
+                            {ans.is_expert_answer && (
+                              <span className="flex items-center gap-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
+                                <CheckCircle size={10} /> Verified Expert
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs text-slate-400 font-medium">{ans.created_at_human}</span>
+                        </div>
+                        <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{ans.body}</p>
+                      </div>
                     ))}
                   </div>
-
-                  {/* Metadata Section */}
-                  <div className="flex items-center justify-between text-slate-500 text-sm">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${q.author_name}&background=random`}
-                        alt={q.author_name}
-                        className="w-6 h-6 rounded-full"
-                      />
-                      <span className="font-medium text-slate-700">{q.author_name}</span>
-                    </div>
-                    <div className="flex gap-4">
-                      <span className="flex items-center gap-1">
-                        <MessageSquare size={14} /> {q.answers ? q.answers.length : 0} answers
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock size={14} /> {q.created_at_human}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             ))
           ) : (

@@ -12,6 +12,10 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
 from django.db import transaction # Added for atomic transactions
+from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
+from .models import WallQuestion
+from .serializers import WallQuestionSerializer
 
 # Make sure to import the new models and serializers
 from .models import User, OTP, Interest, Question, TestResult, StudentTutorProfile, TutorOTP, WallQuestion, WallAnswer
@@ -1802,12 +1806,48 @@ class WallQuestionViewSet(viewsets.ModelViewSet):
     """
     queryset = WallQuestion.objects.all().order_by('-created_at')
     serializer_class = WallQuestionSerializer
-    permission_classes = [AllowAny] # Ensures only logged-in users participate
+    permission_classes = [permissions.IsAuthenticated] 
 
     def perform_create(self, serializer):
         # Automatically sets the author to the student currently logged in
         serializer.save(author=self.request.user)
 
+    def destroy(self, request, *args, **kwargs):
+        """
+        Ensures only the person who asked the question can delete it.
+        """
+        question = self.get_object()
+        
+        # Security check: Does the logged-in user own this question?
+        if question.author != request.user:
+            return Response(
+                {"detail": "You do not have permission to delete this question."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+            
+        return super().destroy(request, *args, **kwargs)
+
+    @action(detail=True, methods=['post'])
+    def upvote(self, request, pk=None):
+        """
+        Toggles the upvote for the current user.
+        URL: /api/wall-questions/{id}/upvote/
+        """
+        question = self.get_object()
+        user = request.user
+
+        # Toggle Logic
+        if question.upvoted_by.filter(id=user.id).exists():
+            question.upvoted_by.remove(user)
+            is_upvoted = False
+        else:
+            question.upvoted_by.add(user)
+            is_upvoted = True
+        
+        return Response({
+            'current_votes': question.upvoted_by.count(),
+            'is_upvoted': is_upvoted
+        })
 
 class WallAnswerViewSet(viewsets.ModelViewSet):
     """
@@ -1816,12 +1856,17 @@ class WallAnswerViewSet(viewsets.ModelViewSet):
     """
     queryset = WallAnswer.objects.all()
     serializer_class = WallAnswerSerializer
-    permission_classes = [AllowAny]
+    
+    # Change: Require the user to be logged in to post an answer
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         user = self.request.user
-        # Logic: If user is a TUTOR or ADMIN, mark the answer as an expert response
+        
+        # Logic: If user is a TUTOR, ADMIN, or STUDENT_TUTOR, mark as expert
+        # This handles the "Expert Badge" logic for the frontend
         is_expert = user.role in ['TUTOR', 'ADMIN', 'STUDENT_TUTOR']
+        
         serializer.save(author=user, is_expert_answer=is_expert)
 
 
