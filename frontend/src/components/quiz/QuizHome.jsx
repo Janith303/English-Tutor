@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import QuizNavbar from "./QuizNavbar";
 import Hero from "./Hero";
@@ -103,26 +103,46 @@ function DynamicQuizCard({ quiz, onStart, onCardClick }) {
 
 export default function QuizHome() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const fetchQuizzes = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get("http://127.0.0.1:8000/api/quizzes/");
+      setQuizzes(response.data);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch quizzes:", err);
+      setError("Failed to load quizzes");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchQuizzes = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("http://127.0.0.1:8000/api/quizzes/");
-        setQuizzes(response.data);
-        setError(null);
-      } catch (err) {
-        console.error("Failed to fetch quizzes:", err);
-        setError("Failed to load quizzes");
-      } finally {
-        setLoading(false);
+    fetchQuizzes();
+  }, [location.key]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchQuizzes();
       }
     };
 
-    fetchQuizzes();
+    const handleFocus = () => {
+      fetchQuizzes();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   const groupedQuizzes = quizzes.reduce((acc, quiz) => {
