@@ -36,31 +36,34 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            'full_name', 
-            'email', 
-            'password', 
-            'university', 
-            'faculty', 
-            'academic_year', 
-            'role',
-            'target_proficiency'
-        ]
+        fields = ['full_name', 'email', 'password', 'university', 'faculty', 'academic_year', 'role', 'target_proficiency']
 
     def create(self, validated_data):
-        # Using create_user ensures the password is automatically hashed
         role = validated_data.get('role', 'STUDENT')
+        
+        # FIX: Determine verification status based on role
+        # If Admin or Tutor, set to VERIFIED immediately
+        if role in ['ADMIN', 'TUTOR']:
+            onboarding = 'VERIFIED'
+            is_verified_bool = True
+        else:
+            onboarding = 'REGISTERED'
+            is_verified_bool = False
+
         user = User.objects.create_user(
-            username=validated_data['email'], # Use email as the internal username
+            username=validated_data['email'],
             email=validated_data['email'],
             password=validated_data['password'],
             full_name=validated_data.get('full_name'),
-            role=validated_data.get('role', 'STUDENT'),
+            role=role,
             university=validated_data.get('university', 'SLIIT'),
             faculty=validated_data.get('faculty'),
             academic_year=validated_data.get('academic_year'),
             target_proficiency=validated_data.get('target_proficiency'),
             
+            # These apply the fix for your database column issue
+            onboarding_status=onboarding,
+            is_verified=is_verified_bool,
             
             is_staff=(role == 'ADMIN'), 
             is_superuser=(role == 'ADMIN'),
