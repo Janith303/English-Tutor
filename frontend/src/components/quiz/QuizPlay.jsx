@@ -85,8 +85,10 @@ export default function QuizPlay() {
   };
 
   const handleQuizComplete = () => {
+    const totalTime = (quiz?.time_limit || 5) * 60;
+    const usedTime = totalTime - timeLeft;
     navigate(`/quiz/${id}/result`, {
-      state: { answers, quiz },
+      state: { answers, quiz, timeUsed: usedTime },
     });
   };
 

@@ -45,6 +45,7 @@ import SentenceQuizStart from "./components/quiz/SentenceQuizStart";
 import SentenceQuizGame from "./components/quiz/SentenceQuizGame";
 import SentenceQuizResult from "./components/quiz/SentenceQuizResult";
 import QuizPlay from "./components/quiz/QuizPlay";
+import QuizResult from "./components/quiz/QuizResult";
 import TutorQandA from "./components/qa/TutorQandA";
 import TutorDashboardPage from "./components/tutor/TutorDashboardPage";
 import EditCoursePage from "./components/course/EditCoursePage";
@@ -90,6 +91,7 @@ function AppRoutes() {
           {/* Features */}
           <Route path="/quiz" element={<QuizHome />} />
           <Route path="/quiz/:id/play" element={<QuizPlay />} />
+          <Route path="/quiz/:id/result" element={<QuizResult />} />
           <Route path="/qa" element={<QandAPage />} />
           <Route path="/tutor-qa" element={<TutorQandA />} />
 
