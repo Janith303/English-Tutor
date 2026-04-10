@@ -58,13 +58,13 @@ export default function QuizPlay() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleAnswerSelect = (option) => {
-    if (selectedAnswer) return;
+  const handleAnswerSelect = (optionId) => {
+    if (selectedAnswer !== null) return;
 
-    setSelectedAnswer(option);
+    setSelectedAnswer(optionId);
     setAnswers((prev) => ({
       ...prev,
-      [currentQuestion]: option,
+      [currentQuestion]: optionId,
     }));
   };
 
@@ -85,8 +85,10 @@ export default function QuizPlay() {
   };
 
   const handleQuizComplete = () => {
+    const totalTime = (quiz?.time_limit || 5) * 60;
+    const usedTime = totalTime - timeLeft;
     navigate(`/quiz/${id}/result`, {
-      state: { answers, quiz },
+      state: { answers, quiz, timeUsed: usedTime },
     });
   };
 
@@ -172,7 +174,7 @@ export default function QuizPlay() {
               return (
                 <button
                   key={option.id || index}
-                  onClick={() => handleAnswerSelect(option)}
+                  onClick={() => handleAnswerSelect(option.id)}
                   className={buttonClass}
                   disabled={showResult}
                 >
