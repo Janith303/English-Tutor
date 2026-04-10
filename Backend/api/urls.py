@@ -54,6 +54,16 @@ urlpatterns = [
     path('tutor/register/', TutorRegisterView.as_view(), name='tutor_register'),
     # --- Tutor Protected Endpoint ---
     path('tutor/dashboard/', TutorDashboardView.as_view(), name='tutor-dashboard'),
+    
+    path('admin/stats/', views.AdminDashboardStatsView.as_view(), name='admin-stats'),
+    # List of all users (Students, Tutors, etc.)
+    path('admin/users/', views.AdminUserListView.as_view(), name='admin-user-list'),
+    
+    # List of pending tutor applications
+    path('admin/requests/', views.AdminTutorRequestListView.as_view(), name='admin-tutor-requests'),
+    
+    # Action endpoint to Approve or Reject a Tutor
+    path('admin/approve-tutor/<int:profile_id>/', views.approve_tutor, name='admin-approve-tutor'),
 ]
 
 

@@ -44,6 +44,7 @@ import TutorLessonPreviewPage from "./components/lesson/TutorLessonPreviewPage";
 import LessonReaderPage from "./components/lesson/LessonReaderPage";
 import VibrantMeshBackground from "./components/ui/VibrantMeshBackground";
 import Waitingapproval from "./components/home/waitingtoverify";
+import Admin from "./components/admin/admindash";
 
 function AppRoutes() {
   const location = useLocation();
@@ -122,6 +123,12 @@ function AppRoutes() {
           <Route path="/reading-quiz/play" element={<ReadingQuizGame />} />
           <Route path="/reading-quiz/result" element={<ReadingQuizResult />} />
           <Route path="/waiting-approval" element={<Waitingapproval />} />
+          <Route path="/admin/dashboard" element={<Admin />} />
+
+           <Route path="/admin/requests" element={<Admin />} />
+          <Route path="/admin/student-tutors" element={<Admin />} />
+          <Route path="/admin/users" element={<Admin />} />
+ 
         </Routes>
       </div>
     </div>

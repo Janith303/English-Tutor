@@ -48,6 +48,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Using create_user ensures the password is automatically hashed
+        role = validated_data.get('role', 'STUDENT')
         user = User.objects.create_user(
             username=validated_data['email'], # Use email as the internal username
             email=validated_data['email'],
@@ -58,6 +59,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             faculty=validated_data.get('faculty'),
             academic_year=validated_data.get('academic_year'),
             target_proficiency=validated_data.get('target_proficiency'),
+            
+            
+            is_staff=(role == 'ADMIN'), 
+            is_superuser=(role == 'ADMIN'),
         )
         return user
 

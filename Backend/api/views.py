@@ -26,6 +26,10 @@ from .permissions import IsApprovedTutor
 
 # --- ADDED THIS IMPORT TO FIX THE NameError ---
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework import generics, status
+from rest_framework.decorators import api_view, permission_classes
+from .models import User, StudentTutorProfile
+from .serializers import WallQuestionSerializer, StudentTutorApplicationSerializer # Ensure these are imported
 
 
 # --- 1. REGISTRATION ---
@@ -1535,3 +1539,49 @@ class WallAnswerViewSet(viewsets.ModelViewSet):
         # Logic: If user is a TUTOR or ADMIN, mark the answer as an expert response
         is_expert = user.role in ['TUTOR', 'ADMIN', 'STUDENT_TUTOR']
         serializer.save(author=user, is_expert_answer=is_expert)
+
+
+from rest_framework.permissions import IsAdminUser
+class AdminDashboardStatsView(APIView):
+    permission_classes = [IsAdminUser] # Only Admins can see this
+
+    def get(self, request):
+        stats = {
+            "totalUsers": User.objects.count(),
+            "pendingRequests": StudentTutorProfile.objects.filter(status='PENDING').count(),
+            "approvedTutors": User.objects.filter(role__in=['TUTOR', 'STUDENT_TUTOR'], is_verified=True).count(),
+            "activeStudents": User.objects.filter(role='STUDENT').count(),
+        }
+        return Response(stats)
+  
+  
+  
+    # 1. GET ALL USERS
+class AdminUserListView(generics.ListAPIView):
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = RegisterSerializer # Use your existing reg serializer
+    permission_classes = [IsAdminUser]
+
+# 2. GET PENDING TUTOR REQUESTS
+class AdminTutorRequestListView(generics.ListAPIView):
+    queryset = StudentTutorProfile.objects.filter(status='PENDING')
+    serializer_class = StudentTutorApplicationSerializer
+    permission_classes = [IsAdminUser]
+
+# 3. APPROVE/REJECT TUTOR ACTION
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def approve_tutor(request, profile_id):
+    profile = get_object_or_404(StudentTutorProfile, id=profile_id)
+    action = request.data.get('action') # 'APPROVE' or 'REJECT'
+    
+    if action == 'APPROVE':
+        profile.status = 'APPROVED'
+        profile.user.role = 'TUTOR' # Ensure role is updated
+        profile.user.is_verified = True
+        profile.user.save()
+    else:
+        profile.status = 'REJECTED'
+        
+    profile.save()
+    return Response({"message": f"Tutor {action}ed successfully"})
