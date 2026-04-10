@@ -4,6 +4,7 @@ import TutorTopNav from "./TutorTopNav";
 import TutorStatsGrid from "./TutorStatsGrid";
 import EnrollmentBarChart from "./EnrollmentBarChart";
 import TutorCoursesGrid from "./TutorCoursesGrid";
+import TutorQuizzesGrid from "./TutorQuizzesGrid";
 import TutorQandA from "../qa/TutorQandA";
 import {
   deleteTutorCourse,
@@ -11,6 +12,7 @@ import {
   getTutorDashboardOverview,
   toTutorCourseCard,
 } from "../../api/courseApi";
+import { getTutorQuizzes, deleteQuiz } from "../../api/quizApi";
 
 import { tutorProfile } from "../../data/tutorDashboardData";
 
@@ -32,6 +34,9 @@ export default function TutorDashboardPage({ onLogout }) {
   const [courses, setCourses] = useState([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [deletingCourseId, setDeletingCourseId] = useState(null);
+  const [quizzes, setQuizzes] = useState([]);
+  const [loadingQuizzes, setLoadingQuizzes] = useState(true);
+  const [deletingQuizId, setDeletingQuizId] = useState(null);
   const [stats, setStats] = useState({
     total_signups: 0,
     total_learners: 0,
@@ -44,13 +49,16 @@ export default function TutorDashboardPage({ onLogout }) {
   const navigate = useNavigate();
   const overviewRef = useRef(null);
   const coursesRef = useRef(null);
+  const quizzesRef = useRef(null);
 
   useEffect(() => {
     const loadDashboard = async () => {
       setLoadingCourses(true);
-      const [coursesResult, dashboardResult] = await Promise.allSettled([
+      setLoadingQuizzes(true);
+      const [coursesResult, dashboardResult, quizzesResult] = await Promise.allSettled([
         getTutorCourses(),
         getTutorDashboardOverview(),
+        getTutorQuizzes(),
       ]);
 
       let mappedCourses = [];
@@ -106,10 +114,18 @@ export default function TutorDashboardPage({ onLogout }) {
         );
       }
 
+      if (quizzesResult.status === "fulfilled") {
+        setQuizzes(quizzesResult.value || []);
+      } else {
+        console.error("Failed to load tutor quizzes:", quizzesResult.reason);
+        setQuizzes([]);
+      }
+
       setCourses(mappedCourses);
       setStats(resolvedStats);
       setEnrollmentTrend(resolvedEnrollmentTrend);
       setLoadingCourses(false);
+      setLoadingQuizzes(false);
     };
 
     loadDashboard();
@@ -154,6 +170,45 @@ export default function TutorDashboardPage({ onLogout }) {
     }
   };
 
+  const handleStartQuiz = (quiz) => {
+    if (quiz?.id) {
+      navigate(`/quiz/${quiz.id}/play`);
+    }
+  };
+
+  const handleEditQuiz = (quiz) => {
+    if (quiz?.id) {
+      navigate(`/tutor/edit-quiz/${quiz.id}`);
+    }
+  };
+
+  const handleDeleteQuiz = async (quiz) => {
+    if (!quiz?.id) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${quiz.title}"? This action cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingQuizId(quiz.id);
+    try {
+      await deleteQuiz(quiz.id);
+      setQuizzes((prev) => prev.filter((item) => item.id !== quiz.id));
+    } catch (deleteError) {
+      console.error("Failed to delete quiz:", deleteError);
+      alert(
+        deleteError?.response?.data?.error ||
+          "Could not delete this quiz. Please try again.",
+      );
+    } finally {
+      setDeletingQuizId(null);
+    }
+  };
+
+  const handleCreateQuiz = () => {
+    navigate("/tutor/create-quiz");
+  };
+
   const tutorStats = [
     {
       id: "signups",
@@ -189,9 +244,8 @@ export default function TutorDashboardPage({ onLogout }) {
     },
   ];
 
-  const handleNavigate = (page) => {
+const handleNavigate = (page) => {
     setActivePage(page);
-    // Scrolling logic for the main dashboard sections
     if (page === "dashboard" && overviewRef.current) {
       setTimeout(() => {
         overviewRef.current.scrollIntoView({ behavior: "smooth" });
@@ -200,6 +254,11 @@ export default function TutorDashboardPage({ onLogout }) {
     if (page === "courses" && coursesRef.current) {
       setTimeout(() => {
         coursesRef.current.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    }
+    if (page === "quizzes" && quizzesRef.current) {
+      setTimeout(() => {
+        quizzesRef.current.scrollIntoView({ behavior: "smooth" });
       }, 0);
     }
   };
@@ -230,6 +289,18 @@ export default function TutorDashboardPage({ onLogout }) {
             </div>
 
             <EnrollmentBarChart data={enrollmentTrend} />
+
+            <div ref={quizzesRef}>
+              <TutorQuizzesGrid
+                quizzes={quizzes}
+                loading={loadingQuizzes}
+                onStart={handleStartQuiz}
+                onEdit={handleEditQuiz}
+                onDelete={handleDeleteQuiz}
+                onCreateNew={handleCreateQuiz}
+                deletingQuizId={deletingQuizId}
+              />
+            </div>
 
             <div ref={coursesRef}>
               {loadingCourses && (
