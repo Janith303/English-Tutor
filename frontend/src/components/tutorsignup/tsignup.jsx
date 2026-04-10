@@ -2,12 +2,11 @@ import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, ArrowLeft, Upload, CheckCircle, Home, User, Mail,
-  Lock, Eye, EyeOff, FileVideo, X, School, Loader2, Send
+  Lock, Eye, EyeOff, FileVideo, X, School, Loader2, Send, Check // Added Check and X
 } from "lucide-react";
 import TutorProgressBar from "../tutorprogressbar/tprogress";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../Topnav";
-// --- IMPORT YOUR AXIOS INSTANCE ---
 import privateApi from "../../api/axios"; 
 
 export default function TutorSignup() {
@@ -18,6 +17,14 @@ export default function TutorSignup() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   
+  // --- NEW: Password Validation State ---
+  const [validations, setValidations] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    number: false,
+  });
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -37,6 +44,16 @@ export default function TutorSignup() {
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
     if (errors[field]) setErrors({ ...errors, [field]: null });
+
+    // --- NEW: Real-time Password Validation Logic ---
+    if (field === "password") {
+      setValidations({
+        length: value.length >= 6,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /[0-9]/.test(value),
+      });
+    }
   };
 
   const toggleSelection = (field, value) => {
@@ -54,12 +71,21 @@ export default function TutorSignup() {
 
   const validateStep = () => {
     let newErrors = {};
+    const isPasswordValid = Object.values(validations).every(Boolean);
+
     if (step === 0) {
       if (!formData.fullName) newErrors.fullName = "Name is required";
       if (!formData.email.includes("@")) newErrors.email = "Valid email required";
       if (!formData.university) newErrors.university = "University is required";
       if (!isEmailVerified) newErrors.verificationCode = "Please verify your email first";
-      if (!formData.password) newErrors.password = "Password required";
+      
+      // --- UPDATED: Check for Password Requirements ---
+      if (!formData.password) {
+        newErrors.password = "Password required";
+      } else if (!isPasswordValid) {
+        newErrors.password = "Requirements not met";
+      }
+
       if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords do not match";
     }
     if (step === 1 && formData.selectedSkills.length === 0) newErrors.selectedSkills = "Select skills";
@@ -70,7 +96,6 @@ export default function TutorSignup() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // --- API: SEND OTP ---
   const handleSendOtp = async () => {
     if (!formData.email || !formData.email.includes("@")) {
       alert("Enter a valid email address first.");
@@ -87,7 +112,6 @@ export default function TutorSignup() {
     }
   };
 
-  // --- API: VERIFY OTP ---
   const handleVerifyEmail = async () => {
     try {
       const response = await privateApi.post("tutor/verify-otp/", {
@@ -103,7 +127,6 @@ export default function TutorSignup() {
     }
   };
 
-  // --- API: FINAL SUBMISSION ---
   const handleFinalSubmit = async () => {
     if (!validateStep()) return;
     setLoading(true);
@@ -113,7 +136,7 @@ export default function TutorSignup() {
       data.append("email", formData.email);
       data.append("university", formData.university);
       data.append("password", formData.password);
-      data.append("role", "TUTOR"); // SETTING ROLE TO TUTOR
+      data.append("role", "TUTOR"); 
 
       data.append("teaching_areas", JSON.stringify(formData.selectedSkills));
       data.append("availability", JSON.stringify(formData.selectedDays));
@@ -183,6 +206,7 @@ export default function TutorSignup() {
                   handleVerifyEmail={handleVerifyEmail}
                   handleSendOtp={handleSendOtp}
                   otpLoading={otpLoading}
+                  validations={validations} // Pass validations to StepContent
                 />
               </AnimatePresence>
             </div>
@@ -202,7 +226,7 @@ export default function TutorSignup() {
   );
 }
 
-function StepContent({ step, formData, handleInputChange, toggleSelection, errors, showPassword, setShowPassword, isEmailVerified, handleVerifyEmail, handleSendOtp, otpLoading }) {
+function StepContent({ step, formData, handleInputChange, toggleSelection, errors, showPassword, setShowPassword, isEmailVerified, handleVerifyEmail, handleSendOtp, otpLoading, validations }) {
   const fileInputRef = useRef(null);
   const variants = { initial: { opacity: 0, x: 15 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -15 } };
   const passwordsMatch = formData.password && formData.password === formData.confirmPassword;
@@ -257,11 +281,19 @@ function StepContent({ step, formData, handleInputChange, toggleSelection, error
               </div>
               <InputField label="Confirm Password" type={showPassword ? "text" : "password"} value={formData.confirmPassword} onChange={(v) => handleInputChange("confirmPassword", v)} error={formData.confirmPassword && !passwordsMatch ? "Mismatch" : null} />
             </div>
+
+            {/* --- NEW: Validation Checklist UI --- */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 px-1">
+              <ValidationNote isMet={validations.length} label="6+ Chars" />
+              <ValidationNote isMet={validations.upper} label="Uppercase" />
+              <ValidationNote isMet={validations.lower} label="Lowercase" />
+              <ValidationNote isMet={validations.number} label="Number" />
+            </div>
           </div>
         </motion.div>
       );
     case 1:
-      const skills = ["Grammar", "IELTS Prep", "Academic Writting", "Presentation Skills", "Interview Prep", "Vocabulary"];
+      const skills = ["Grammar", "IELTS Prep", "Academic Writing", "Presentation Skills", "Interview Prep", "Vocabulary"];
       return (
         <motion.div {...variants} className="space-y-6">
           <h3 className="text-2xl font-black text-slate-900">Expertise</h3>
@@ -299,6 +331,18 @@ function StepContent({ step, formData, handleInputChange, toggleSelection, error
       );
     default: return null;
   }
+}
+
+// --- NEW: Helper Component for Validation Checklist ---
+function ValidationNote({ isMet, label }) {
+  return (
+    <div className={`flex items-center gap-2 ${isMet ? "opacity-100" : "opacity-40"}`}>
+      {isMet ? <Check size={12} className="text-green-500 stroke-[4px]" /> : <X size={12} className="text-gray-300 stroke-[4px]" />}
+      <span className={`text-[10px] font-black uppercase tracking-tight ${isMet ? "text-green-600" : "text-gray-400"}`}>
+        {label}
+      </span>
+    </div>
+  );
 }
 
 function InputField({ label, placeholder, type = "text", isTextArea, value, onChange, error, icon }) {
