@@ -261,3 +261,136 @@ class TutorOTP(models.Model):
 
     def __str__(self):
         return f"Tutor OTP for {self.email}"
+
+
+class LessonAuthoringProfile(models.Model):
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('PUBLISHED', 'Published'),
+    ]
+
+    lesson = models.OneToOneField(
+        Lesson,
+        on_delete=models.CASCADE,
+        related_name='authoring_profile',
+    )
+    description = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    publish_at = models.DateTimeField(null=True, blank=True)
+    drip_delay_days = models.PositiveIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(365)],
+    )
+    require_quiz_pass_for_completion = models.BooleanField(default=True)
+    lesson_link_url = models.URLField(blank=True, default='')
+    lesson_image = models.ImageField(upload_to='lessons/images/', null=True, blank=True)
+    lesson_video_file = models.FileField(upload_to='lessons/videos/', null=True, blank=True)
+    lesson_video_embed_url = models.URLField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['lesson_id']
+
+    def __str__(self):
+        return f"Lesson Profile: {self.lesson.title} ({self.status})"
+
+
+class LessonExerciseFile(models.Model):
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='exercise_files')
+    display_name = models.CharField(max_length=150, blank=True, default='')
+    file = models.FileField(upload_to='lessons/exercises/')
+    order = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)],
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ('lesson', 'order')
+
+    def __str__(self):
+        label = self.display_name or self.file.name
+        return f"{self.lesson.title} - {label}"
+
+
+class LessonQuiz(models.Model):
+    STATUS_CHOICES = [
+        ('DRAFT', 'Draft'),
+        ('PUBLISHED', 'Published'),
+    ]
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='quizzes')
+    title = models.CharField(max_length=140)
+    instructions = models.TextField(blank=True, default='')
+    passing_score = models.PositiveSmallIntegerField(
+        default=70,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    order = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)],
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ('lesson', 'order')
+
+    def __str__(self):
+        return f"{self.lesson.title} - Quiz {self.order}: {self.title}"
+
+
+class LessonQuizQuestion(models.Model):
+    CORRECT_OPTION_CHOICES = [
+        ('A', 'Option A'),
+        ('B', 'Option B'),
+        ('C', 'Option C'),
+        ('D', 'Option D'),
+    ]
+
+    quiz = models.ForeignKey(LessonQuiz, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    option_a = models.CharField(max_length=255)
+    option_b = models.CharField(max_length=255)
+    option_c = models.CharField(max_length=255)
+    option_d = models.CharField(max_length=255)
+    correct_option = models.CharField(max_length=1, choices=CORRECT_OPTION_CHOICES)
+    order = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(1000)],
+    )
+    explanation = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['order', 'id']
+        unique_together = ('quiz', 'order')
+
+    def __str__(self):
+        return f"Quiz {self.quiz_id} Q{self.order}"
+
+
+class LessonQuizAttempt(models.Model):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name='quiz_attempts')
+    quiz = models.ForeignKey(LessonQuiz, on_delete=models.CASCADE, related_name='attempts')
+    score_percent = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    passed = models.BooleanField(default=False)
+    answers = models.JSONField(default=list, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+        unique_together = ('enrollment', 'quiz')
+        indexes = [
+            models.Index(fields=['enrollment', 'quiz']),
+            models.Index(fields=['quiz', 'submitted_at']),
+        ]
+
+    def __str__(self):
+        return f"Attempt {self.enrollment_id}-{self.quiz_id}: {self.score_percent}%"
