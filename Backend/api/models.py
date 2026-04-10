@@ -146,9 +146,7 @@ class Course(models.Model):
 
     tutor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='courses')
     title = models.CharField(max_length=120)
-    slug = models.SlugField(max_length=150, unique=True)
     summary = models.CharField(max_length=300)
-    description = models.TextField()
     category = models.CharField(max_length=80)
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
     duration_hours = models.DecimalField(
@@ -163,9 +161,6 @@ class Course(models.Model):
     )
     thumbnail = models.ImageField(upload_to='courses/thumbnails/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
-    public_marketplace = models.BooleanField(default=True)
-    search_indexing = models.BooleanField(default=False)
-    auto_enroll_existing_students = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
