@@ -6,6 +6,10 @@ const ToolbarButton = ({ title, children, onClick }) => (
     type="button"
     title={title}
     onClick={onClick}
+    onMouseDown={(event) => {
+      // Keep textarea selection active so toolbar actions apply to selected text.
+      event.preventDefault();
+    }}
     className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-black hover:text-black transition-colors text-sm font-bold"
   >
     {children}
@@ -22,18 +26,44 @@ export default function RichTextEditor({
 }) {
   const ref = useRef();
 
+  const getSelectionRange = () => {
+    const el = ref.current;
+    if (!el) {
+      return { start: 0, end: 0 };
+    }
+
+    const start = Number.isInteger(el.selectionStart) ? el.selectionStart : 0;
+    const end = Number.isInteger(el.selectionEnd) ? el.selectionEnd : start;
+    return start <= end ? { start, end } : { start: end, end: start };
+  };
+
   const wrap = (before, after = before) => {
     const el = ref.current;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
+    const { start, end } = getSelectionRange();
     const selected = value.slice(start, end);
     const newVal =
       value.slice(0, start) + before + selected + after + value.slice(end);
     onChange(newVal);
+
     setTimeout(() => {
+      if (!el) return;
       el.focus();
       el.setSelectionRange(start + before.length, end + before.length);
     }, 0);
+  };
+
+  const handleKeyDown = (event) => {
+    const key = String(event.key || "").toLowerCase();
+    if ((event.ctrlKey || event.metaKey) && key === "b") {
+      event.preventDefault();
+      wrap("**");
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && key === "i") {
+      event.preventDefault();
+      wrap("_");
+    }
   };
 
   const hasError = !!error;
@@ -42,13 +72,13 @@ export default function RichTextEditor({
     <div>
       {label && <FieldLabel>{label}</FieldLabel>}
       <div
-        className={`border-2 rounded-xl overflow-hidden transition-colors focus-within:ring-1 ${
+        className={`rounded-lg border overflow-hidden transition-colors focus-within:ring-2 ${
           hasError
-            ? "border-red-500 focus-within:border-red-600 focus-within:ring-red-200"
-            : "border-black focus-within:border-black focus-within:ring-blue-100"
+            ? "border-red-400 bg-red-50 focus-within:border-red-500 focus-within:ring-red-200"
+            : "border-slate-400 bg-slate-50 focus-within:border-indigo-500 focus-within:ring-indigo-500"
         }`}
       >
-        <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 bg-white">
+        <div className="flex items-center gap-1 px-3 py-2 border-b border-slate-300 bg-slate-50">
           <ToolbarButton title="Bold" onClick={() => wrap("**")}>
             B
           </ToolbarButton>
@@ -100,7 +130,7 @@ export default function RichTextEditor({
               />
             </svg>
           </ToolbarButton>
-          <span className="ml-auto text-xs text-gray-300">
+          <span className="ml-auto text-xs text-slate-400">
             {value.length} chars
           </span>
         </div>
@@ -110,10 +140,11 @@ export default function RichTextEditor({
           name={name}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           rows={7}
-          className={`w-full px-4 py-3 text-sm text-black resize-y focus:outline-none placeholder-gray-600 ${
-            hasError ? "bg-red-50" : "bg-white"
+          className={`w-full px-4 py-3 text-base text-slate-700 resize-y focus:outline-none placeholder:text-slate-500 ${
+            hasError ? "bg-red-50" : "bg-slate-50 focus:bg-white"
           }`}
         />
       </div>

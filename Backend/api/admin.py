@@ -11,6 +11,11 @@ from .models import (
 	Lesson,
 	Enrollment,
 	LessonCompletion,
+	LessonAuthoringProfile,
+	LessonExerciseFile,
+	LessonQuiz,
+	LessonQuizQuestion,
+	LessonQuizAttempt,
 )
 
 admin.site.register(User)
@@ -24,3 +29,8 @@ admin.site.register(Chapter)
 admin.site.register(Lesson)
 admin.site.register(Enrollment)
 admin.site.register(LessonCompletion)
+admin.site.register(LessonAuthoringProfile)
+admin.site.register(LessonExerciseFile)
+admin.site.register(LessonQuiz)
+admin.site.register(LessonQuizQuestion)
+admin.site.register(LessonQuizAttempt)

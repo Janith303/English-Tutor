@@ -1,5 +1,10 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import Home from "./components/home/Home";
 import Login from "./components/home/login";
 import SignUp from "./components/home/singup";
@@ -34,63 +39,97 @@ import TutorQandA from "./components/qa/TutorQandA";
 import TutorDashboardPage from "./components/tutor/TutorDashboardPage";
 import EditCoursePage from "./components/course/EditCoursePage";
 import TutorCreateQuizPage from "./components/tutor/TutorCreateQuizPage";
+import TutorLessonEditorPage from "./components/lesson/TutorLessonEditorPage";
+import TutorLessonPreviewPage from "./components/lesson/TutorLessonPreviewPage";
+import LessonReaderPage from "./components/lesson/LessonReaderPage";
+import VibrantMeshBackground from "./components/ui/VibrantMeshBackground";
 
+function AppRoutes() {
+  const location = useLocation();
+  const hasGlobalMesh = location.pathname !== "/signup";
+
+  return (
+    <div
+      className={`relative min-h-screen overflow-x-hidden ${hasGlobalMesh ? "app-mesh-scope app-mesh-active" : ""}`}
+    >
+      {hasGlobalMesh && <VibrantMeshBackground />}
+      <div className={hasGlobalMesh ? "relative z-10" : ""}>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/becometutor" element={<BecomeTutor />} />
+
+          {/* Dashboard & Learning */}
+          <Route path="/dashboard" element={<LearnerDashboard />} />
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/my-learning" element={<MyLearningPage />} />
+          <Route
+            path="/learning/:courseId/lesson/:lessonId"
+            element={<LessonReaderPage />}
+          />
+          <Route
+            path="/learning/:courseId"
+            element={<PersonalizedLearningHub />}
+          />
+          <Route path="/course/:courseId" element={<TutorDetailsPage />} />
+
+          {/* Features */}
+          <Route path="/quiz" element={<QuizHome />} />
+          <Route path="/qa" element={<QandAPage />} />
+          <Route path="/tutor-qa" element={<TutorQandA />} />
+
+          {/* Student Signup Flow */}
+          <Route path="/signup/sverify" element={<StudentSignUp />} />
+          <Route path="/signup/interests" element={<StudentSignUpStep2 />} />
+          <Route path="/signup/test" element={<PlacementTest />} />
+
+          {/* Tutor/Combined Signup Flow */}
+          <Route path="/stsignup/stverify" element={<Studenttutor />} />
+          <Route path="/stsignup/stexperiance" element={<Stexperiance />} />
+          <Route path="/stsignup/mailverify" element={<Stmailverify />} />
+          <Route path="/tutor/stverify" element={<TutorSignup />} />
+          <Route path="/tutor/dashboard" element={<TutorDashboardPage />} />
+          <Route path="/edit-course" element={<EditCoursePage />} />
+          <Route
+            path="/tutor/courses/:courseId/chapter/:chapterId/lesson/:lessonId/edit"
+            element={<TutorLessonEditorPage />}
+          />
+          <Route
+            path="/tutor/courses/:courseId/chapter/:chapterId/lesson/:lessonId/preview"
+            element={<TutorLessonPreviewPage />}
+          />
+          <Route path="/tutor/create-quiz" element={<TutorCreateQuizPage />} />
+
+          <Route path="/daily-quiz" element={<DailyQuizStart />} />
+          <Route path="/daily-quiz/play" element={<DailyQuizGame />} />
+          <Route path="/daily-quiz/result" element={<DailyQuizResult />} />
+          <Route path="/vocabulary-quiz" element={<VocabularyQuizStart />} />
+          <Route
+            path="/vocabulary-quiz/play"
+            element={<VocabularyQuizGame />}
+          />
+          <Route
+            path="/vocabulary-quiz/result"
+            element={<VocabularyQuizResult />}
+          />
+          <Route path="/grammar-quiz" element={<GrammarQuizStart />} />
+          <Route path="/grammar-quiz/play" element={<GrammarQuizGame />} />
+          <Route path="/grammar-quiz/result" element={<GrammarQuizResult />} />
+          <Route path="/reading-quiz" element={<ReadingQuizStart />} />
+          <Route path="/reading-quiz/play" element={<ReadingQuizGame />} />
+          <Route path="/reading-quiz/result" element={<ReadingQuizResult />} />
+        </Routes>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/becometutor" element={<BecomeTutor />} />
-
-        {/* Dashboard & Learning */}
-        <Route path="/dashboard" element={<LearnerDashboard />} />
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/my-learning" element={<MyLearningPage />} />
-        <Route
-          path="/learning/:courseId"
-          element={<PersonalizedLearningHub />}
-        />
-        <Route path="/course/:courseId" element={<TutorDetailsPage />} />
-
-        {/* Features */}
-        <Route path="/quiz" element={<QuizHome />} />
-        <Route path="/qa" element={<QandAPage />} />
-        <Route path="/tutor-qa" element={<TutorQandA />} />
-
-        {/* Student Signup Flow */}
-        <Route path="/signup/sverify" element={<StudentSignUp />} />
-        <Route path="/signup/interests" element={<StudentSignUpStep2 />} />
-        <Route path="/signup/test" element={<PlacementTest />} />
-
-        {/* Tutor/Combined Signup Flow */}
-        <Route path="/stsignup/stverify" element={<Studenttutor />} />
-        <Route path="/stsignup/stexperiance" element={<Stexperiance />} />
-        <Route path="/stsignup/mailverify" element={<Stmailverify />} />
-        <Route path="/tutor/stverify" element={<TutorSignup />} />
-        <Route path="/tutor/dashboard" element={<TutorDashboardPage />} />
-        <Route path="/edit-course" element={<EditCoursePage />} />
-        <Route path="/tutor/create-quiz" element={<TutorCreateQuizPage />} />
-
-        <Route path="/daily-quiz" element={<DailyQuizStart />} />
-        <Route path="/daily-quiz/play" element={<DailyQuizGame />} />
-        <Route path="/daily-quiz/result" element={<DailyQuizResult />} />
-        <Route path="/vocabulary-quiz" element={<VocabularyQuizStart />} />
-        <Route path="/vocabulary-quiz/play" element={<VocabularyQuizGame />} />
-        <Route
-          path="/vocabulary-quiz/result"
-          element={<VocabularyQuizResult />}
-        />
-        <Route path="/grammar-quiz" element={<GrammarQuizStart />} />
-        <Route path="/grammar-quiz/play" element={<GrammarQuizGame />} />
-        <Route path="/grammar-quiz/result" element={<GrammarQuizResult />} />
-        <Route path="/reading-quiz" element={<ReadingQuizStart />} />
-        <Route path="/reading-quiz/play" element={<ReadingQuizGame />} />
-        <Route path="/reading-quiz/result" element={<ReadingQuizResult />} />
-      </Routes>
+      <AppRoutes />
     </Router>
   );
 }

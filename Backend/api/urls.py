@@ -9,6 +9,7 @@ from .views import (
     VerifyOTPView, 
     InterestListView,
     SubmitInterestsView, 
+    StudentProfileView,
     PlacementTestView, 
     CreateQuestionView,
     IdentityVerificationView,      # New: Step 1 of Tutor Application
@@ -39,6 +40,7 @@ urlpatterns = [
     # --- Onboarding Flow ---
     path('interests/list/', InterestListView.as_view(), name='list_interests'), # To GET interests
     path('interests/', SubmitInterestsView.as_view(), name='submit_interests'), # To POST selected interests
+    path('students/profile/', StudentProfileView.as_view(), name='student-profile'),
     path('placement-test/', PlacementTestView.as_view(), name='placement_test'),
     path('create-questions/', CreateQuestionView.as_view(), name='create-questions'),
     
@@ -75,4 +77,16 @@ urlpatterns += [
     path('students/enrollments/', course_views.StudentEnrollmentListCreateView.as_view(), name='student-enrollments'),
     path('students/courses/<int:course_id>/lessons/<int:lesson_id>/complete/', course_views.StudentLessonCompleteView.as_view(), name='student-lesson-complete'),
     path('students/courses/<int:course_id>/progress/', course_views.StudentCourseProgressView.as_view(), name='student-course-progress'),
+
+    # --- Tutor Lesson Authoring ---
+    path('tutor/chapters/<int:chapter_id>/lessons/<int:lesson_id>/authoring/', course_views.TutorLessonAuthoringDetailView.as_view(), name='tutor-lesson-authoring-detail'),
+    path('tutor/lessons/<int:lesson_id>/files/', course_views.TutorLessonExerciseFileListCreateView.as_view(), name='tutor-lesson-files'),
+    path('tutor/lessons/<int:lesson_id>/files/<int:file_id>/', course_views.TutorLessonExerciseFileDetailView.as_view(), name='tutor-lesson-file-detail'),
+    path('tutor/lessons/<int:lesson_id>/quizzes/', course_views.TutorLessonQuizListCreateView.as_view(), name='tutor-lesson-quizzes'),
+    path('tutor/lessons/<int:lesson_id>/quizzes/<int:quiz_id>/', course_views.TutorLessonQuizDetailView.as_view(), name='tutor-lesson-quiz-detail'),
+
+    # --- Learner Lesson Reader + Quiz ---
+    path('students/courses/<int:course_id>/lessons/<int:lesson_id>/', course_views.StudentLessonDetailView.as_view(), name='student-lesson-detail'),
+    path('students/courses/<int:course_id>/lessons/<int:lesson_id>/quizzes/<int:quiz_id>/submit/', course_views.StudentLessonQuizSubmitView.as_view(), name='student-lesson-quiz-submit'),
+    path('students/courses/<int:course_id>/lessons/<int:lesson_id>/complete-checked/', course_views.StudentLessonCompleteWithRulesView.as_view(), name='student-lesson-complete-checked'),
 ]
