@@ -13,7 +13,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['role'] = self.user.role
         data['email'] = self.user.email
         data['full_name'] = self.user.full_name
-        data['is_verified'] = self.user.is_verified
+        data['onboarding_status'] = self.user.onboarding_status
         return data
 
 # 1. Serializer for Placement Test Questions

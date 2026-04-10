@@ -28,21 +28,36 @@ export default function Login() {
       });
 
       if (res.status === 200) {
-        // NOTE: Ensure your Django Serializer sends 'is_verified' and 'full_name'
-        const { access, refresh, role, is_verified, full_name } = res.data;
+        // Added onboarding_status to the destructured data
+        const { access, refresh, role, /*is_verified,*/ full_name, onboarding_status } = res.data;
 
-        // --- NEW LOGIC: CONDITIONAL VERIFICATION CHECK ---
+        // --- NEW LOGIC: VERIFICATION & ONBOARDING GATING ---
         const isTutorRole = role === "TUTOR" || role === "STUDENT_TUTOR";
 
-        // If they are a tutor but NOT yet verified by admin, block entry
-        if (isTutorRole && !is_verified) {
-          setError("Account Pending: Your Tutor profile is under review. You will be able to log in once verified.");
+        // 1. Strict Tutor Check: Must be verified by Admin
+        if (isTutorRole && onboarding_status !== "REGISTERED") {
+          setError("Account Pending: Your Tutor profile is under review.");
           setLoading(false);
           navigate("/waiting-approval");
-          return; // Stop the login process here
+          return; 
         }
 
-        // 2. Persist session data (Reached by Admins, Students, and Verified Tutors)
+        // 2. Strict Student Check: Must have completed placement test
+        if (role === "STUDENT" && onboarding_status !== "COMPLETED") {
+          // We save the token so they can actually perform the onboarding actions
+          localStorage.setItem("access_token", access);
+          localStorage.setItem("role", role);
+          
+          // Route them to the correct step based on where they left off
+          if (onboarding_status === "REGISTERED") {
+            navigate("/onboarding/interests");
+          } else {
+            navigate("/onboarding/placement-test");
+          }
+          return;
+        }
+
+        // 2. Persist session data (Reached by Admins and Fully Registered Users)
         localStorage.setItem("access_token", access);
         localStorage.setItem("refresh_token", refresh);
         localStorage.setItem("role", role);
@@ -65,8 +80,7 @@ export default function Login() {
         }
       }
     } catch (err) {
-      // Handles 401 Unauthorized or Connection Errors
-      const msg = err.response?.data?.detail || "Invalid email or password. Please try again.";
+      const msg = err.response?.data?.detail && "Invalid email or password. Please try again.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -102,7 +116,6 @@ export default function Login() {
               <p className="mt-2 text-gray-500 font-medium">Enter your credentials to access your dashboard.</p>
             </div>
 
-            {/* Error Alert for Invalid Login or Verification Pending */}
             {error && (
               <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl animate-shake">
                 <AlertCircle size={20} className="shrink-0" />
