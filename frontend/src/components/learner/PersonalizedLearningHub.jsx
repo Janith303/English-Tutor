@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import LearnerTopNav from "./LearnerTopNav";
-import { mockStudent, mockLessons, mockCourses } from "../../data/mockCourses";
+import { mockStudent } from "../../data/mockCourses";
 import { Target, Crown, Zap, TrendingUp } from "lucide-react";
 import {
-  completeCourseLesson,
   getCourseProgress,
   getPublishedCourseDetail,
+  getStudentProfile,
+  toLearnerStudentProfile,
   toLessonRowsFromCourseDetail,
 } from "../../api/courseApi";
 
@@ -22,9 +23,10 @@ export default function PersonalizedLearningHub() {
   const enrolledCourse = course;
 
   const hydrateCourse = async () => {
-    const [detail, progress] = await Promise.all([
+    const [detail, progress, profileData] = await Promise.all([
       getPublishedCourseDetail(courseId),
       getCourseProgress(courseId),
+      getStudentProfile(),
     ]);
 
     setCourse(detail);
@@ -39,7 +41,12 @@ export default function PersonalizedLearningHub() {
       }),
     );
     setLessons(mappedLessons);
-    setStudent((prev) => ({ ...prev, earnedCredits: progress.earned_credits }));
+
+    const resolvedProfile = toLearnerStudentProfile(profileData, mockStudent);
+    setStudent({
+      ...resolvedProfile,
+      earnedCredits: progress.earned_credits,
+    });
   };
 
   useEffect(() => {
@@ -57,21 +64,14 @@ export default function PersonalizedLearningHub() {
     load();
   }, [courseId]);
 
-  const handleStartLesson = async (lesson) => {
-    const confirm = window.confirm(
-      `Mark "${lesson.title}" as complete and earn ${lesson.creditsAwarded} credits?`,
-    );
-    if (!confirm) return;
-
-    try {
-      await completeCourseLesson(courseId, lesson.id);
-      await hydrateCourse();
-    } catch (error) {
-      alert(
-        error?.response?.data?.error ||
-          "Failed to complete lesson. Please try again.",
-      );
+  const handleStartLesson = (lesson) => {
+    if (!lesson?.id) return;
+    if (lesson.isUnlocked === false) {
+      alert("This lesson is still locked.");
+      return;
     }
+
+    navigate(`/learning/${courseId}/lesson/${lesson.id}`);
   };
 
   const completedCount = lessons.filter((l) => l.isCompleted).length;
@@ -141,9 +141,8 @@ export default function PersonalizedLearningHub() {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">{student.name}</p>
-                <p className="text-sm text-gray-600">
-                  {student.proficiencyLevel}
-                </p>
+                <p className="text-sm text-gray-600">{student.level}</p>
+                <p className="text-xs text-gray-500">{student.selectedArea}</p>
               </div>
             </div>
             <div className="bg-white rounded-full px-4 py-2 border-2 border-yellow-400 text-center">
