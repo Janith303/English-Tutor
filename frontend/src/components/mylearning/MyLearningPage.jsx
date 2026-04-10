@@ -13,14 +13,18 @@ import {
 } from "../../data/myLearningData";
 import { mockStudent } from "../../data/mockCourses";
 import {
+  filterCoursesForStudentPreferences,
   getPublishedCourses,
+  getStudentProfile,
   getStudentEnrollments,
   toLearnerCourseCard,
+  toLearnerStudentProfile,
   toMyLearningCard,
 } from "../../api/courseApi";
 
 export default function MyLearningPage() {
   const navigate = useNavigate();
+  const [student, setStudent] = useState(mockStudent);
   const [courses, setCourses] = useState([]);
   const [recommended, setRecommended] = useState(recommendedCourses);
   const [loading, setLoading] = useState(true);
@@ -29,17 +33,36 @@ export default function MyLearningPage() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [enrollments, published] = await Promise.all([
+        const [profileData, enrollments, published] = await Promise.all([
+          getStudentProfile(),
           getStudentEnrollments(),
           getPublishedCourses(),
         ]);
 
+        const resolvedStudent = toLearnerStudentProfile(
+          profileData,
+          mockStudent,
+        );
+
+        setStudent(resolvedStudent);
         setCourses((enrollments || []).map(toMyLearningCard));
-        setRecommended((published || []).slice(0, 3).map(toLearnerCourseCard));
+
+        const mappedPublished = (published || []).map(toLearnerCourseCard);
+        const filteredRecommended = filterCoursesForStudentPreferences(
+          mappedPublished,
+          resolvedStudent,
+        );
+        setRecommended(filteredRecommended.slice(0, 3));
       } catch (error) {
         console.error("Failed to load my learning data:", error);
+        setStudent(mockStudent);
         setCourses(enrolledCourses);
-        setRecommended(recommendedCourses);
+        setRecommended(
+          filterCoursesForStudentPreferences(
+            recommendedCourses,
+            mockStudent,
+          ).slice(0, 3),
+        );
       } finally {
         setLoading(false);
       }
@@ -100,7 +123,7 @@ export default function MyLearningPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <LearnerTopNav student={mockStudent} />
+      <LearnerTopNav student={student} />
       <div className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
         <div className="flex gap-8">
           <div className="flex-1 min-w-0">
@@ -125,9 +148,14 @@ export default function MyLearningPage() {
                 Back to Dashboard
               </button>
               <div className="flex items-center justify-between gap-4">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  My Learning
-                </h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    My Learning
+                  </h1>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Focus: {student.selectedArea} · Level: {student.level}
+                  </p>
+                </div>
                 <CourseSearchFilter />
               </div>
             </div>
