@@ -14,7 +14,7 @@ export default function LearnerTopNav({ student }) {
   return (
     <nav className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <img src={logoImg} alt="logo" className="h-17" />
+        <img src={logoImg} alt="logo" className="h-15" />
 
         <div className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
