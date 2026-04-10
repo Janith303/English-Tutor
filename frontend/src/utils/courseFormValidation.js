@@ -5,22 +5,11 @@ export const VALIDATION_RULES = {
     maxLength: 120,
     label: "Course Title",
   },
-  slug: {
-    required: true,
-    pattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    label: "URL Slug",
-    patternMessage: "Only lowercase letters, numbers, and hyphens allowed",
-  },
   summary: {
     required: true,
     minLength: 10,
     maxLength: 300,
     label: "Summary",
-  },
-  description: {
-    required: true,
-    minLength: 10,
-    label: "Full Description",
   },
   category: {
     required: true,

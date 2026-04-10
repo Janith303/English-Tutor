@@ -23,9 +23,7 @@ import {
 
 const INITIAL_FORM = {
   title: "",
-  slug: "",
   summary: "",
-  description: "",
   category: "",
   level: "",
   duration: "",
@@ -52,9 +50,6 @@ export default function EditCoursePage({ onBack }) {
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [publishing, setPublishing] = useState({
     status: "DRAFT",
-    publicMarketplace: true,
-    searchIndexing: false,
-    autoEnroll: false,
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -118,18 +113,13 @@ export default function EditCoursePage({ onBack }) {
 
   const getPayload = () => ({
     title: formData.title,
-    slug: formData.slug,
     summary: formData.summary,
-    description: formData.description,
     category: formData.category,
     level: formData.level,
     duration_hours: formData.duration,
     price: formData.price,
     thumbnail: formData.thumbnail || undefined,
     status: publishing.status,
-    public_marketplace: publishing.publicMarketplace,
-    search_indexing: publishing.searchIndexing,
-    auto_enroll_existing_students: publishing.autoEnroll,
   });
 
   const handleSubmit = async () => {
@@ -228,21 +218,19 @@ export default function EditCoursePage({ onBack }) {
 
             {!loadingCourse && activeTab === "basic" && (
               <div className="flex gap-7">
-                <div className="flex-1 min-w-0 flex flex-col gap-10">
+                <div className="flex-1 min-w-0 flex flex-col gap-8">
                   <BasicInfoForm
                     formData={formData}
                     errors={errors}
                     onChange={handleChange}
                     onBlur={handleBlur}
                   />
-                  <div className="border-t border-gray-100 pt-8">
-                    <CourseMetadataFields
-                      formData={formData}
-                      errors={errors}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                    />
-                  </div>
+                  <CourseMetadataFields
+                    formData={formData}
+                    errors={errors}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                  />
                 </div>
 
                 <div className="w-64 flex-shrink-0 flex flex-col gap-5">

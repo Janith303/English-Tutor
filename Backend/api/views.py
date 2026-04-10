@@ -1,6 +1,9 @@
 import random
 import json
+from datetime import timedelta
 from django.utils import timezone
+from django.db.models import Count
+from django.db.models.functions import TruncDate
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets
@@ -172,6 +175,38 @@ class PlacementTestView(APIView):
             "onboarding_status": user.onboarding_status,
             "status": "Onboarding Complete"
         }, status=status.HTTP_200_OK)
+
+
+class StudentProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        interest_names = list(user.interests.values_list('name', flat=True))
+
+        latest_result = (
+            TestResult.objects.filter(student=user)
+            .order_by('-completed_at', '-id')
+            .first()
+        )
+
+        target_level_label = dict(User.TARGET_LEVEL_CHOICES).get(user.target_proficiency)
+        placement_level = latest_result.proficiency_level if latest_result else None
+        resolved_level = placement_level or target_level_label
+
+        data = {
+            'id': user.id,
+            'full_name': user.full_name,
+            'email': user.email,
+            'onboarding_status': user.onboarding_status,
+            'selected_area': interest_names[0] if interest_names else None,
+            'selected_areas': interest_names,
+            'target_level': target_level_label,
+            'placement_level': placement_level,
+            'placement_score': latest_result.score if latest_result else None,
+            'level': resolved_level,
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class CreateQuestionView(APIView):
@@ -404,7 +439,53 @@ class TutorDashboardView(APIView):
     permission_classes = [IsApprovedTutor]
 
     def get(self, request):
-        return Response({"message": "Welcome to the Tutor Dashboard! You have access to this because your application was approved."})
+        courses_qs = Course.objects.filter(tutor=request.user)
+        enrollments_qs = Enrollment.objects.filter(course__tutor=request.user)
+
+        today = timezone.localdate()
+        start_date = today - timedelta(days=29)
+
+        enrollment_rows = (
+            enrollments_qs
+            .filter(enrolled_at__date__gte=start_date)
+            .annotate(day=TruncDate('enrolled_at'))
+            .values('day')
+            .annotate(enrollments=Count('id'))
+            .order_by('day')
+        )
+
+        enrollments_by_day = {
+            row['day']: row['enrollments']
+            for row in enrollment_rows
+            if row.get('day')
+        }
+
+        enrollment_trend = []
+        for index in range(30):
+            current_day = start_date + timedelta(days=index)
+            enrollment_trend.append(
+                {
+                    "day": index + 1,
+                    "date": current_day.isoformat(),
+                    "enrollments": enrollments_by_day.get(current_day, 0),
+                }
+            )
+
+        stats = {
+            "total_signups": enrollments_qs.count(),
+            "total_learners": enrollments_qs.values("student_id").distinct().count(),
+            "total_courses": courses_qs.count(),
+            "total_lessons": Lesson.objects.filter(chapter__course__tutor=request.user).count(),
+        }
+
+        return Response(
+            {
+                "message": "Welcome to the Tutor Dashboard!",
+                "stats": stats,
+                "enrollment_trend": enrollment_trend,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 # --- 6. COURSE CRUD WORKFLOW ---
@@ -456,24 +537,6 @@ def _build_course_context(user, course):
         'completed_lesson_ids': completed_ids,
         'earned_credits': enrollment.earned_credits,
     }
-
-
-def _parse_optional_bool(raw_value):
-    if isinstance(raw_value, bool):
-        return raw_value
-
-    if isinstance(raw_value, str):
-        normalized = raw_value.strip().lower()
-        if normalized in ['true', '1', 'yes', 'on']:
-            return True
-        if normalized in ['false', '0', 'no', 'off']:
-            return False
-        return None
-
-    if isinstance(raw_value, (int, float)):
-        return bool(raw_value)
-
-    return None
 
 
 class TutorCourseListCreateView(APIView):
@@ -547,30 +610,11 @@ class TutorCoursePublishView(APIView):
             else:
                 course.published_at = None
 
-        if 'public_marketplace' in request.data:
-            parsed = _parse_optional_bool(request.data.get('public_marketplace'))
-            if parsed is None:
-                return Response({'error': 'public_marketplace must be a boolean value.'}, status=status.HTTP_400_BAD_REQUEST)
-            course.public_marketplace = parsed
-        if 'search_indexing' in request.data:
-            parsed = _parse_optional_bool(request.data.get('search_indexing'))
-            if parsed is None:
-                return Response({'error': 'search_indexing must be a boolean value.'}, status=status.HTTP_400_BAD_REQUEST)
-            course.search_indexing = parsed
-        if 'auto_enroll_existing_students' in request.data:
-            parsed = _parse_optional_bool(request.data.get('auto_enroll_existing_students'))
-            if parsed is None:
-                return Response({'error': 'auto_enroll_existing_students must be a boolean value.'}, status=status.HTTP_400_BAD_REQUEST)
-            course.auto_enroll_existing_students = parsed
-
         course.save()
         return Response(
             {
-                'message': 'Publishing settings updated successfully.',
+                'message': 'Publishing status updated successfully.',
                 'status': course.status,
-                'public_marketplace': course.public_marketplace,
-                'search_indexing': course.search_indexing,
-                'auto_enroll_existing_students': course.auto_enroll_existing_students,
                 'published_at': course.published_at,
             },
             status=status.HTTP_200_OK,
@@ -752,7 +796,6 @@ class PublishedCourseListView(APIView):
     def get(self, request):
         courses = Course.objects.filter(
             status='PUBLISHED',
-            public_marketplace=True,
         ).select_related('tutor')
         serializer = CoursePublicSerializer(courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -891,6 +934,577 @@ class StudentCourseProgressView(APIView):
         )
         return Response({"message": "Welcome to the Tutor Dashboard!"})
 
+
+# --- 7. LESSON AUTHORING + LESSON READER WORKFLOW ---
+from datetime import timedelta
+from rest_framework.parsers import JSONParser
+
+from .models import (
+    LessonAuthoringProfile,
+    LessonExerciseFile,
+    LessonQuiz,
+    LessonQuizAttempt,
+)
+from .serializers import (
+    LessonAuthoringProfileSerializer,
+    LessonExerciseFileSerializer,
+    LessonQuizSerializer,
+    LearnerLessonQuizSerializer,
+    LessonQuizSubmissionSerializer,
+    LessonQuizAttemptSerializer,
+)
+
+
+def _normalize_exercise_file_orders(lesson):
+    files = lesson.exercise_files.order_by('order', 'id')
+    for index, file_obj in enumerate(files, start=1):
+        if file_obj.order != index:
+            LessonExerciseFile.objects.filter(id=file_obj.id).update(order=index)
+
+
+def _normalize_quiz_orders(lesson):
+    quizzes = lesson.quizzes.order_by('order', 'id')
+    for index, quiz in enumerate(quizzes, start=1):
+        if quiz.order != index:
+            LessonQuiz.objects.filter(id=quiz.id).update(order=index)
+
+
+def _get_ordered_course_lesson_ids(course_id):
+    return list(
+        Lesson.objects.filter(chapter__course_id=course_id)
+        .order_by('chapter__order', 'order', 'id')
+        .values_list('id', flat=True)
+    )
+
+
+def _is_sequentially_unlocked(enrollment, lesson):
+    ordered_ids = _get_ordered_course_lesson_ids(enrollment.course_id)
+    if lesson.id not in ordered_ids:
+        return False, []
+
+    lesson_index = ordered_ids.index(lesson.id)
+    if lesson_index == 0:
+        return True, []
+
+    required_previous_ids = ordered_ids[:lesson_index]
+    completed_previous_ids = set(
+        LessonCompletion.objects.filter(
+            enrollment=enrollment,
+            lesson_id__in=required_previous_ids,
+        ).values_list('lesson_id', flat=True)
+    )
+    missing_ids = [lesson_id for lesson_id in required_previous_ids if lesson_id not in completed_previous_ids]
+    return len(missing_ids) == 0, missing_ids
+
+
+def _is_drip_unlocked(enrollment, profile):
+    if not profile or profile.drip_delay_days <= 0:
+        return True, None
+
+    unlock_at = enrollment.enrolled_at + timedelta(days=profile.drip_delay_days)
+    return timezone.now() >= unlock_at, unlock_at
+
+
+def _can_student_view_lesson(profile):
+    if not profile:
+        return True
+    if profile.status != 'PUBLISHED':
+        return False
+    if profile.publish_at and timezone.now() < profile.publish_at:
+        return False
+    return True
+
+
+def _quiz_completion_requirement(enrollment, lesson, profile):
+    published_quizzes = list(lesson.quizzes.filter(status='PUBLISHED').order_by('order', 'id'))
+    require_quiz_pass = bool(published_quizzes) and (profile.require_quiz_pass_for_completion if profile else True)
+
+    if not require_quiz_pass:
+        return {
+            'require_quiz_pass': False,
+            'all_passed': True,
+            'missing_quiz_ids': [],
+            'published_quizzes': published_quizzes,
+        }
+
+    passed_quiz_ids = set(
+        LessonQuizAttempt.objects.filter(
+            enrollment=enrollment,
+            quiz__in=published_quizzes,
+            passed=True,
+        ).values_list('quiz_id', flat=True)
+    )
+    missing_quiz_ids = [quiz.id for quiz in published_quizzes if quiz.id not in passed_quiz_ids]
+    return {
+        'require_quiz_pass': require_quiz_pass,
+        'all_passed': len(missing_quiz_ids) == 0,
+        'missing_quiz_ids': missing_quiz_ids,
+        'published_quizzes': published_quizzes,
+    }
+
+
+class TutorLessonAuthoringDetailView(APIView):
+    permission_classes = [IsTutorAuthor]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_lesson(self, request, chapter_id, lesson_id):
+        lesson = get_object_or_404(
+            Lesson.objects.select_related('chapter__course__tutor'),
+            id=lesson_id,
+            chapter_id=chapter_id,
+        )
+        if lesson.chapter.course.tutor_id != request.user.id:
+            return None
+        return lesson
+
+    def get(self, request, chapter_id, lesson_id):
+        lesson = self.get_lesson(request, chapter_id, lesson_id)
+        if lesson is None:
+            return Response({'error': 'Unauthorized to access this lesson.'}, status=status.HTTP_403_FORBIDDEN)
+
+        profile, _ = LessonAuthoringProfile.objects.get_or_create(lesson=lesson)
+        serializer = LessonAuthoringProfileSerializer(profile, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, chapter_id, lesson_id):
+        lesson = self.get_lesson(request, chapter_id, lesson_id)
+        if lesson is None:
+            return Response({'error': 'Unauthorized to modify this lesson.'}, status=status.HTTP_403_FORBIDDEN)
+
+        profile, _ = LessonAuthoringProfile.objects.get_or_create(lesson=lesson)
+        serializer = LessonAuthoringProfileSerializer(
+            profile,
+            data=request.data,
+            partial=True,
+            context={'request': request},
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TutorLessonExerciseFileListCreateView(APIView):
+    permission_classes = [IsTutorAuthor]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_lesson(self, request, lesson_id):
+        lesson = get_object_or_404(
+            Lesson.objects.select_related('chapter__course__tutor'),
+            id=lesson_id,
+        )
+        if lesson.chapter.course.tutor_id != request.user.id:
+            return None
+        return lesson
+
+    def get(self, request, lesson_id):
+        lesson = self.get_lesson(request, lesson_id)
+        if lesson is None:
+            return Response({'error': 'Unauthorized to access this lesson.'}, status=status.HTTP_403_FORBIDDEN)
+
+        files = lesson.exercise_files.all()
+        serializer = LessonExerciseFileSerializer(files, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, lesson_id):
+        lesson = self.get_lesson(request, lesson_id)
+        if lesson is None:
+            return Response({'error': 'Unauthorized to modify this lesson.'}, status=status.HTTP_403_FORBIDDEN)
+
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return Response({'error': 'file is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        display_name = (request.data.get('display_name') or uploaded_file.name).strip()
+        next_order = lesson.exercise_files.count() + 1
+
+        exercise_file = LessonExerciseFile.objects.create(
+            lesson=lesson,
+            file=uploaded_file,
+            display_name=display_name,
+            order=next_order,
+        )
+        return Response(LessonExerciseFileSerializer(exercise_file).data, status=status.HTTP_201_CREATED)
+
+
+class TutorLessonExerciseFileDetailView(APIView):
+    permission_classes = [IsTutorAuthor]
+    parser_classes = [JSONParser]
+
+    def get_file(self, request, lesson_id, file_id):
+        file_obj = get_object_or_404(
+            LessonExerciseFile.objects.select_related('lesson__chapter__course__tutor'),
+            id=file_id,
+            lesson_id=lesson_id,
+        )
+        if file_obj.lesson.chapter.course.tutor_id != request.user.id:
+            return None
+        return file_obj
+
+    def patch(self, request, lesson_id, file_id):
+        file_obj = self.get_file(request, lesson_id, file_id)
+        if file_obj is None:
+            return Response({'error': 'Unauthorized to modify this file.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if 'display_name' in request.data:
+            file_obj.display_name = str(request.data.get('display_name') or '').strip()
+
+        if 'order' in request.data:
+            try:
+                order = int(request.data.get('order'))
+                if order < 1:
+                    raise ValueError
+                file_obj.order = order
+            except (TypeError, ValueError):
+                return Response({'error': 'order must be an integer >= 1.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        file_obj.save()
+        _normalize_exercise_file_orders(file_obj.lesson)
+        refreshed_file = LessonExerciseFile.objects.get(id=file_obj.id)
+        return Response(LessonExerciseFileSerializer(refreshed_file).data, status=status.HTTP_200_OK)
+
+    def delete(self, request, lesson_id, file_id):
+        file_obj = self.get_file(request, lesson_id, file_id)
+        if file_obj is None:
+            return Response({'error': 'Unauthorized to delete this file.'}, status=status.HTTP_403_FORBIDDEN)
+
+        lesson = file_obj.lesson
+        file_obj.delete()
+        _normalize_exercise_file_orders(lesson)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class TutorLessonQuizListCreateView(APIView):
+    permission_classes = [IsTutorAuthor]
+    parser_classes = [JSONParser]
+
+    def get_lesson(self, request, lesson_id):
+        lesson = get_object_or_404(
+            Lesson.objects.select_related('chapter__course__tutor').prefetch_related('quizzes__questions'),
+            id=lesson_id,
+        )
+        if lesson.chapter.course.tutor_id != request.user.id:
+            return None
+        return lesson
+
+    def get(self, request, lesson_id):
+        lesson = self.get_lesson(request, lesson_id)
+        if lesson is None:
+            return Response({'error': 'Unauthorized to access quizzes for this lesson.'}, status=status.HTTP_403_FORBIDDEN)
+
+        quizzes = lesson.quizzes.prefetch_related('questions').all()
+        serializer = LessonQuizSerializer(quizzes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, lesson_id):
+        lesson = self.get_lesson(request, lesson_id)
+        if lesson is None:
+            return Response({'error': 'Unauthorized to modify quizzes for this lesson.'}, status=status.HTTP_403_FORBIDDEN)
+
+        payload = request.data.copy()
+        if not payload.get('order'):
+            payload['order'] = lesson.quizzes.count() + 1
+
+        serializer = LessonQuizSerializer(data=payload)
+        if serializer.is_valid():
+            quiz = serializer.save(lesson=lesson)
+            _normalize_quiz_orders(lesson)
+            return Response(LessonQuizSerializer(quiz).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TutorLessonQuizDetailView(APIView):
+    permission_classes = [IsTutorAuthor]
+    parser_classes = [JSONParser]
+
+    def get_quiz(self, request, lesson_id, quiz_id):
+        quiz = get_object_or_404(
+            LessonQuiz.objects.select_related('lesson__chapter__course__tutor').prefetch_related('questions'),
+            id=quiz_id,
+            lesson_id=lesson_id,
+        )
+        if quiz.lesson.chapter.course.tutor_id != request.user.id:
+            return None
+        return quiz
+
+    def patch(self, request, lesson_id, quiz_id):
+        quiz = self.get_quiz(request, lesson_id, quiz_id)
+        if quiz is None:
+            return Response({'error': 'Unauthorized to modify this quiz.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = LessonQuizSerializer(quiz, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            _normalize_quiz_orders(quiz.lesson)
+            refreshed_quiz = LessonQuiz.objects.prefetch_related('questions').get(id=quiz.id)
+            return Response(LessonQuizSerializer(refreshed_quiz).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, lesson_id, quiz_id):
+        quiz = self.get_quiz(request, lesson_id, quiz_id)
+        if quiz is None:
+            return Response({'error': 'Unauthorized to delete this quiz.'}, status=status.HTTP_403_FORBIDDEN)
+
+        lesson = quiz.lesson
+        quiz.delete()
+        _normalize_quiz_orders(lesson)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StudentLessonDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, course_id, lesson_id):
+        enrollment = get_object_or_404(
+            Enrollment.objects.select_related('course'),
+            student=request.user,
+            course_id=course_id,
+        )
+        lesson = get_object_or_404(
+            Lesson.objects.select_related('chapter__course').prefetch_related('exercise_files', 'quizzes__questions'),
+            id=lesson_id,
+            chapter__course_id=course_id,
+        )
+
+        profile = LessonAuthoringProfile.objects.filter(lesson=lesson).first()
+        if not _can_student_view_lesson(profile):
+            return Response({'error': 'This lesson is not published yet.'}, status=status.HTTP_403_FORBIDDEN)
+
+        sequential_unlocked, missing_previous_lesson_ids = _is_sequentially_unlocked(enrollment, lesson)
+        credits_unlocked = enrollment.earned_credits >= lesson.required_credits_to_unlock
+        drip_unlocked, drip_unlock_at = _is_drip_unlocked(enrollment, profile)
+        is_unlocked = sequential_unlocked and credits_unlocked and drip_unlocked
+
+        completion_exists = LessonCompletion.objects.filter(enrollment=enrollment, lesson=lesson).exists()
+
+        quiz_status = _quiz_completion_requirement(enrollment, lesson, profile)
+        quizzes_data = LearnerLessonQuizSerializer(quiz_status['published_quizzes'], many=True).data
+
+        attempt_by_quiz = {
+            attempt.quiz_id: attempt
+            for attempt in LessonQuizAttempt.objects.filter(
+                enrollment=enrollment,
+                quiz__in=quiz_status['published_quizzes'],
+            )
+        }
+        for quiz_data in quizzes_data:
+            attempt = attempt_by_quiz.get(quiz_data['id'])
+            quiz_data['attempt'] = LessonQuizAttemptSerializer(attempt).data if attempt else None
+
+        requires_quiz_pass = quiz_status['require_quiz_pass']
+        can_complete = is_unlocked and (quiz_status['all_passed'] or not requires_quiz_pass)
+
+        data = {
+            'id': lesson.id,
+            'title': lesson.title,
+            'description': profile.description if profile else '',
+            'content': lesson.content,
+            'duration_minutes': lesson.duration_minutes,
+            'credits_awarded': lesson.credits_awarded,
+            'required_credits_to_unlock': lesson.required_credits_to_unlock,
+            'status': profile.status if profile else 'PUBLISHED',
+            'publish_at': profile.publish_at if profile else None,
+            'drip_delay_days': profile.drip_delay_days if profile else 0,
+            'require_quiz_pass_for_completion': requires_quiz_pass,
+            'lesson_link_url': profile.lesson_link_url if profile else '',
+            'lesson_image_url': profile.lesson_image.url if profile and profile.lesson_image else None,
+            'lesson_video_file_url': profile.lesson_video_file.url if profile and profile.lesson_video_file else None,
+            'lesson_video_embed_url': profile.lesson_video_embed_url if profile else '',
+            'exercise_files': LessonExerciseFileSerializer(lesson.exercise_files.all(), many=True).data,
+            'quizzes': quizzes_data,
+            'is_completed': completion_exists,
+            'is_unlocked': is_unlocked,
+            'sequential_unlocked': sequential_unlocked,
+            'missing_previous_lesson_ids': missing_previous_lesson_ids,
+            'credits_unlocked': credits_unlocked,
+            'earned_credits': enrollment.earned_credits,
+            'drip_unlocked': drip_unlocked,
+            'drip_unlock_at': drip_unlock_at,
+            'all_quizzes_passed': quiz_status['all_passed'],
+            'missing_quiz_ids': quiz_status['missing_quiz_ids'],
+            'can_complete': can_complete,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class StudentLessonQuizSubmitView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, course_id, lesson_id, quiz_id):
+        enrollment = get_object_or_404(
+            Enrollment.objects.select_related('course'),
+            student=request.user,
+            course_id=course_id,
+        )
+        lesson = get_object_or_404(
+            Lesson.objects.select_related('chapter__course'),
+            id=lesson_id,
+            chapter__course_id=course_id,
+        )
+        profile = LessonAuthoringProfile.objects.filter(lesson=lesson).first()
+
+        if not _can_student_view_lesson(profile):
+            return Response({'error': 'This lesson is not published yet.'}, status=status.HTTP_403_FORBIDDEN)
+
+        sequential_unlocked, _ = _is_sequentially_unlocked(enrollment, lesson)
+        credits_unlocked = enrollment.earned_credits >= lesson.required_credits_to_unlock
+        drip_unlocked, _ = _is_drip_unlocked(enrollment, profile)
+
+        if not (sequential_unlocked and credits_unlocked and drip_unlocked):
+            return Response({'error': 'This lesson is still locked.'}, status=status.HTTP_403_FORBIDDEN)
+
+        quiz = get_object_or_404(
+            LessonQuiz.objects.prefetch_related('questions'),
+            id=quiz_id,
+            lesson=lesson,
+            status='PUBLISHED',
+        )
+
+        submission_serializer = LessonQuizSubmissionSerializer(data=request.data)
+        if not submission_serializer.is_valid():
+            return Response(submission_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        answers = submission_serializer.validated_data['answers']
+        submitted_by_question = {item['question_id']: item['selected_option'] for item in answers}
+
+        questions = list(quiz.questions.order_by('order', 'id'))
+        if not questions:
+            return Response({'error': 'Quiz has no questions yet.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        evaluated_answers = []
+        correct_count = 0
+        for question in questions:
+            selected_option = submitted_by_question.get(question.id)
+            is_correct = selected_option == question.correct_option
+            if is_correct:
+                correct_count += 1
+
+            evaluated_answers.append(
+                {
+                    'question_id': question.id,
+                    'selected_option': selected_option,
+                    'correct_option': question.correct_option,
+                    'is_correct': is_correct,
+                }
+            )
+
+        score_percent = round((correct_count / len(questions)) * 100)
+        passed = score_percent >= quiz.passing_score
+
+        attempt, _ = LessonQuizAttempt.objects.update_or_create(
+            enrollment=enrollment,
+            quiz=quiz,
+            defaults={
+                'score_percent': score_percent,
+                'passed': passed,
+                'answers': evaluated_answers,
+            },
+        )
+
+        return Response(
+            {
+                'message': 'Quiz submitted successfully.',
+                'quiz_id': quiz.id,
+                'score_percent': score_percent,
+                'passing_score': quiz.passing_score,
+                'passed': passed,
+                'correct_answers': correct_count,
+                'total_questions': len(questions),
+                'attempt': LessonQuizAttemptSerializer(attempt).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class StudentLessonCompleteWithRulesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, course_id, lesson_id):
+        enrollment = get_object_or_404(
+            Enrollment.objects.select_related('course'),
+            student=request.user,
+            course_id=course_id,
+        )
+        lesson = get_object_or_404(
+            Lesson.objects.select_related('chapter__course'),
+            id=lesson_id,
+            chapter__course_id=course_id,
+        )
+        profile = LessonAuthoringProfile.objects.filter(lesson=lesson).first()
+
+        if LessonCompletion.objects.filter(enrollment=enrollment, lesson=lesson).exists():
+            return Response({'message': 'Lesson already completed.'}, status=status.HTTP_200_OK)
+
+        if not _can_student_view_lesson(profile):
+            return Response({'error': 'This lesson is not published yet.'}, status=status.HTTP_403_FORBIDDEN)
+
+        sequential_unlocked, missing_previous_lesson_ids = _is_sequentially_unlocked(enrollment, lesson)
+        if not sequential_unlocked:
+            return Response(
+                {
+                    'error': 'Previous lessons must be completed first.',
+                    'missing_previous_lesson_ids': missing_previous_lesson_ids,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if enrollment.earned_credits < lesson.required_credits_to_unlock:
+            return Response(
+                {
+                    'error': 'Lesson is still locked by credit requirement.',
+                    'required_credits_to_unlock': lesson.required_credits_to_unlock,
+                    'earned_credits': enrollment.earned_credits,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        drip_unlocked, drip_unlock_at = _is_drip_unlocked(enrollment, profile)
+        if not drip_unlocked:
+            return Response(
+                {
+                    'error': 'Lesson is locked by drip schedule.',
+                    'drip_unlock_at': drip_unlock_at,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        quiz_status = _quiz_completion_requirement(enrollment, lesson, profile)
+        if quiz_status['require_quiz_pass'] and not quiz_status['all_passed']:
+            return Response(
+                {
+                    'error': 'Quiz pass is required before completing this lesson.',
+                    'missing_quiz_ids': quiz_status['missing_quiz_ids'],
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        with transaction.atomic():
+            LessonCompletion.objects.create(
+                enrollment=enrollment,
+                lesson=lesson,
+                credits_awarded=lesson.credits_awarded,
+            )
+
+            enrollment.earned_credits += lesson.credits_awarded
+            total_lessons = Lesson.objects.filter(chapter__course=enrollment.course).count()
+            completed_count = LessonCompletion.objects.filter(enrollment=enrollment).count()
+            enrollment.progress_percent = round((completed_count / total_lessons) * 100) if total_lessons else 0
+
+            if enrollment.progress_percent >= 100:
+                enrollment.status = 'completed'
+                enrollment.completed_at = timezone.now()
+
+            enrollment.save()
+
+        return Response(
+            {
+                'message': 'Lesson marked as completed.',
+                'earned_credits': enrollment.earned_credits,
+                'progress': enrollment.progress_percent,
+                'status': enrollment.status,
+            },
+            status=status.HTTP_200_OK,
+        )
 # --- 7. Q&A WALL LOGIC ---
 
 class WallQuestionViewSet(viewsets.ModelViewSet):
