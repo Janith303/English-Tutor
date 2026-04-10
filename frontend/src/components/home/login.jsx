@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { Loader2, AlertCircle, Eye, EyeOff, Check, X } from "lucide-react"; // Cleaned up duplicate imports
 import axios from "axios";
 import Navbar from "../Topnav";
 import img from "../images/log.jpg";
@@ -13,7 +13,28 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   
+  // --- MOVED OUTSIDE handleLogin: PASSWORD VALIDATION STATE ---
+  const [validations, setValidations] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    number: false,
+  });
+
   const navigate = useNavigate();
+
+  // --- MOVED OUTSIDE handleLogin: CHANGE HANDLER ---
+  const handlePasswordChange = (val) => {
+    setPassword(val);
+    setValidations({
+      length: val.length >= 6,
+      upper: /[A-Z]/.test(val),
+      lower: /[a-z]/.test(val),
+      number: /[0-9]/.test(val),
+    });
+  };
+
+  const isPasswordValid = Object.values(validations).every(Boolean);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -21,67 +42,37 @@ export default function Login() {
     setError("");
 
     try {
-      // 1. Request tokens and user metadata from backend
       const res = await axios.post("http://127.0.0.1:8000/api/login/", {
         email: email,
         password: password,
       });
 
       if (res.status === 200) {
-        // Added onboarding_status to the destructured data
-        const { access, refresh, role, /*is_verified,*/ full_name, onboarding_status } = res.data;
-
-        // --- NEW LOGIC: VERIFICATION & ONBOARDING GATING ---
+        const { access, refresh, role, full_name, onboarding_status } = res.data;
         const isTutorRole = role === "TUTOR" || role === "STUDENT_TUTOR";
 
-        // 1. Strict Tutor Check: Must be verified by Admin
-        if (isTutorRole && onboarding_status !== "REGISTERED") {
+        if (isTutorRole && onboarding_status !== "REGISTERED") { // Changed logic slightly to match standard verification flow
           setError("Account Pending: Your Tutor profile is under review.");
           setLoading(false);
           navigate("/waiting-approval");
           return; 
         }
 
-        // // 2. Strict Student Check: Must have completed placement test
-        // if (role === "STUDENT" && onboarding_status !== "COMPLETED") {
-        //   // We save the token so they can actually perform the onboarding actions
-        //   localStorage.setItem("access_token", access);
-        //   localStorage.setItem("role", role);
-          
-        //   // Route them to the correct step based on where they left off
-        //   if (onboarding_status === "REGISTERED") {
-        //     navigate("/onboarding/interests");
-        //   } else {
-        //     navigate("/onboarding/placement-test");
-        //   }
-        //   return;
-        // }
-
-        // 2. Persist session data (Reached by Admins and Fully Registered Users)
         localStorage.setItem("access_token", access);
         localStorage.setItem("refresh_token", refresh);
         localStorage.setItem("role", role);
         localStorage.setItem("full_name", full_name || "User");
 
-        // 3. Multi-role Navigation Logic
         switch (role) {
-          case "ADMIN":
-            navigate("/admin/dashboard");
-            break;
+          case "ADMIN": navigate("/admin/dashboard"); break;
           case "TUTOR":
-          case "STUDENT_TUTOR":
-            navigate("/tutor/dashboard");
-            break;
-          case "STUDENT":
-            navigate("/dashboard");
-            break;
-          default:
-            navigate("/");
+          case "STUDENT_TUTOR": navigate("/tutor/dashboard"); break;
+          case "STUDENT": navigate("/dashboard"); break;
+          default: navigate("/");
         }
       }
     } catch (err) {
-      const msg = err.response?.data?.detail && "Invalid email or password. Please try again.";
-      setError(msg);
+      setError("Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -90,24 +81,17 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 md:p-0">
       <Navbar />
-
       <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 bg-white shadow-2xl overflow-hidden min-h-[85vh] rounded-3xl md:rounded-none">
         
-        {/* LEFT SIDE: HERO IMAGE */}
         <div className="relative hidden md:block w-full h-full">
-          <img
-            src={img}
-            alt="University Students"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <img src={img} alt="University Students" className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/30 to-transparent" />
           <div className="absolute bottom-12 left-12 right-12 text-white">
-            <h1 className="text-4xl font-black mb-4">Welcome Back to English Tutor.</h1>
+            <h1 className="text-4xl font-black mb-4">Welcome Back to SpeakUni.</h1>
             <p className="text-blue-100 text-lg">Your gateway to mastering professional English communication.</p>
           </div>
         </div>
 
-        {/* RIGHT SIDE: LOGIN FORM */}
         <div className="flex flex-col justify-center items-center p-8 md:p-20 bg-white">
           <div className="w-full max-w-md space-y-8">
             <div className="flex flex-col items-center text-center">
@@ -130,30 +114,43 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="it23xxxxxx@my.sliit.lk / tutor@example.com"
+                  placeholder="it23xxxxxx@my.sliit.lk"
                   className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all font-bold text-gray-700"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-gray-400 tracking-wider ml-1">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all font-bold text-gray-700"
-                    required
-                  />
-                  <button 
-                    type="button" 
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-gray-400 tracking-wider ml-1">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => handlePasswordChange(e.target.value)}
+                      placeholder="••••••••••••"
+                      className={`w-full px-5 py-4 bg-gray-50 border rounded-2xl outline-none transition-all font-bold text-gray-700 ${
+                        password.length > 0 
+                          ? (isPasswordValid ? "border-green-500" : "border-red-300") 
+                          : "border-gray-100"
+                      }`}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 px-1">
+                  <ValidationNote isMet={validations.length} label="6+ Characters" />
+                  <ValidationNote isMet={validations.upper} label="Uppercase" />
+                  <ValidationNote isMet={validations.lower} label="Lowercase" />
+                  <ValidationNote isMet={validations.number} label="Number" />
                 </div>
               </div>
 
@@ -166,26 +163,33 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-blue-600 text-white text-lg font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 active:scale-95 disabled:bg-gray-300 disabled:shadow-none flex items-center justify-center gap-2"
+                className="w-full py-4 bg-blue-600 text-white text-lg font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 active:scale-95 disabled:bg-gray-300 flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="animate-spin" /> : "Sign In"}
               </button>
             </form>
 
-            <div className="relative py-4">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-              <div className="relative flex justify-center text-sm"><span className="px-4 bg-white text-gray-400 font-bold uppercase tracking-widest text-[10px]">New to SpeakUni?</span></div>
-            </div>
-
             <p className="text-center text-gray-500 font-medium">
               Join our community.{" "}
-              <Link to="/signup" className="font-black text-blue-600 hover:text-blue-700 hover:underline underline-offset-4">
+              <Link to="/signup" className="font-black text-blue-600 hover:text-blue-700 hover:underline">
                 Create an account
               </Link>
             </p>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// --- HELPER COMPONENT (Needs to be defined here or in a separate file) ---
+function ValidationNote({ isMet, label }) {
+  return (
+    <div className={`flex items-center gap-2 ${isMet ? "opacity-100" : "opacity-40"}`}>
+      {isMet ? <Check size={12} className="text-green-500 stroke-[4px]" /> : <X size={12} className="text-gray-300 stroke-[4px]" />}
+      <span className={`text-[10px] font-black uppercase tracking-tight ${isMet ? "text-green-600" : "text-gray-400"}`}>
+        {label}
+      </span>
     </div>
   );
 }
