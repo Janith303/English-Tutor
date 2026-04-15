@@ -1,27 +1,23 @@
 import React, { useState, useRef } from "react";
 import { 
-  BookOpen, 
-  Upload, 
-  Clock, 
-  MessageSquare, 
-  Plus, 
-  X, 
-  Check,
-  ArrowRight,
-  ArrowLeft,
-  Calendar,
-  FileVideo,
-  AlertCircle
+  BookOpen, Upload, Clock, MessageSquare, Plus, X, Check,
+  ArrowRight, ArrowLeft, Calendar, FileVideo, AlertCircle,
+  Sparkles, ShieldCheck, CheckCircle2, Loader2 
 } from "lucide-react";
 import Navbar from "../Topnav";
 import { useNavigate } from "react-router-dom";
 import ProgressBar from "../stprogressbar/stpro";
+
+// --- IMPORT YOUR AXIOS SETUP HERE ---
+import privateApi from "../../api/axios"; 
 
 export default function TutorStepTwo() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   // --- States ---
+  const [isSubmitted, setIsSubmitted] = useState(false); 
+  const [loading, setLoading] = useState(false); // Added loading state for API call
   const [selectedAreas, setSelectedAreas] = useState([]);
   const [bio, setBio] = useState("");
   const [availability, setAvailability] = useState({});
@@ -49,14 +45,12 @@ export default function TutorStepTwo() {
     });
   };
 
-  // --- File Validation Logic ---
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setFileError(""); // Reset error
+    setFileError(""); 
 
     if (!file) return;
 
-    // Validate Format (MP4 only)
     const allowedTypes = ["video/mp4"];
     if (!allowedTypes.includes(file.type)) {
       setFileError("Please upload a valid MP4 video.");
@@ -64,20 +58,16 @@ export default function TutorStepTwo() {
       return;
     }
 
-    // Validate Size (20MB = 20 * 1024 * 1024 bytes)
     const maxSize = 20 * 1024 * 1024;
     if (file.size > maxSize) {
       setFileError("File is too large. Maximum size is 20MB.");
       setVideoFile(null);
       return;
     }
-
     setVideoFile(file);
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current.click();
-  };
+  const triggerFileInput = () => fileInputRef.current.click();
 
   const removeFile = (e) => {
     e.stopPropagation();
@@ -85,189 +75,205 @@ export default function TutorStepTwo() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // --- BACKEND INTEGRATION ---
+  const handleFinalSubmit = async () => {
+    setLoading(true);
+    try {
+      // Must use FormData when sending files
+      const formData = new FormData();
+      
+      // Convert arrays/objects to JSON strings because FormData only accepts strings/files
+      formData.append("teaching_areas", JSON.stringify(selectedAreas));
+      formData.append("bio", bio);
+      formData.append("availability", JSON.stringify(availability)); 
+      
+      if (videoFile) {
+        formData.append("video", videoFile);
+      }
+
+      // Make the API call using the private interceptor (attaches token)
+      const response = await privateApi.post('tutor/application/', formData);
+
+      if (response.status === 201) {
+        setIsSubmitted(true);
+      }
+    } catch (error) {
+      console.error("Submission Error:", error);
+      // Display the specific error from Django if it exists
+      alert(JSON.stringify(error.response?.data || "Failed to submit application. Please try again."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col relative overflow-hidden font-sans">
       <Navbar />
       
-      {/* --- MESH BACKGROUND --- */}
+      {/* Mesh Background */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] left-[-10%] w-175 h-175 bg-cyan-400/30 rounded-full blur-[130px] animate-pulse" />
-        <div className="absolute top-[-10%] right-[-15%] w-200 h-200 bg-fuchsia-400/20 rounded-full blur-[160px]" />
-        <div className="absolute top-[30%] right-[10%] w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[140px]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-cyan-400/30 rounded-full blur-[130px]" />
+        <div className="absolute top-[-10%] right-[-15%] w-[600px] h-[600px] bg-fuchsia-400/20 rounded-full blur-[160px]" />
       </div>
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6 mt-16">
         <div className="w-full max-w-4xl mb-10">
-          <ProgressBar currentStep={2} />
+          <ProgressBar currentStep={3} />
         </div>
 
-        <div className="w-full max-w-3xl bg-white/90 backdrop-blur-2xl border border-white rounded-[3rem] shadow-2xl p-8 md:p-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          
-          <div className="mb-10">
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              <BookOpen className="text-blue-600" size={32} /> Skills & Experience
-            </h2>
-            <p className="text-slate-500 font-medium mt-2">Tell us about your teaching strengths and availability.</p>
-          </div>
-
-          <div className="space-y-12">
-            
-            {/* 1. Teaching Areas */}
-            <section className="space-y-4">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Check size={14} className="text-blue-500" /> Select Teaching Areas
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {teachingAreas.map(area => (
-                  <button
-                    key={area}
-                    onClick={() => toggleArea(area)}
-                    className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all border-2 ${
-                      selectedAreas.includes(area)
-                        ? "bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200"
-                        : "bg-white border-slate-100 text-slate-500 hover:border-blue-200"
-                    }`}
-                  >
-                    {selectedAreas.includes(area) && <Check size={14} className="inline mr-2" />}
-                    {area}
-                  </button>
-                ))}
+        {isSubmitted ? (
+          /* SUCCESS VIEW */
+          <div className="w-full max-w-2xl bg-white/95 backdrop-blur-2xl border border-white rounded-[3rem] shadow-2xl p-10 md:p-16 text-center animate-in fade-in zoom-in duration-700">
+            <div className="relative inline-block mb-8">
+              <div className="absolute inset-0 bg-blue-100 rounded-full animate-ping opacity-25" />
+              <div className="relative bg-blue-600 text-white p-6 rounded-full shadow-xl shadow-blue-200">
+                <Clock size={48} strokeWidth={2.5} />
               </div>
-            </section>
+            </div>
+            
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Application Pending</h2>
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-full text-xs font-black uppercase tracking-widest border border-amber-100">
+              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              Status: Under Review
+            </div>
+            
+            <p className="text-slate-500 font-medium mt-6 text-lg leading-relaxed">
+              Excellent! Your tutor application has been received. We will verify your credentials within <strong>24-48 hours</strong>.
+            </p>
 
-            {/* 2. Short Bio */}
-            <section className="space-y-4">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <MessageSquare size={14} className="text-blue-500" /> Teaching Motivation
-              </label>
-              <textarea 
-                placeholder="Why do you want to be a tutor? Mention your previous experience..."
-                rows={4}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                className="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-700"
-              />
-            </section>
+            <div className="mt-10 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 text-left space-y-4">
+              <div className="flex items-center gap-3 text-slate-600">
+                <CheckCircle2 size={18} className="text-green-500" />
+                <span className="text-sm font-bold">Eligibility check passed</span>
+              </div>
+              <div className="flex items-center gap-3 text-blue-600 animate-pulse">
+                <Loader2 size={18} className="animate-spin" />
+                <span className="text-sm font-black">Awaiting Administrative Approval</span>
+              </div>
+            </div>
 
-            {/* 3. Availability Selection Grid */}
-            <section className="space-y-4">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Calendar size={14} className="text-blue-500" /> Weekly Availability
-              </label>
-              <div className="overflow-x-auto rounded-[2rem] border border-slate-100">
-                <table className="w-full text-left bg-slate-50/50">
-                  <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="p-4 text-[10px] font-black text-slate-400">DAY</th>
-                      {timeSlots.map(slot => (
-                        <th key={slot} className="p-4 text-[10px] font-black text-slate-400">{slot.split(" ")[0]}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {days.map(day => (
-                      <tr key={day} className="border-b border-slate-100 last:border-0">
-                        <td className="p-4 font-bold text-slate-700 text-sm">{day}</td>
-                        {timeSlots.map(slot => {
-                          const isSelected = availability[day]?.includes(slot);
+            <button 
+              onClick={() => navigate("/")}
+              className="mt-10 w-full py-5 bg-slate-900 text-white rounded-[1.8rem] font-black text-lg shadow-xl hover:bg-black transition-all"
+            >
+              Return to Home
+            </button>
+          </div>
+        ) : (
+          /* FORM VIEW */
+          <div className="w-full max-w-3xl bg-white/90 backdrop-blur-2xl border border-white rounded-[3rem] shadow-2xl p-8 md:p-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="mb-10">
+              <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                <BookOpen className="text-blue-600" size={32} /> Skills & Experience
+              </h2>
+              <p className="text-slate-500 font-medium mt-2">Tell us about your teaching strengths and availability.</p>
+            </div>
+
+            <div className="space-y-12">
+              {/* Teaching Areas */}
+              <section className="space-y-4">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <Check size={14} className="text-blue-500" /> Select Teaching Areas
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {teachingAreas.map(area => (
+                    <button
+                      key={area}
+                      onClick={() => toggleArea(area)}
+                      className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all border-2 ${
+                        selectedAreas.includes(area)
+                          ? "bg-blue-600 border-blue-600 text-white"
+                          : "bg-white border-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {area}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* --- NEW: Weekly Availability Picker --- */}
+              <section className="space-y-4">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <Calendar size={14} className="text-blue-500" /> Weekly Availability
+                </label>
+                <div className="space-y-3">
+                  {days.map((day) => (
+                    <div key={day} className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                      <span className="w-24 text-sm font-black text-slate-700 uppercase tracking-tighter">{day}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {timeSlots.map((slot) => {
+                          const isActive = availability[day]?.includes(slot);
                           return (
-                            <td key={slot} className="p-2">
-                              <button 
-                                onClick={() => toggleSlot(day, slot)}
-                                className={`w-full h-10 rounded-xl transition-all flex items-center justify-center ${
-                                  isSelected ? "bg-blue-500 text-white shadow-md" : "bg-white border border-slate-200 text-slate-300 hover:border-blue-300"
-                                }`}
-                              >
-                                {isSelected ? <Check size={16} /> : <Plus size={16} />}
-                              </button>
-                            </td>
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => toggleSlot(day, slot)}
+                              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border-2 ${
+                                isActive 
+                                  ? "bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100" 
+                                  : "bg-white border-slate-100 text-slate-400 hover:border-blue-200 hover:text-blue-500"
+                              }`}
+                            >
+                              {slot}
+                            </button>
                           );
                         })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            {/* 4. Supporting Documents (With Validation UI) */}
-            <section className="space-y-4">
-              <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Upload size={14} className="text-blue-500" /> Short teaching video 
-              </label>
-              
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleFileChange} 
-                accept="video/mp4" 
-                className="hidden" 
-              />
-
-              <div 
-                onClick={triggerFileInput}
-                className={`p-8 border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center group transition-all cursor-pointer ${
-                  videoFile ? "border-green-400 bg-green-50" : fileError ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300"
-                }`}
-              >
-                {!videoFile ? (
-                  <>
-                    <div className="p-4 bg-white rounded-2xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
-                       <Upload className={fileError ? "text-red-500" : "text-blue-600"} size={24} />
+                      </div>
                     </div>
-                    <p className="text-sm font-bold text-slate-600">
-                      {fileError ? "Invalid File" : "Upload teaching video"}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-tighter">MP4 (Max 20MB)</p>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <div className="p-4 bg-white rounded-2xl shadow-sm mb-3">
-                      <FileVideo className="text-green-600" size={24} />
-                    </div>
-                    <p className="text-sm font-bold text-green-700 truncate max-w-[200px]">{videoFile.name}</p>
-                    <button 
-                      onClick={removeFile}
-                      className="mt-2 text-xs font-black text-red-500 uppercase tracking-widest flex items-center gap-1 hover:underline"
-                    >
-                      <X size={12} /> Remove
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {fileError && (
-                <div className="flex items-center gap-2 text-red-500 mt-2 animate-bounce">
-                  <AlertCircle size={14} />
-                  <p className="text-xs font-bold uppercase">{fileError}</p>
+                  ))}
                 </div>
-              )}
-            </section>
+              </section>
 
+              {/* Short Bio */}
+              <section className="space-y-4">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <MessageSquare size={14} className="text-blue-500" /> Teaching Motivation
+                </label>
+                <textarea 
+                  placeholder="Why do you want to be a tutor?"
+                  rows={4}
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-[2rem] outline-none focus:border-blue-500"
+                />
+              </section>
+
+              {/* Video Upload */}
+              <section className="space-y-4">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <Upload size={14} className="text-blue-500" /> Short teaching video 
+                </label>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="video/mp4" className="hidden" />
+                <div onClick={triggerFileInput} className="p-8 border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center cursor-pointer bg-slate-50 hover:bg-blue-50 relative">
+                  {!videoFile ? (
+                    <p className="text-sm font-bold text-slate-600">Click to upload MP4 (Max 20MB)</p>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-bold text-green-700">{videoFile.name}</p>
+                      <button onClick={removeFile} className="p-1 bg-red-100 text-red-600 rounded-full hover:bg-red-200">
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {fileError && <p className="text-red-500 text-xs font-bold mt-2 ml-2 flex items-center gap-1"><AlertCircle size={12}/> {fileError}</p>}
+              </section>
+            </div>
+
+            {/* Navigation */}
+            <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col md:flex-row gap-4">
+              <button onClick={() => navigate(-1)} className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-[1.8rem] font-bold">Back</button>
+              <button 
+                onClick={handleFinalSubmit}
+                disabled={selectedAreas.length === 0 || !bio || !videoFile || loading}
+                className="flex-[2] py-5 bg-slate-900 text-white rounded-[1.8rem] font-black disabled:opacity-30 flex items-center justify-center gap-3 transition-all"
+              >
+                {loading ? <Loader2 className="animate-spin" size={24} /> : "Submit Application"}
+              </button>
+            </div>
           </div>
-
-          {/* Navigation */}
-          <div className="mt-12 pt-8 border-t border-slate-100 flex flex-col md:flex-row gap-4">
-            <button 
-              onClick={() => navigate("/stsignup/stverify")}
-              className="flex-1 py-5 bg-slate-100 text-slate-500 rounded-[1.8rem] font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-            >
-              <ArrowLeft size={18} /> Back
-            </button>
-            <button 
-              onClick={() => navigate("/stsignup/mailverify")}
-              disabled={selectedAreas.length === 0 || !bio || !videoFile}
-              className="flex-[2] py-5 bg-slate-900 text-white rounded-[1.8rem] font-black text-lg shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-30 group"
-            >
-              Submit Application
-              <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-        </div>
-
-        <p className="mt-10 text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">
-          English Tutor • Student Tutor Onboarding 2026
-        </p>
+        )}
       </main>
     </div>
   );

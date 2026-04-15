@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import LearnerTopNav from "../learner/LearnerTopNav";
 import { useNavigate } from "react-router-dom";
 import CourseProgressCard from "./CourseProgressCard";
@@ -9,22 +10,120 @@ import {
   enrolledCourses,
   learningProgress,
   recommendedCourses,
-  weekSchedule,
 } from "../../data/myLearningData";
 import { mockStudent } from "../../data/mockCourses";
+import {
+  filterCoursesForStudentPreferences,
+  getPublishedCourses,
+  getStudentProfile,
+  getStudentEnrollments,
+  toLearnerCourseCard,
+  toLearnerStudentProfile,
+  toMyLearningCard,
+} from "../../api/courseApi";
 
 export default function MyLearningPage() {
   const navigate = useNavigate();
-  const inProgressCourses = enrolledCourses.filter(
-    (c) => c.status === "in_progress",
-  );
-  const completedCourses = enrolledCourses.filter(
-    (c) => c.status === "completed",
-  );
+  const [student, setStudent] = useState(mockStudent);
+  const [courses, setCourses] = useState([]);
+  const [recommended, setRecommended] = useState(recommendedCourses);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [profileData, enrollments, published] = await Promise.all([
+          getStudentProfile(),
+          getStudentEnrollments(),
+          getPublishedCourses(),
+        ]);
+
+        const resolvedStudent = toLearnerStudentProfile(
+          profileData,
+          mockStudent,
+        );
+
+        setStudent(resolvedStudent);
+        setCourses((enrollments || []).map(toMyLearningCard));
+
+        const mappedPublished = (published || []).map(toLearnerCourseCard);
+        const filteredRecommended = filterCoursesForStudentPreferences(
+          mappedPublished,
+          resolvedStudent,
+        );
+        setRecommended(filteredRecommended.slice(0, 3));
+      } catch (error) {
+        console.error("Failed to load my learning data:", error);
+        setStudent(mockStudent);
+        setCourses(enrolledCourses);
+        setRecommended(
+          filterCoursesForStudentPreferences(
+            recommendedCourses,
+            mockStudent,
+          ).slice(0, 3),
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const inProgressCourses = courses.filter((c) => c.status === "in_progress");
+  const completedCourses = courses.filter((c) => c.status === "completed");
+
+  const liveStats = useMemo(() => {
+    const completed = completedCourses.length;
+    const totalHours = courses.reduce((sum, c) => {
+      const pct = Number(c.progress || 0) / 100;
+      return sum + pct * 6;
+    }, 0);
+
+    return {
+      coursesCompleted: completed,
+      hoursStudied: Math.round(totalHours),
+      streakDays: Math.max(1, Math.min(14, inProgressCourses.length * 2)),
+    };
+  }, [courses, completedCourses.length, inProgressCourses.length]);
+
+  const liveWeekSchedule = useMemo(() => {
+    const now = new Date();
+    const activeCourses = inProgressCourses.length
+      ? inProgressCourses
+      : courses.slice(0, 3);
+
+    if (activeCourses.length === 0) {
+      return [];
+    }
+
+    return activeCourses.slice(0, 4).map((course, index) => {
+      const when = new Date(now);
+      when.setDate(now.getDate() + index);
+      when.setHours(15 + (index % 3), index % 2 === 0 ? 0 : 30, 0, 0);
+
+      const isToday = index === 0;
+      const dayLabel = isToday
+        ? "Today"
+        : when.toLocaleDateString([], { weekday: "long" });
+      const timeLabel = when.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      return {
+        id: course.id,
+        title: `${course.title.split(" ").slice(0, 3).join(" ")} Session`,
+        time: `${dayLabel}, ${timeLabel}`,
+        isToday,
+      };
+    });
+  }, [courses, inProgressCourses]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <LearnerTopNav student={mockStudent} />
+      <LearnerTopNav student={student} />
       <div className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
         <div className="flex gap-8">
           <div className="flex-1 min-w-0">
@@ -49,9 +148,14 @@ export default function MyLearningPage() {
                 Back to Dashboard
               </button>
               <div className="flex items-center justify-between gap-4">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  My Learning
-                </h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    My Learning
+                  </h1>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Focus: {student.selectedArea} · Level: {student.level}
+                  </p>
+                </div>
                 <CourseSearchFilter />
               </div>
             </div>
@@ -60,6 +164,11 @@ export default function MyLearningPage() {
               <h2 className="text-base font-bold text-gray-800 mb-3">
                 In Progress
               </h2>
+              {loading && (
+                <div className="text-sm text-gray-500 bg-white border border-gray-100 rounded-2xl p-6 mb-3">
+                  Loading your enrolled courses...
+                </div>
+              )}
               <div className="flex flex-col gap-4">
                 {inProgressCourses.length > 0 ? (
                   inProgressCourses.map((course) => (
@@ -92,14 +201,16 @@ export default function MyLearningPage() {
           </div>
 
           <aside className="w-72 flex-shrink-0 flex flex-col gap-6">
-            <LearningStatsPanel stats={learningProgress} />
+            <LearningStatsPanel
+              stats={loading ? learningProgress : liveStats}
+            />
 
             <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-              <SidebarRecommendations courses={recommendedCourses} />
+              <SidebarRecommendations courses={recommended} />
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-              <WeekSchedulePanel schedule={weekSchedule} />
+              <WeekSchedulePanel schedule={liveWeekSchedule} />
             </div>
           </aside>
         </div>

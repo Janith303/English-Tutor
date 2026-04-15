@@ -1,19 +1,44 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Eye, ChevronLeft, ChevronRight, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Plus, Trash2, Eye, ChevronLeft, ChevronRight, Save, Loader } from "lucide-react";
+import { createQuiz, updateQuiz, getQuizDetail } from "../../api/quizApi";
+
+const CATEGORY_MAP = {
+  "Vocabulary": "VOCABULARY",
+  "Grammar": "GRAMMAR",
+  "Reading": "READING",
+  "Idioms": "IDIOMS",
+  "Writing": "WRITING",
+  "Sentence Structure": "SENTENCE",
+};
+
+const CATEGORY_REVERSE_MAP = Object.fromEntries(
+  Object.entries(CATEGORY_MAP).map(([k, v]) => [v, k])
+);
+
+const DIFFICULTY_MAP = {
+  "Easy": "EASY",
+  "Medium": "MEDIUM",
+  "Hard": "HARD",
+};
 
 export default function TutorCreateQuizPage() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [touched, setTouched] = useState({});
   const [touchedQuestions, setTouchedQuestions] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(isEditMode);
 
   const [quiz, setQuiz] = useState({
     title: "",
     description: "",
     category: "",
     difficulty: "",
-    timeLimit: 15,
+    timeLimit: 5,
     passingScore: 70,
     randomize: false,
     immediateResults: true,
@@ -22,7 +47,7 @@ export default function TutorCreateQuizPage() {
         id: 1,
         questionText: "",
         marks: 10,
-        type: "Multiple Choice",
+        type: "MULTIPLE_CHOICE",
         options: ["", "", "", ""],
         correctAnswer: null,
       },
@@ -34,6 +59,69 @@ export default function TutorCreateQuizPage() {
     description: "",
     questions: [],
   });
+
+  useEffect(() => {
+    if (isEditMode && id) {
+      loadQuizForEdit();
+    }
+  }, [id]);
+
+  const loadQuizForEdit = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getQuizDetail(id);
+      
+      const categoryReverseMap = Object.fromEntries(
+        Object.entries(CATEGORY_MAP).map(([k, v]) => [v, k])
+      );
+      const difficultyReverseMap = {
+        EASY: "Easy",
+        MEDIUM: "Medium",
+        HARD: "Hard",
+      };
+
+      const mappedQuestions = (data.questions || []).map((q, qIndex) => {
+        const correctIndex = q.options?.findIndex((opt) => opt.is_correct);
+        return {
+          id: q.id || qIndex + 1,
+          questionText: q.question_text || "",
+          marks: q.marks || 10,
+          type: q.question_type || "MULTIPLE_CHOICE",
+          options: q.options?.map((opt) => opt.option_text) || ["", "", "", ""],
+          correctAnswer: correctIndex !== undefined && correctIndex >= 0 ? correctIndex : null,
+        };
+      });
+
+      if (mappedQuestions.length === 0) {
+        mappedQuestions.push({
+          id: 1,
+          questionText: "",
+          marks: 10,
+          type: "MULTIPLE_CHOICE",
+          options: ["", "", "", ""],
+          correctAnswer: null,
+        });
+      }
+
+      setQuiz({
+        title: data.title || "",
+        description: data.description || "",
+        category: categoryReverseMap[data.category] || data.category || "",
+        difficulty: difficultyReverseMap[data.difficulty] || data.difficulty || "",
+        timeLimit: data.time_limit || 5,
+        passingScore: data.passing_score || 70,
+        randomize: data.randomize_questions || false,
+        immediateResults: data.immediate_results !== false,
+        questions: mappedQuestions,
+      });
+    } catch (error) {
+      console.error("Failed to load quiz:", error);
+      alert("Failed to load quiz data. Please try again.");
+      navigate("/tutor/dashboard");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const categories = [
     "Vocabulary",
@@ -129,7 +217,7 @@ export default function TutorCreateQuizPage() {
       id: quiz.questions.length + 1,
       questionText: "",
       marks: 10,
-      type: "Multiple Choice",
+      type: "MULTIPLE_CHOICE",
       options: ["", "", "", ""],
       correctAnswer: null,
     };
@@ -181,9 +269,64 @@ export default function TutorCreateQuizPage() {
     setCurrentStep(1);
   };
 
-  const handleSaveDraft = () => {
-    console.log("Saving draft:", quiz);
-    alert("Quiz saved as draft!");
+  const buildPayload = () => {
+    const questionsPayload = quiz.questions.map((q, index) => {
+      const optionsPayload = q.options.map((optText, optIndex) => ({
+        option_text: optText,
+        is_correct: q.correctAnswer === optIndex,
+      }));
+
+      return {
+        question_text: q.questionText,
+        marks: q.marks,
+        question_type: q.type,
+        order: index + 1,
+        options: optionsPayload,
+      };
+    });
+
+    return {
+      title: quiz.title,
+      description: quiz.description,
+      category: CATEGORY_MAP[quiz.category] || quiz.category.toUpperCase(),
+      difficulty: DIFFICULTY_MAP[quiz.difficulty] || quiz.difficulty.toUpperCase(),
+      time_limit: quiz.timeLimit,
+      passing_score: quiz.passingScore,
+      randomize_questions: quiz.randomize,
+      immediate_results: quiz.immediateResults,
+      is_daily_quiz: false,
+      is_active: true,
+      questions: questionsPayload,
+    };
+  };
+
+  const handleSaveDraft = async () => {
+    if (!validateStep1()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = buildPayload();
+      payload.is_active = false;
+      
+      if (isEditMode) {
+        await updateQuiz(id, payload);
+        alert("Quiz updated as draft successfully!");
+      } else {
+        await createQuiz(payload);
+        alert("Quiz saved as draft successfully!");
+      }
+    } catch (error) {
+      console.error("Failed to save draft:", error);
+      alert(
+        JSON.stringify(
+          error?.response?.data || "Failed to save quiz. Please try again."
+        )
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handlePreview = () => {
@@ -193,17 +336,38 @@ export default function TutorCreateQuizPage() {
       }
     } else {
       if (validateStep2()) {
-        console.log("Preview quiz:", quiz);
         alert("Preview mode coming soon!");
       }
     }
   };
 
-  const handlePublish = () => {
-    if (validateStep2()) {
-      console.log("Publishing quiz:", quiz);
-      alert("Quiz published successfully!");
+  const handlePublish = async () => {
+    if (!validateStep2()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = buildPayload();
+      payload.is_active = true;
+      
+      if (isEditMode) {
+        await updateQuiz(id, payload);
+        alert("Quiz updated successfully!");
+      } else {
+        await createQuiz(payload);
+        alert("Quiz published successfully!");
+      }
       navigate("/tutor/dashboard");
+    } catch (error) {
+      console.error("Failed to publish quiz:", error);
+      alert(
+        JSON.stringify(
+          error?.response?.data || "Failed to publish quiz. Please try again."
+        )
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -222,30 +386,47 @@ export default function TutorCreateQuizPage() {
       </nav>
 
       <div className="max-w-5xl mx-auto px-8 py-8">
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Create New Quiz</h1>
-            <p className="text-gray-500 mt-1">
-              Add questions, set answers and configure quiz settings
-            </p>
+        {isLoading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="flex flex-col items-center gap-3">
+              <Loader size={32} className="animate-spin text-indigo-600" />
+              <p className="text-slate-500">Loading quiz data...</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleSaveDraft}
-              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-lg font-semibold transition-colors"
-            >
-              <Save size={18} />
-              Save Draft
-            </button>
-            <button
-              onClick={handlePreview}
-              className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-lg font-semibold transition-colors"
-            >
-              <Eye size={18} />
-              Preview
-            </button>
-          </div>
-        </div>
+        )}
+
+        {!isLoading && (
+          <>
+            <div className="flex items-start justify-between mb-8">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {isEditMode ? "Edit Quiz" : "Create New Quiz"}
+                </h1>
+                <p className="text-gray-500 mt-1">
+                  {isEditMode
+                    ? "Update quiz details and questions"
+                    : "Add questions, set answers and configure quiz settings"}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSaveDraft}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? <Loader size={18} className="animate-spin" /> : <Save size={18} />}
+                  Save Draft
+                </button>
+                <button
+                  onClick={handlePreview}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-2.5 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                >
+                  <Eye size={18} />
+                  Preview
+                </button>
+              </div>
+            </div>
 
         <div className="flex items-center gap-4 mb-8">
           <div
@@ -585,9 +766,9 @@ export default function TutorCreateQuizPage() {
         <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200">
           <button
             onClick={handlePrev}
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || isSubmitting}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-semibold transition-colors ${
-              currentStep === 1
+              currentStep === 1 || isSubmitting
                 ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                 : "bg-slate-100 hover:bg-slate-200 text-slate-700"
             }`}
@@ -599,7 +780,8 @@ export default function TutorCreateQuizPage() {
           {currentStep === 1 ? (
             <button
               onClick={handleNext}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
+              disabled={isSubmitting || isLoading}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
               Next
               <ChevronRight size={18} />
@@ -607,12 +789,22 @@ export default function TutorCreateQuizPage() {
           ) : (
             <button
               onClick={handlePublish}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors"
+              disabled={isSubmitting || isLoading}
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
-              Preview & Publish
+              {isSubmitting ? (
+                <>
+                  <Loader size={18} className="animate-spin" />
+                  {isEditMode ? "Updating..." : "Publishing..."}
+                </>
+              ) : (
+                <>{isEditMode ? "Update Quiz" : "Publish Quiz"}</>
+              )}
             </button>
           )}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

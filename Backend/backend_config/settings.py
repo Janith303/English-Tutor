@@ -39,6 +39,7 @@ INSTALLED_APPS = [
 # CRITICAL: Tell Django to use your custom User model
 AUTH_USER_MODEL = 'api.User'
 
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware', # Add this for React
@@ -70,11 +71,36 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend_config.wsgi.application'
 
 # 2. Database Configuration (PostgreSQL/Neon)
+def get_database_config():
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if not database_url:
+        raise ImproperlyConfigured(
+            "DATABASE_URL environment variable is not set. "
+            "Please ensure your .env file contains a valid DATABASE_URL."
+        )
+    
+    if database_url.startswith("'"):
+        database_url = database_url.strip("'")
+    if database_url.startswith('"'):
+        database_url = database_url.strip('"')
+    
+    config = dj_database_url.parse(database_url, conn_max_age=600)
+    
+    if 'postgres' in database_url:
+        config['OPTIONS'] = {
+            'sslmode': 'require',
+        }
+    
+    return config
+
+
+class ImproperlyConfigured(Exception):
+    pass
+
+
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-    )
+    'default': get_database_config()
 }
 
 # Password validation
@@ -101,6 +127,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+    'TOKEN_OBTAIN_SERIALIZER': 'api.serializers.MyTokenObtainPairSerializer',
 }
 
 # 4. Email Configuration (Console for development)
@@ -118,3 +145,11 @@ USE_TZ = True
 # Static files
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Add this at the bottom
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

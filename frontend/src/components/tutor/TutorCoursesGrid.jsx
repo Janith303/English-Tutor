@@ -4,11 +4,11 @@ function CreateAtelierCard({ onClick }) {
   return (
     <div
       onClick={onClick}
-      className="bg-blue-100 border border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-3 min-h-[320px] cursor-pointer hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group"
+      className="bg-slate-50 border border-slate-300 rounded-2xl flex flex-col items-center justify-center gap-3 min-h-[320px] cursor-pointer hover:border-indigo-400 hover:bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300 group"
     >
-      <div className="w-12 h-12 bg-blue-200 group-hover:bg-blue-100 rounded-full flex items-center justify-center transition-colors">
+      <div className="w-12 h-12 bg-slate-200 group-hover:bg-indigo-50 rounded-full flex items-center justify-center transition-colors">
         <svg
-          className="w-5 h-5 text-gray-600 group-hover:text-blue-500 transition-colors"
+          className="w-5 h-5 text-slate-600 group-hover:text-indigo-600 transition-colors"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -23,7 +23,7 @@ function CreateAtelierCard({ onClick }) {
       </div>
       <div className="text-center px-4">
         <p className="font-semibold text-black text-sm">Create New Course</p>
-        <p className="text-xs text-black mt-1 leading-relaxed">
+        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
           Design a new learning experience for your students.
         </p>
       </div>
@@ -31,14 +31,20 @@ function CreateAtelierCard({ onClick }) {
   );
 }
 
-export default function TutorCoursesGrid({ courses, onEdit, onCreate }) {
+export default function TutorCoursesGrid({
+  courses,
+  onEdit,
+  onCreate,
+  onDelete,
+  deletingCourseId,
+}) {
   return (
-    <section className="hover:shadow-lg transition-all duration-300">
+    <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7 transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="text-xl font-bold text-gray-900">Your Courses</h2>
+        <h2 className="text-xl font-bold text-black">Your Courses</h2>
         <button
           onClick={onCreate}
-          className="flex items-center gap-1.5 text-blue-600 font-semibold text-sm hover:underline"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 hover:border-indigo-500 hover:text-indigo-600 transition-colors"
         >
           Create Course
           <svg
@@ -59,7 +65,13 @@ export default function TutorCoursesGrid({ courses, onEdit, onCreate }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {courses.map((course) => (
-          <TutorCourseCard key={course.id} course={course} onEdit={onEdit} />
+          <TutorCourseCard
+            key={course.id}
+            course={course}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            isDeleting={deletingCourseId === course.id}
+          />
         ))}
         <CreateAtelierCard onClick={onCreate} />
       </div>

@@ -1,33 +1,77 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import LearnerTopNav from "./LearnerTopNav";
-import { mockStudent, mockLessons, mockCourses } from "../../data/mockCourses";
+import { mockStudent } from "../../data/mockCourses";
 import { Target, Crown, Zap, TrendingUp } from "lucide-react";
+import {
+  getCourseProgress,
+  getPublishedCourseDetail,
+  getStudentProfile,
+  toLearnerStudentProfile,
+  toLessonRowsFromCourseDetail,
+} from "../../api/courseApi";
 
 export default function PersonalizedLearningHub() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [student, setStudent] = useState(mockStudent);
-  const [lessons, setLessons] = useState(mockLessons);
+  const [lessons, setLessons] = useState([]);
+  const [course, setCourse] = useState(null);
+  const [progressData, setProgressData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const enrolledCourse = mockCourses.find((c) => c.id === parseInt(courseId));
+  const enrolledCourse = course;
 
-  const handleStartLesson = (lesson) => {
-    const confirm = window.confirm(
-      `Mark "${lesson.title}" as complete and earn ${lesson.creditsAwarded} credits?`,
-    );
-    if (!confirm) return;
+  const hydrateCourse = async () => {
+    const [detail, progress, profileData] = await Promise.all([
+      getPublishedCourseDetail(courseId),
+      getCourseProgress(courseId),
+      getStudentProfile(),
+    ]);
 
-    const newCredits = student.earnedCredits + lesson.creditsAwarded;
-    setStudent((prev) => ({ ...prev, earnedCredits: newCredits }));
-    setLessons((prev) =>
-      prev.map((l) => {
-        if (l.id === lesson.id) return { ...l, isCompleted: true };
-        if (!l.isUnlocked && l.requiredCreditsToUnlock <= newCredits)
-          return { ...l, isUnlocked: true };
-        return l;
+    setCourse(detail);
+    setProgressData(progress);
+    const mappedLessons = toLessonRowsFromCourseDetail(detail).map(
+      (lesson) => ({
+        ...lesson,
+        isCompleted: progress.completed_lesson_ids.includes(lesson.id),
+        isUnlocked:
+          progress.completed_lesson_ids.includes(lesson.id) ||
+          progress.earned_credits >= lesson.requiredCreditsToUnlock,
       }),
     );
+    setLessons(mappedLessons);
+
+    const resolvedProfile = toLearnerStudentProfile(profileData, mockStudent);
+    setStudent({
+      ...resolvedProfile,
+      earnedCredits: progress.earned_credits,
+    });
+  };
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        await hydrateCourse();
+      } catch (error) {
+        console.error("Failed to load learning hub data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [courseId]);
+
+  const handleStartLesson = (lesson) => {
+    if (!lesson?.id) return;
+    if (lesson.isUnlocked === false) {
+      alert("This lesson is still locked.");
+      return;
+    }
+
+    navigate(`/learning/${courseId}/lesson/${lesson.id}`);
   };
 
   const completedCount = lessons.filter((l) => l.isCompleted).length;
@@ -35,16 +79,19 @@ export default function PersonalizedLearningHub() {
   const courseProgress = Math.round((completedCount / totalCount) * 100);
   const creditsToTarget = Math.max(150 - student.earnedCredits, 0);
 
-  const recommendedLessons = [
-    {
-      id: 101,
-      title: "Research Paper Vocabulary",
-      credits: 30,
-      impact: "High",
-    },
-    { id: 102, title: "Formal Email Syntax", credits: 15, impact: "Medium" },
-    { id: 103, title: "Academic Citations Guide", credits: 25, impact: "High" },
-  ];
+  const recommendedLessons = useMemo(
+    () =>
+      lessons
+        .filter((lesson) => !lesson.isCompleted)
+        .slice(0, 3)
+        .map((lesson) => ({
+          id: lesson.id,
+          title: lesson.title,
+          credits: lesson.creditsAwarded,
+          impact: lesson.requiredCreditsToUnlock > 0 ? "High" : "Medium",
+        })),
+    [lessons],
+  );
 
   const levels = [
     { label: "A1", status: "active" },
@@ -59,6 +106,12 @@ export default function PersonalizedLearningHub() {
       <LearnerTopNav />
 
       <div className="max-w-6xl mx-auto px-4 py-6">
+        {loading && (
+          <div className="mb-6 bg-white rounded-xl border border-gray-100 p-4 text-sm text-gray-500">
+            Loading learning progress...
+          </div>
+        )}
+
         <button
           onClick={() => navigate("/dashboard")}
           className="mb-6 px-4 py-2 bg-white rounded-lg text-blue-600 font-medium hover:bg-gray-100 transition-colors"
@@ -84,13 +137,12 @@ export default function PersonalizedLearningHub() {
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-3xl px-6 py-4 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 border border-blue-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                {student.name.charAt(0)}
+                {(student.name || "S").charAt(0)}
               </div>
               <div>
                 <p className="font-semibold text-gray-900">{student.name}</p>
-                <p className="text-sm text-gray-600">
-                  {student.proficiencyLevel}
-                </p>
+                <p className="text-sm text-gray-600">{student.level}</p>
+                <p className="text-xs text-gray-500">{student.selectedArea}</p>
               </div>
             </div>
             <div className="bg-white rounded-full px-4 py-2 border-2 border-yellow-400 text-center">
@@ -278,7 +330,7 @@ export default function PersonalizedLearningHub() {
                 <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
                   <p className="text-xs text-gray-600 mb-1">Total Earned</p>
                   <p className="text-2xl font-bold text-blue-600 animate-pulse">
-                    {student.earnedCredits}
+                    {progressData?.earned_credits ?? student.earnedCredits}
                   </p>
                 </div>
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-200">

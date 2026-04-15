@@ -77,7 +77,7 @@ export default function TutorStatsGrid({ stats }) {
       {stats.map((stat) => (
         <div
           key={stat.id}
-          className="bg-gradient-to-br from-[#2563EB] to-[#3B82F6] rounded-2xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+          className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col gap-3 transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
         >
           <StatIcon
             type={stat.icon}
@@ -85,10 +85,10 @@ export default function TutorStatsGrid({ stats }) {
             colorClass={stat.iconColor}
           />
           <div>
-            <p className="text-xs font-bold text-white tracking-wide uppercase mb-1">
+            <p className="text-xs font-semibold text-slate-600 tracking-wide uppercase mb-1">
               {stat.label}
             </p>
-            <p className="text-3xl font-bold text-white">{stat.value}</p>
+            <p className="text-3xl font-bold text-black">{stat.value}</p>
           </div>
         </div>
       ))}
