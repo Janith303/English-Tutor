@@ -3,7 +3,11 @@ export default function CourseFormActionBar({
   onSubmit,
   lastSaved,
   errorCount = 0,
+  submitLabel = "Create Course",
+  submitting = false,
 }) {
+  const submitDisabled = errorCount > 0 || submitting;
+
   return (
     <div className="sticky bottom-0 bg-white border-t border-gray-100 px-8 py-4 flex items-center justify-between z-30 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-2 text-black text-sm">
@@ -54,14 +58,20 @@ export default function CourseFormActionBar({
           type="button"
           onClick={onSubmit}
           className={`font-semibold text-sm px-6 py-2.5 rounded-xl transition-all ${
-            errorCount > 0
+            submitDisabled
               ? "bg-gray-200 text-gray-400 cursor-not-allowed"
               : "bg-blue-600 hover:bg-blue-700 text-white"
           }`}
-          disabled={errorCount > 0}
-          title={errorCount > 0 ? "Please fix all errors before saving" : ""}
+          disabled={submitDisabled}
+          title={
+            errorCount > 0
+              ? "Please fix all errors before saving"
+              : submitting
+                ? "Saving..."
+                : ""
+          }
         >
-          Create Course
+          {submitting ? "Saving..." : submitLabel}
         </button>
       </div>
     </div>

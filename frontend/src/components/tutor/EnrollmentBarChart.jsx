@@ -1,29 +1,61 @@
 import { useState } from "react";
 
+function formatPointDate(point) {
+  if (!point?.date) {
+    return `Day ${point?.day ?? "-"}`;
+  }
+
+  const parsed = new Date(point.date);
+  if (Number.isNaN(parsed.getTime())) {
+    return `Day ${point?.day ?? "-"}`;
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function EnrollmentBarChart({ data }) {
   const [view, setView] = useState("monthly");
   const [hoveredBar, setHoveredBar] = useState(null);
-  const maxValue = Math.max(...data.map((d) => d.enrollments));
-  const peakBar = data.find((d) => d.enrollments === maxValue);
+  const chartData =
+    Array.isArray(data) && data.length > 0
+      ? data
+      : Array.from({ length: 30 }, (_, index) => ({
+          day: index + 1,
+          enrollments: 0,
+        }));
+
+  const hasEnrollments = chartData.some(
+    (point) => Number(point?.enrollments || 0) > 0,
+  );
+  const maxValue = hasEnrollments
+    ? Math.max(...chartData.map((d) => Number(d?.enrollments || 0)))
+    : 1;
 
   const chartHeight = 200;
   const barWidth = 42;
   const gap = 14;
-  const totalWidth = data.length * (barWidth + gap) - gap;
+  const totalWidth = chartData.length * (barWidth + gap) - gap;
+  const baselineY = chartHeight + 80;
 
   return (
-    <div className="bg-blue-100 rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7 transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h3 className="font-bold text-black text-lg">Total Enrollments</h3>
-          <p className="text-sm text-black mt-0.5">
+          <h3 className="text-xl font-bold text-black mb-2">
+            Total Enrollments
+          </h3>
+          <p className="text-sm text-slate-600 leading-relaxed">
             Trends over the last 30 days
           </p>
         </div>
         <button
           onClick={() => setView(view === "monthly" ? "weekly" : "monthly")}
-          className="text-sm font-semibold text-black hover:underline"
+          className="inline-flex items-center rounded-xl border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:border-indigo-500 hover:text-indigo-600 transition-colors"
         >
           {view === "monthly" ? "Monthly View" : "Weekly View"}
         </button>
@@ -35,11 +67,37 @@ export default function EnrollmentBarChart({ data }) {
           className="w-full"
           style={{ minWidth: "400px" }}
         >
-          {data.map((d, i) => {
-            const barH = (d.enrollments / maxValue) * chartHeight;
+          {!hasEnrollments && (
+            <g>
+              <line
+                x1={0}
+                y1={baselineY}
+                x2={Math.max(totalWidth, 0)}
+                y2={baselineY}
+                stroke="#475569"
+                strokeWidth={2}
+                strokeDasharray="5 4"
+              />
+              <text
+                x={(totalWidth + 20) / 2}
+                y={baselineY - 14}
+                textAnchor="middle"
+                fill="#334155"
+                fontSize="12"
+                fontWeight="600"
+              >
+                No enrollments yet
+              </text>
+            </g>
+          )}
+
+          {chartData.map((d, i) => {
+            const enrollments = Number(d?.enrollments || 0);
+            const barH = (enrollments / maxValue) * chartHeight;
             const x = i * (barWidth + gap);
             const y = chartHeight - barH + 80;
-            const isPeak = d.enrollments === maxValue;
+            const isPeak = hasEnrollments && enrollments === maxValue;
+            const isZeroDay = enrollments === 0;
 
             return (
               <g key={d.day}>
@@ -71,7 +129,7 @@ export default function EnrollmentBarChart({ data }) {
                       fontSize="9"
                       fontWeight="600"
                     >
-                      {d.enrollments}
+                      {enrollments}
                     </text>
 
                     <polygon
@@ -79,6 +137,18 @@ export default function EnrollmentBarChart({ data }) {
                       fill="#1e3a8a"
                     />
                   </g>
+                )}
+
+                {isZeroDay && (
+                  <line
+                    x1={x + 6}
+                    y1={baselineY}
+                    x2={x + barWidth - 6}
+                    y2={baselineY}
+                    stroke="#475569"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                  />
                 )}
 
                 <rect
@@ -92,7 +162,8 @@ export default function EnrollmentBarChart({ data }) {
                   onMouseEnter={() =>
                     setHoveredBar({
                       day: d.day,
-                      enrollments: d.enrollments,
+                      dateLabel: formatPointDate(d),
+                      enrollments,
                       x: x + barWidth / 2,
                       y: y,
                     })
@@ -106,9 +177,9 @@ export default function EnrollmentBarChart({ data }) {
           {hoveredBar && (
             <g>
               <rect
-                x={hoveredBar.x - 35}
+                x={hoveredBar.x - 62}
                 y={hoveredBar.y - 50}
-                width={70}
+                width={124}
                 height={35}
                 rx={6}
                 fill="#1e3a8a"
@@ -122,7 +193,7 @@ export default function EnrollmentBarChart({ data }) {
                 fontSize="12"
                 fontWeight="600"
               >
-                Day {hoveredBar.day}
+                {hoveredBar.dateLabel}
               </text>
               <text
                 x={hoveredBar.x}
@@ -145,8 +216,10 @@ export default function EnrollmentBarChart({ data }) {
       </div>
 
       <div className="flex justify-between mt-1 px-1">
-        <span className="text-xs text-black">30 DAYS AGO</span>
-        <span className="text-xs text-black">TODAY</span>
+        <span className="text-xs font-semibold text-slate-600">
+          30 DAYS AGO
+        </span>
+        <span className="text-xs font-semibold text-slate-600">TODAY</span>
       </div>
     </div>
   );

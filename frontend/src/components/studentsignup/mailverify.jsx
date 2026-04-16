@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { publicApi } from "../../api/axios"; // Fixed import syntax
+import { publicApi } from "../../api/axios"; 
 import Navbar from "../Topnav";
 import logo from "../images/icon.png";
 import ProgressBar from "../progressbar/studentp";
 import { 
   Lock, Eye, EyeOff, Mail, User, School, Zap, 
-  CheckCircle2, Info, ShieldCheck, Loader2 
-} from "lucide-react";
+  CheckCircle2, Info, ShieldCheck, Loader2, Check, X 
+} from "lucide-react"; // Added Check and X
 
 export default function StudentSignUp() {
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
-    full_name: "",         // Updated key to match backend
+    full_name: "",         
     faculty: "",
     academicYear: "",
     email: "",
@@ -21,6 +21,14 @@ export default function StudentSignUp() {
     confirmPassword: ""
   });
   
+  // --- NEW: Password Validation State ---
+  const [validations, setValidations] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    number: false,
+  });
+
   const [otpCode, setOtpCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -29,15 +37,27 @@ export default function StudentSignUp() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // --- UPDATED: handleChange to include validation logic ---
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
     if (name === "email") validateEmail(value);
+
+    // Run password validation real-time
+    if (name === "password") {
+      setValidations({
+        length: value.length >= 6,
+        upper: /[A-Z]/.test(value),
+        lower: /[a-z]/.test(value),
+        number: /[0-9]/.test(value),
+      });
+    }
   };
 
   const validateEmail = (val) => {
     if (!val.includes("@my.sliit.lk") && val !== "") {
-      setError("Please use your SLIIT email (e.g., ITXXXX@my.sliit.lk)");
+      setError("Please use your SLIIT email (e.g., itXXXX@my.sliit.lk)");
     } else {
       setError("");
     }
@@ -51,7 +71,6 @@ export default function StudentSignUp() {
     return () => clearInterval(interval);
   }, [timer]);
 
-  // --- API CALL: REGISTER & SEND OTP ---
   const handleSendCode = async () => {
     if (!formData.email.includes("@my.sliit.lk")) return;
     if (formData.password !== formData.confirmPassword) {
@@ -63,7 +82,6 @@ export default function StudentSignUp() {
     setError("");
 
     try {
-      // Backend now takes 'full_name' directly and needs a 'role'
       await publicApi.post("register/", {
         full_name: formData.full_name,
         email: formData.email,
@@ -71,7 +89,7 @@ export default function StudentSignUp() {
         university: "SLIIT",
         faculty: formData.faculty,
         academic_year: parseInt(formData.academicYear) || 1,
-        role: "STUDENT" // Hardcoded role for this specific portal
+        role: "STUDENT" 
       });
 
       setCodeSent(true);
@@ -83,7 +101,6 @@ export default function StudentSignUp() {
     }
   };
 
-  // --- API CALL: VERIFY OTP & SAVE DATA ---
   const handleVerifyOTP = async () => {
     if (otpCode.length < 6) return;
     setLoading(true);
@@ -95,7 +112,6 @@ export default function StudentSignUp() {
         code: otpCode
       });
 
-      // Saving tokens and role from backend response
       localStorage.setItem("access_token", response.data.access);
       localStorage.setItem("refresh_token", response.data.refresh);
       localStorage.setItem("user_role", response.data.role);
@@ -109,6 +125,7 @@ export default function StudentSignUp() {
   };
 
   const passwordsMatch = formData.password !== "" && formData.password === formData.confirmPassword;
+  const isPasswordValid = Object.values(validations).every(Boolean);
 
   return (
     <div className="min-h-screen bg-slate-200 flex flex-col relative overflow-hidden font-sans text-slate-900">
@@ -184,7 +201,7 @@ export default function StudentSignUp() {
             <div className="space-y-1">
               <label className="text-[11px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Mail size={12} /> University Email</label>
               <div className="relative">
-                <input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="ITXXXXXX@my.sliit.lk" className={`w-full px-5 py-3 bg-slate-50 border rounded-2xl outline-none transition-all ${error && formData.email ? "border-red-400" : "border-slate-100 focus:border-blue-500"}`} />
+                <input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="itXXXXXX@my.sliit.lk" className={`w-full px-5 py-3 bg-slate-50 border rounded-2xl outline-none transition-all ${error && formData.email ? "border-red-400" : "border-slate-100 focus:border-blue-500"}`} />
                 {formData.email && !error && formData.email.includes("@my.sliit.lk") && <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500" size={20} />}
               </div>
             </div>
@@ -193,7 +210,14 @@ export default function StudentSignUp() {
               <div className="space-y-1">
                 <label className="text-[11px] font-bold text-slate-400 uppercase ml-1 flex items-center gap-1"><Lock size={12} /> Password</label>
                 <div className="relative">
-                  <input name="password" value={formData.password} onChange={handleChange} type={showPassword ? "text" : "password"} placeholder="••••••••" className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:border-blue-500" />
+                  <input 
+                    name="password" 
+                    value={formData.password} 
+                    onChange={handleChange} 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="••••••••" 
+                    className={`w-full px-5 py-3 bg-slate-50 border rounded-2xl outline-none transition-all ${formData.password.length > 0 ? (isPasswordValid ? "border-green-400" : "border-red-300") : "border-slate-100 focus:border-blue-500"}`} 
+                  />
                   <button onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600">
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -205,10 +229,18 @@ export default function StudentSignUp() {
               </div>
             </div>
 
+            {/* --- NEW: Validation Checklist UI --- */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 px-1">
+              <ValidationNote isMet={validations.length} label="6+ Chars" />
+              <ValidationNote isMet={validations.upper} label="Uppercase" />
+              <ValidationNote isMet={validations.lower} label="Lowercase" />
+              <ValidationNote isMet={validations.number} label="Number" />
+            </div>
+
             {!codeSent ? (
               <button 
                 onClick={handleSendCode}
-                disabled={loading || !formData.email.includes("@my.sliit.lk") || !passwordsMatch}
+                disabled={loading || !formData.email.includes("@my.sliit.lk") || !passwordsMatch || !isPasswordValid}
                 className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
               >
                 {loading ? <Loader2 className="animate-spin" /> : <><Zap size={18} className="text-blue-400 fill-blue-400" /> Send Verification Code</>}
@@ -250,6 +282,18 @@ export default function StudentSignUp() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+// --- HELPER COMPONENT ---
+function ValidationNote({ isMet, label }) {
+  return (
+    <div className={`flex items-center gap-2 ${isMet ? "opacity-100" : "opacity-40"}`}>
+      {isMet ? <Check size={12} className="text-green-500 stroke-[4px]" /> : <X size={12} className="text-gray-300 stroke-[4px]" />}
+      <span className={`text-[10px] font-black uppercase tracking-tight ${isMet ? "text-green-600" : "text-gray-400"}`}>
+        {label}
+      </span>
     </div>
   );
 }

@@ -2,6 +2,18 @@ import { useNavigate } from "react-router-dom";
 
 export default function CourseEnrollCard({ course, onEnroll }) {
   const navigate = useNavigate();
+
+  const handleEnrollClick = async (event) => {
+    event.stopPropagation();
+
+    if (onEnroll) {
+      const success = await onEnroll(course);
+      if (success === false) return;
+    }
+
+    navigate(`/learning/${course.id}`);
+  };
+
   return (
     <div
       onClick={() => navigate(`/course/${course.id}`)}
@@ -115,10 +127,7 @@ export default function CourseEnrollCard({ course, onEnroll }) {
       </div>
 
       <button
-        onClick={() => {
-          onEnroll && onEnroll(course);
-          navigate(`/learning/${course.id}`);
-        }}
+        onClick={handleEnrollClick}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl py-3.5 flex items-center justify-center gap-2 transition-colors duration-200 mt-auto"
       >
         <svg
