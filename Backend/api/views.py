@@ -51,9 +51,9 @@ class RegisterView(APIView):
             
             # Send Email (Console backend for testing)
             send_mail(
-                'SpeakUni Verification Code',
+                'English Tutor Verification Code',
                 f'Hello {user.full_name}, your verification code is: {otp_code}',
-                'noreply@speakuni.edu',
+                'noreply@english-tutor.edu',
                 [user.email],
                 fail_silently=False,
             )
@@ -145,7 +145,20 @@ class PlacementTestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        questions = Question.objects.all().order_by('?')[:15]
+        # 1. Start with all questions
+        queryset = Question.objects.all()
+
+        # 2. Check if the frontend sent a category (e.g., ?category=GRAMMAR)
+        category_param = request.query_params.get('category', None)
+        # 1. PRINT WHAT DJANGO ACTUALLY RECEIVED
+        print(f"--- DEBUG: Category Received from React: {category_param} ---")
+        # 3. Filter the database if a category exists
+        if category_param:
+            queryset = queryset.filter(category__iexact=category_param)
+
+        # 4. Now randomize and take 15 questions from that specific category
+        questions = queryset.order_by('?')[:15]
+        
         serializer = QuestionSerializer(questions, many=True)
         return Response(serializer.data)
 
@@ -352,9 +365,9 @@ def send_tutor_otp(request):
         )
         
         send_mail(
-            'SpeakUni Tutor Verification',
-            f'Your code: {otp_code}',
-            'noreply@speakuni.edu',
+            'English Tutor Verification',
+            f'This is Your English Tutor Verification code: {otp_code}',
+            'noreply@english-tutor.edu',
             [email],
             fail_silently=False, 
         )
