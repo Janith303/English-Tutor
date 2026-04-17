@@ -51,9 +51,9 @@ class RegisterView(APIView):
             
             # Send Email (Console backend for testing)
             send_mail(
-                'SpeakUni Verification Code',
+                'English Tutor Verification Code',
                 f'Hello {user.full_name}, your verification code is: {otp_code}',
-                'noreply@speakuni.edu',
+                'noreply@english-tutor.edu',
                 [user.email],
                 fail_silently=False,
             )
@@ -352,9 +352,9 @@ def send_tutor_otp(request):
         )
         
         send_mail(
-            'SpeakUni Tutor Verification',
+            'English Tutor Verification',
             f'Your code: {otp_code}',
-            'noreply@speakuni.edu',
+            'noreply@english-tutor.edu',
             [email],
             fail_silently=False, 
         )

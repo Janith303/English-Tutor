@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -131,7 +132,22 @@ SIMPLE_JWT = {
 }
 
 # 4. Email Configuration (Console for development)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Load environment variables from .env file
+
+load_dotenv()
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# Gmail SMTP Server Settings
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = os.getenv('EMAIL_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
+
+
 
 # 5. CORS Settings (To allow your React frontend to talk to this API)
 CORS_ALLOW_ALL_ORIGINS = True 
@@ -152,4 +168,4 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # settings.py
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
