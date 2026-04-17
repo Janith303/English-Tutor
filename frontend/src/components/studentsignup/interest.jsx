@@ -18,14 +18,14 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+// --- THE FIX: Changed IDs to match Django Database Categories exactly ---
 const interestAreas = [
-  { id: 1, label: "Grammar & Flow", icon: PenTool, desc: "Essays & Research" },
-  { id: 2, label: "Presentation Skills", icon: Mic2, desc: "Public Speaking" },
-  { id: 3, label: "Vocabulary", icon: Briefcase, desc: "Job Readiness" },
-  { id: 4, label: "Academic Writing", icon: Puzzle, desc: "Sentence Structure" },
-  { id: 5, label: "IELTS Prep", icon: BookText, desc: "Academic Lexicon" },
+  { id: 1, quizCategory: "GRAMMAR", label: "Grammar & Flow", icon: PenTool, desc: "Essays & Research" },
+  { id: 2, quizCategory: "SPEAKING", label: "Presentation Skills", icon: Mic2, desc: "Public Speaking" },
+  { id: 3, quizCategory: "VOCABULARY", label: "Vocabulary", icon: Briefcase, desc: "Job Readiness" },
+  { id: 4, quizCategory: "WRITING", label: "Academic Writing", icon: Puzzle, desc: "Sentence Structure" },
+  { id: 5, quizCategory: "IELTS", label: "IELTS Prep", icon: BookText, desc: "Academic Lexicon" },
 ];
-
 const levels = [
   { id: "BEGINNER", label: "Beginner", desc: "Basic communication" },
   { id: "INTERMEDIATE", label: "Intermediate", desc: "Standard academic flow" },
@@ -37,10 +37,9 @@ export default function StudentSignUpStep2() {
   const [selectedInterest, setSelectedInterest] = useState(null);
   const [selectedLevel, setSelectedLevel] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isPreparing, setIsPreparing] = useState(false); // New state for transition
+  const [isPreparing, setIsPreparing] = useState(false); 
   const [prepStatus, setPrepStatus] = useState("Analyzing focus areas...");
 
-  // Logic for the status text animation
   useEffect(() => {
     if (isPreparing) {
       const timers = [
@@ -57,14 +56,15 @@ export default function StudentSignUpStep2() {
     setLoading(true);
     try {
       await privateApi.post("interests/", {
-        interests: [selectedInterest.id],
+        interests: [selectedInterest.id], // Now sends ["WRITING"] instead of [4]
         target_level: selectedLevel.id,
       });
 
-      // Show Prep View instead of immediate navigation
+      // --- THE FIX: Save the database ID ("WRITING") not the UI label ("Academic Writing") ---
+      localStorage.setItem("selectedInterest", selectedInterest.id);
+
       setIsPreparing(true);
 
-      // Delay for 3.5 seconds to show the animation
       setTimeout(() => {
         navigate("/signup/test");
       }, 3500);
@@ -92,7 +92,6 @@ export default function StudentSignUpStep2() {
 
         <div className="w-full max-w-4xl min-h-[500px] flex flex-col">
           
-          {/* --- PREPARATION VIEW --- */}
           {isPreparing ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in duration-500">
               <div className="relative mb-8">
@@ -119,7 +118,6 @@ export default function StudentSignUpStep2() {
             </div>
           ) : (
             
-            /* --- STANDARD FORM VIEW --- */
             <div className="bg-white/90 backdrop-blur-md rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-white p-8 md:p-12 animate-in fade-in zoom-in duration-500">
               <div className="text-center mb-10">
                 <h2 className="text-3xl font-black text-slate-900">Personalize Your Journey</h2>
@@ -127,7 +125,6 @@ export default function StudentSignUpStep2() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                {/* Focus Areas */}
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
@@ -162,7 +159,6 @@ export default function StudentSignUpStep2() {
                   </div>
                 </div>
 
-                {/* Level Selection */}
                 <div className="space-y-6">
                   <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
@@ -206,7 +202,6 @@ export default function StudentSignUpStep2() {
                 </div>
               </div>
 
-              {/* Footer */}
               <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center">
                 <Link to="/signup/sverify" className="flex items-center gap-2 text-slate-400 font-bold hover:text-slate-600 transition-all">
                    <ChevronLeft className="w-4 h-4" />
@@ -237,7 +232,6 @@ export default function StudentSignUpStep2() {
         </div>
       </main>
 
-      {/* Custom Styles for the progress bar animation */}
       <style>{`
         @keyframes progress {
           0% { transform: scaleX(0); }
@@ -250,4 +244,3 @@ export default function StudentSignUpStep2() {
     </div>
   );
 }
-

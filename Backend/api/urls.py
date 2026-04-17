@@ -64,6 +64,8 @@ urlpatterns = [
     
     # Action endpoint to Approve or Reject a Tutor
     path('admin/approve-tutor/<int:profile_id>/', views.approve_tutor, name='admin-approve-tutor'),
+    
+    
 ]
 
 

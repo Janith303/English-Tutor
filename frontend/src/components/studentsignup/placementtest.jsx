@@ -33,11 +33,31 @@ export default function PlacementTest() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const response = await privateApi.get("placement-test/");
+        setLoading(true);
+        
+        // 1. Grab whatever is in Local Storage (it might be "4" or "WRITING")
+        const savedCategory = localStorage.getItem("selectedInterest");
+        
+        // 2. THE CHEAT CODE: Translate numbers into the words Django wants
+        const translationMap = {
+          "1": "GRAMMAR",
+          "2": "SPEAKING",
+          "3": "VOCABULARY",
+          "4": "WRITING",
+          "5": "IELTS"
+        };
+
+        // 3. If it's a number, translate it. If it's already a word, keep it. Fallback to GRAMMAR.
+        const finalCategory = translationMap[savedCategory] || savedCategory || "GRAMMAR";
+        
+        console.log("TRANSLATED CATEGORY:", finalCategory); 
+
+        // 4. Send the perfectly translated word to Django
+        const response = await privateApi.get(`placement-test/?category=${finalCategory}`);
+        
         setQuestions(response.data);
       } catch (err) {
         console.error("Failed to fetch questions:", err);
-        alert("Could not load questions. Please check your database.");
       } finally {
         setLoading(false);
       }
