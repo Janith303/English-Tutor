@@ -353,7 +353,7 @@ def send_tutor_otp(request):
         
         send_mail(
             'English Tutor Verification',
-            f'Your code: {otp_code}',
+            f'This is Your English Tutor Verification code: {otp_code}',
             'noreply@english-tutor.edu',
             [email],
             fail_silently=False, 
