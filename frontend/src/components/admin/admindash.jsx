@@ -4,7 +4,8 @@ import {
   Users, UserCheck, Clock, GraduationCap, 
   LayoutDashboard, Settings, Bell, LogOut, Search, 
   CheckCircle, XCircle, MoreVertical, ShieldCheck,
-  FileText, Play, ExternalLink, Loader2, Mail, BookOpen, User, Image as ImageIcon
+  FileText, Play, ExternalLink, Loader2, Mail, BookOpen, User, Image as ImageIcon,
+  Plus, Edit3, Trash2, AlertCircle 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -13,12 +14,11 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({ totalUsers: 0, pendingRequests: 0, approvedTutors: 0, activeStudents: 0 });
   const [listData, setListData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState(null); // For Video Modal
+  const [selectedVideo, setSelectedVideo] = useState(null);
   
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Path detection to handle active tab
   const pathParts = location.pathname.split("/").filter(Boolean);
   const activeTab = pathParts[pathParts.length - 1] || "dashboard";
 
@@ -47,6 +47,14 @@ export default function AdminDashboard() {
     if (activeTab === "requests") endpoint = "/admin/requests/";
     if (activeTab === "users") endpoint = "/admin/users/";
     if (activeTab === "student-tutors") endpoint = "/admin/users/?role=STUDENT_TUTOR";
+    
+    // 🟢 FIXED: Use create-questions to fetch the full list for the admin
+    if (activeTab === "placement-questions") endpoint = "/create-questions/";
+
+    if (!endpoint) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await axios.get(`${API_BASE}${endpoint}`, {
@@ -84,6 +92,7 @@ export default function AdminDashboard() {
           <NavItem to="/admin/requests" icon={<Clock size={20}/>} label="Tutor Requests" badge={stats.pendingRequests} />
           <NavItem to="/admin/student-tutors" icon={<UserCheck size={20}/>} label="Student Tutors" />
           <NavItem to="/admin/users" icon={<Users size={20}/>} label="All Users" />
+          <NavItem to="/admin/placement-questions" icon={<BookOpen size={20}/>} label="Placement Questions" />
         </nav>
 
         <div className="p-4 border-t border-slate-50">
@@ -147,10 +156,13 @@ export default function AdminDashboard() {
                             onAction={handleTutorAction} 
                             onViewVideo={(url) => setSelectedVideo(url)} 
                          />
+                      ) : activeTab === "placement-questions" ? (
+                         <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
                       ) : (
                          <UserTable data={listData} />
                       )}
-                      {listData.length === 0 && <EmptyState label={`No ${activeTab} data available.`} />}
+                      
+                      {listData.length === 0 && <EmptyState label={`No ${activeTab.replace('-', ' ')} data available.`} />}
                     </>
                   )}
                 </>
@@ -177,6 +189,211 @@ export default function AdminDashboard() {
 }
 
 // --- SUB COMPONENTS ---
+
+// COMPONENT: Placement Question Manager
+function PlacementQuestionManager({ data, onRefresh }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [submitError, setSubmitError] = useState(null); 
+  
+  const [formData, setFormData] = useState({
+    text: "", category: "GRAMMAR",
+    option_a: "", option_b: "", option_c: "", option_d: "",
+    correct_option: "A"
+  });
+
+  const categories = ["GRAMMAR", "VOCABULARY", "WRITING", "SPEAKING", "IELTS"];
+  const API_BASE = "http://127.0.0.1:8000/api";
+  const token = localStorage.getItem("access_token");
+
+  const handleOpenModal = (question = null) => {
+    setSubmitError(null); 
+    if (question) {
+      setEditingQuestion(question);
+      setFormData(question);
+    } else {
+      setEditingQuestion(null);
+      setFormData({ text: "", category: "GRAMMAR", option_a: "", option_b: "", option_c: "", option_d: "", correct_option: "A" });
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError(null); 
+    const method = editingQuestion ? "PUT" : "POST";
+    
+    // 🟢 FIXED: Send POST/PUT requests to /create-questions/ instead of /placement-test/
+    const url = editingQuestion 
+        ? `${API_BASE}/create-questions/${editingQuestion.id}/` 
+        : `${API_BASE}/create-questions/`;
+
+    try {
+      await axios({
+        method, url, data: formData,
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsModalOpen(false);
+      onRefresh(); 
+    } catch (err) { 
+      if (err.response && err.response.data) {
+        const errorData = err.response.data;
+        const formattedError = typeof errorData === 'string' 
+            ? errorData 
+            : JSON.stringify(errorData).replace(/[{}[\]"]/g, ' ').trim();
+        
+        setSubmitError(`Django Validation Error: ${formattedError}`);
+        console.error("Validation Errors:", errorData);
+      } else {
+        setSubmitError("Network Error. Check if your Django server is running.");
+      }
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this question?")) return;
+    try {
+      // 🟢 FIXED: Send DELETE requests to /create-questions/
+      await axios.delete(`${API_BASE}/create-questions/${id}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      onRefresh();
+    } catch (err) { alert("Delete failed"); }
+  };
+
+  if (data.length === 0 && !isModalOpen) {
+    return (
+      <div className="text-center">
+         <EmptyState label="No placement questions found in the database." />
+         <button onClick={() => handleOpenModal()} className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 mx-auto hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all">
+          <Plus size={18} /> Add Your First Question
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <p className="text-slate-500 font-medium">Manage entry-level evaluation questions.</p>
+        <button 
+          onClick={() => handleOpenModal()}
+          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all"
+        >
+          <Plus size={18} /> Add New Question
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {data.map((q) => (
+          <div key={q.id} className="bg-white p-6 rounded-3xl border border-slate-100 flex justify-between items-center group hover:shadow-md transition-all">
+            <div className="flex-1 pr-6">
+              <span className="text-[10px] font-black bg-blue-50 text-blue-600 px-2 py-1 rounded-md mb-2 inline-block">{q.category}</span>
+              <p className="font-bold text-slate-900 leading-tight mb-3">{q.text}</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                 <p className={`text-xs p-2 rounded-lg ${q.correct_option === 'A' ? 'bg-green-50 text-green-700 font-bold' : 'bg-slate-50 text-slate-500'}`}>A: {q.option_a}</p>
+                 <p className={`text-xs p-2 rounded-lg ${q.correct_option === 'B' ? 'bg-green-50 text-green-700 font-bold' : 'bg-slate-50 text-slate-500'}`}>B: {q.option_b}</p>
+                 <p className={`text-xs p-2 rounded-lg ${q.correct_option === 'C' ? 'bg-green-50 text-green-700 font-bold' : 'bg-slate-50 text-slate-500'}`}>C: {q.option_c}</p>
+                 <p className={`text-xs p-2 rounded-lg ${q.correct_option === 'D' ? 'bg-green-50 text-green-700 font-bold' : 'bg-slate-50 text-slate-500'}`}>D: {q.option_d}</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button onClick={() => handleOpenModal(q)} className="p-3 bg-slate-50 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all"><Edit3 size={18}/></button>
+              <button onClick={() => handleDelete(q.id)} className="p-3 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-xl transition-all"><Trash2 size={18}/></button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* --- ADD/EDIT MODAL --- */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.form 
+              onSubmit={handleSubmit}
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white w-full max-w-2xl rounded-[2.5rem] p-10 shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <h3 className="text-2xl font-black mb-6 text-slate-900">{editingQuestion ? "Edit Question" : "New Question"}</h3>
+              
+              {submitError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
+                  <AlertCircle className="text-red-500 w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-red-800">Save Failed</p>
+                    <p className="text-sm text-red-600 mt-1 capitalize">{submitError}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-5">
+                <div>
+                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Category</label>
+                  <select 
+                    value={formData.category} 
+                    onChange={(e) => setFormData({...formData, category: e.target.value})}
+                    className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer"
+                  >
+                    {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Question Text</label>
+                  <textarea 
+                    value={formData.text} 
+                    onChange={(e) => setFormData({...formData, text: e.target.value})}
+                    placeholder="E.g., Choose the correct synonym for 'Meticulous'..."
+                    className="w-full bg-slate-50 border-none rounded-2xl p-4 font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 h-24 resize-none"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {['a', 'b', 'c', 'd'].map(opt => (
+                    <div key={opt}>
+                      <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Option {opt.toUpperCase()}</label>
+                      <input 
+                        type="text" value={formData[`option_${opt}`]} 
+                        onChange={(e) => setFormData({...formData, [`option_${opt}`]: e.target.value})}
+                        placeholder={`Option ${opt.toUpperCase()} text`}
+                        className="w-full bg-slate-50 border-none rounded-xl p-4 font-medium text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100" 
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-2">
+                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Select Correct Answer</label>
+                  <div className="flex gap-4">
+                    {['A', 'B', 'C', 'D'].map(val => (
+                      <button 
+                        key={val} type="button"
+                        onClick={() => setFormData({...formData, correct_option: val})}
+                        className={`flex-1 py-4 rounded-xl font-black transition-all ${formData.correct_option === val ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-10 flex gap-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 bg-slate-100 text-slate-500 hover:text-slate-700 rounded-2xl font-black transition-all">Cancel</button>
+                <button type="submit" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100 transition-all hover:bg-blue-700 hover:scale-[1.02]">
+                  {editingQuestion ? "Update Question" : "Create Question"}
+                </button>
+              </div>
+            </motion.form>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function TutorRequestsGrid({ data, onAction, onViewVideo }) {
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -366,5 +583,5 @@ function DetailItem({ label, value, icon }) {
 }
 
 function EmptyState({ label }) {
-  return <div className="h-64 flex items-center justify-center text-slate-400 font-bold italic bg-white rounded-[2.5rem] border border-dashed border-slate-200">{label}</div>;
+  return <div className="h-64 flex flex-col items-center justify-center text-slate-400 font-bold italic bg-white rounded-[2.5rem] border border-dashed border-slate-200">{label}</div>;
 }
