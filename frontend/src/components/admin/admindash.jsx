@@ -88,7 +88,7 @@ export default function AdminDashboard() {
         <nav className="flex-1 px-4 space-y-2">
           <NavItem to="/admin/dashboard" icon={<LayoutDashboard size={20}/>} label="Dashboard Overview" />
           <NavItem to="/admin/requests" icon={<Clock size={20}/>} label="Tutor Requests" badge={stats.pendingRequests} />
-          <NavItem to="/admin/student-tutors" icon={<UserCheck size={20}/>} label="Student Tutors" />
+          {/* <NavItem to="/admin/student-tutors" icon={<UserCheck size={20}/>} label="All Tutors" /> */}
           <NavItem to="/admin/users" icon={<Users size={20}/>} label="All Users" />
           <NavItem to="/admin/placement-questions" icon={<BookOpen size={20}/>} label="Placement Questions" />
         </nav>
