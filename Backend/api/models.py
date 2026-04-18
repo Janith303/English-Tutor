@@ -97,7 +97,7 @@ class Question(models.Model):
     correct_option = models.CharField(max_length=1)
 
     def __str__(self):
-        return f"{self.category}: {self.text[:30]}..."
+       return f"[{self.category}] {self.text}"
 
 
 class TestResult(models.Model):

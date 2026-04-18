@@ -18,7 +18,8 @@ from .views import (
     TutorDashboardView,             # New: Example Protected Route
     TutorRegisterView,             # New: Final Tutor Registration after OTP
     WallQuestionViewSet,
-    WallAnswerViewSet
+    WallAnswerViewSet,
+    QuestionDetailView,
 )
 
 from rest_framework.routers import DefaultRouter
@@ -65,7 +66,13 @@ urlpatterns = [
     # Action endpoint to Approve or Reject a Tutor
     path('admin/approve-tutor/<int:profile_id>/', views.approve_tutor, name='admin-approve-tutor'),
     
+    path('placement-test/', PlacementTestView.as_view(), name='placement_test'),
     
+    # Endpoint for GET (list all) and POST (create new)
+    path('create-questions/', CreateQuestionView.as_view(), name='create-questions'),
+    
+    # NEW: Endpoint for PUT (edit) and DELETE specific questions by ID
+    path('create-questions/<int:pk>/', views.QuestionDetailView.as_view(), name='question-detail'),
 ]
 
 

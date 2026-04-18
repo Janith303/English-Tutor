@@ -232,6 +232,12 @@ class StudentProfileView(APIView):
 
 class CreateQuestionView(APIView):
     permission_classes = [IsAuthenticated] 
+    
+    def get(self, request):
+        """Returns all placement questions for the admin dashboard"""
+        questions = Question.objects.all().order_by('-id') # Newest first
+        serializer = QuestionSerializer(questions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         is_many = isinstance(request.data, list)
@@ -245,6 +251,14 @@ class CreateQuestionView(APIView):
             }, status=status.HTTP_201_CREATED)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class QuestionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Handles GET, PUT (Edit), and DELETE for a single placement question.
+    """
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
+    permission_classes = [IsAuthenticated]
 
 
 # --- 5. TUTOR APPLICATION WORKFLOW ---
