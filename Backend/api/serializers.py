@@ -90,6 +90,7 @@ class IdentityVerificationSerializer(serializers.ModelSerializer):
 
 # 5. Serializer for Student Tutor Application (Step 2 of Application)
 class StudentTutorApplicationSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = StudentTutorProfile
         fields = ['id', 'teaching_areas', 'bio', 'availability', 'status', 'applied_at']
@@ -116,11 +117,46 @@ def create(self, validated_data):
     
 # In api/serializers.py
 class StudentTutorApplicationSerializer(serializers.ModelSerializer):
+    # 1. Use ReadOnlyField (It won't crash if the value is missing)
+    full_name = serializers.ReadOnlyField(source='user.full_name')
+    email = serializers.ReadOnlyField(source='user.email')
+    
+    # 2. Use SerializerMethodField for media to safely catch any missing files
+    identity_proof = serializers.SerializerMethodField()
+    video = serializers.SerializerMethodField()
+
     class Meta:
         model = StudentTutorProfile
-        # Add 'video' to the fields list
-        fields = ['id', 'teaching_areas', 'bio', 'availability', 'video', 'status', 'applied_at']
+        fields = [
+            'id', 'full_name', 'email', 'identity_proof', 
+            'teaching_areas', 'bio', 'availability', 'video', 
+            'status', 'applied_at'
+        ]
         read_only_fields = ['id', 'status', 'applied_at']
+
+    def get_identity_proof(self, obj):
+        try:
+            # Safely check if the user and the file exist
+            if obj.user and hasattr(obj.user, 'identity_proof') and obj.user.identity_proof:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.user.identity_proof.url)
+                return obj.user.identity_proof.url
+        except Exception:
+            pass # If anything goes wrong, catch the crash silently
+        return None
+
+    def get_video(self, obj):
+        try:
+            # Safely check if the video exists
+            if hasattr(obj, 'video') and obj.video:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.video.url)
+                return obj.video.url
+        except Exception:
+            pass
+        return None
 
 
 # --- COURSE SYSTEM SERIALIZERS ---
