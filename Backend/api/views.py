@@ -290,6 +290,7 @@ class SubmitApplicationView(APIView):
     Handles submitting teaching areas, bio, and availability
     """
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
         """Check application status"""
@@ -320,7 +321,8 @@ class SubmitApplicationView(APIView):
 
         serializer = StudentTutorApplicationSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user, status='PENDING')
+            uploaded_video = request.FILES.get('video')
+            serializer.save(user=request.user, status='PENDING',video=uploaded_video)
             return Response(
                 {"message": "Application submitted successfully. It is currently under review.", "data": serializer.data}, 
                 status=status.HTTP_201_CREATED

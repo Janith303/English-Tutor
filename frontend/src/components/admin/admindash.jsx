@@ -47,8 +47,6 @@ export default function AdminDashboard() {
     if (activeTab === "requests") endpoint = "/admin/requests/";
     if (activeTab === "users") endpoint = "/admin/users/";
     if (activeTab === "student-tutors") endpoint = "/admin/users/?role=STUDENT_TUTOR";
-    
-    // 🟢 FIXED: Use create-questions to fetch the full list for the admin
     if (activeTab === "placement-questions") endpoint = "/create-questions/";
 
     if (!endpoint) {
@@ -190,7 +188,6 @@ export default function AdminDashboard() {
 
 // --- SUB COMPONENTS ---
 
-// COMPONENT: Placement Question Manager
 function PlacementQuestionManager({ data, onRefresh }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
@@ -222,8 +219,6 @@ function PlacementQuestionManager({ data, onRefresh }) {
     e.preventDefault();
     setSubmitError(null); 
     const method = editingQuestion ? "PUT" : "POST";
-    
-    // 🟢 FIXED: Send POST/PUT requests to /create-questions/ instead of /placement-test/
     const url = editingQuestion 
         ? `${API_BASE}/create-questions/${editingQuestion.id}/` 
         : `${API_BASE}/create-questions/`;
@@ -241,9 +236,7 @@ function PlacementQuestionManager({ data, onRefresh }) {
         const formattedError = typeof errorData === 'string' 
             ? errorData 
             : JSON.stringify(errorData).replace(/[{}[\]"]/g, ' ').trim();
-        
         setSubmitError(`Django Validation Error: ${formattedError}`);
-        console.error("Validation Errors:", errorData);
       } else {
         setSubmitError("Network Error. Check if your Django server is running.");
       }
@@ -253,7 +246,6 @@ function PlacementQuestionManager({ data, onRefresh }) {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this question?")) return;
     try {
-      // 🟢 FIXED: Send DELETE requests to /create-questions/
       await axios.delete(`${API_BASE}/create-questions/${id}/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -276,10 +268,7 @@ function PlacementQuestionManager({ data, onRefresh }) {
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-6">
         <p className="text-slate-500 font-medium">Manage entry-level evaluation questions.</p>
-        <button 
-          onClick={() => handleOpenModal()}
-          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all"
-        >
+        <button onClick={() => handleOpenModal()} className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all">
           <Plus size={18} /> Add New Question
         </button>
       </div>
@@ -305,7 +294,6 @@ function PlacementQuestionManager({ data, onRefresh }) {
         ))}
       </div>
 
-      {/* --- ADD/EDIT MODAL --- */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
@@ -338,18 +326,15 @@ function PlacementQuestionManager({ data, onRefresh }) {
                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
-
                 <div>
                   <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Question Text</label>
                   <textarea 
                     value={formData.text} 
                     onChange={(e) => setFormData({...formData, text: e.target.value})}
-                    placeholder="E.g., Choose the correct synonym for 'Meticulous'..."
                     className="w-full bg-slate-50 border-none rounded-2xl p-4 font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 h-24 resize-none"
                     required
                   />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {['a', 'b', 'c', 'd'].map(opt => (
                     <div key={opt}>
@@ -357,14 +342,12 @@ function PlacementQuestionManager({ data, onRefresh }) {
                       <input 
                         type="text" value={formData[`option_${opt}`]} 
                         onChange={(e) => setFormData({...formData, [`option_${opt}`]: e.target.value})}
-                        placeholder={`Option ${opt.toUpperCase()} text`}
                         className="w-full bg-slate-50 border-none rounded-xl p-4 font-medium text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100" 
                         required
                       />
                     </div>
                   ))}
                 </div>
-
                 <div className="pt-2">
                   <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Select Correct Answer</label>
                   <div className="flex gap-4">
@@ -398,8 +381,21 @@ function PlacementQuestionManager({ data, onRefresh }) {
 function TutorRequestsGrid({ data, onAction, onViewVideo }) {
   const [selectedRequest, setSelectedRequest] = useState(null);
 
+  // 🟢 FIX 1: Smart extractors to handle both nested 'req.user.X' and flat 'req.X' structures
+  const getFullName = (req) => req?.full_name || req?.user?.full_name || "Unknown Applicant";
+  const getEmail = (req) => req?.email || req?.user?.email || "No Email Provided";
+  const getIdentityProof = (req) => req?.identity_proof || req?.user?.identity_proof;
+  const getVideo = (req) => req?.video || req?.user?.video;
+
+  // 🟢 FIX 2: Ensure Media URLs are absolute so React can open PDFs properly
+  const buildMediaUrl = (path) => {
+    if (!path) return "#";
+    if (path.startsWith('http')) return path;
+    return `http://127.0.0.1:8000${path}`;
+  };
+
   const getFileType = (url) => {
-    if (!url) return "none";
+    if (!url || url === "#") return "none";
     const extension = url.split('.').pop().toLowerCase();
     if (['jpg', 'jpeg', 'png', 'webp'].includes(extension)) return 'image';
     return extension === 'pdf' ? 'pdf' : 'other';
@@ -415,13 +411,14 @@ function TutorRequestsGrid({ data, onAction, onViewVideo }) {
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-blue-100">
-                  {req.full_name?.charAt(0)}
+                  {/* Using smart extractor */}
+                  {getFullName(req).charAt(0)}
                 </div>
                 <div>
-                  <h4 className="font-black text-slate-900 text-lg">{req.full_name}</h4>
+                  <h4 className="font-black text-slate-900 text-lg">{getFullName(req)}</h4>
                   <div className="flex items-center gap-2 text-slate-400">
                     <Mail size={12} />
-                    <span className="text-xs font-bold">{req.email}</span>
+                    <span className="text-xs font-bold">{getEmail(req)}</span>
                   </div>
                 </div>
               </div>
@@ -455,12 +452,12 @@ function TutorRequestsGrid({ data, onAction, onViewVideo }) {
               
               <div className="mb-10">
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">Verification Profile</h3>
-                <p className="text-blue-600 font-bold text-sm mt-1">{selectedRequest.email}</p>
+                <p className="text-blue-600 font-bold text-sm mt-1">{getEmail(selectedRequest)}</p>
               </div>
 
               <div className="space-y-8">
                 <section className="grid grid-cols-2 gap-4">
-                  <DetailItem label="Full Name" value={selectedRequest.full_name} icon={<User size={14}/>} />
+                  <DetailItem label="Full Name" value={getFullName(selectedRequest)} icon={<User size={14}/>} />
                   <DetailItem label="Subject Area" value={selectedRequest.teaching_areas} icon={<BookOpen size={14}/>} />
                 </section>
 
@@ -472,7 +469,7 @@ function TutorRequestsGrid({ data, onAction, onViewVideo }) {
                 <section className="space-y-6">
                   <h5 className="text-[10px] font-black uppercase text-blue-600 tracking-widest border-b border-blue-50 pb-2">Verification Assets</h5>
                   
-                  <button onClick={() => onViewVideo(selectedRequest.video)} className="w-full flex items-center justify-between p-5 bg-white border-2 border-slate-100 rounded-2xl hover:border-blue-600 transition-all group">
+                  <button onClick={() => onViewVideo(buildMediaUrl(getVideo(selectedRequest)))} className="w-full flex items-center justify-between p-5 bg-white border-2 border-slate-100 rounded-2xl hover:border-blue-600 transition-all group">
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all"><Play size={20}/></div>
                       <span className="font-bold text-slate-700">Play Video Introduction</span>
@@ -482,15 +479,16 @@ function TutorRequestsGrid({ data, onAction, onViewVideo }) {
 
                   <div className="flex flex-col gap-3">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Identity Proof (ID Card)</label>
-                    {getFileType(selectedRequest.identity_proof) === 'image' ? (
+                    {/* Using safely built URL to open PDF/Image */}
+                    {getFileType(getIdentityProof(selectedRequest)) === 'image' ? (
                       <div className="relative group rounded-2xl overflow-hidden border border-slate-200">
-                        <img src={selectedRequest.identity_proof} alt="ID" className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={buildMediaUrl(getIdentityProof(selectedRequest))} alt="ID" className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                           <a href={selectedRequest.identity_proof} target="_blank" rel="noreferrer" className="bg-white p-3 rounded-full text-blue-600 shadow-xl"><ExternalLink size={20}/></a>
+                           <a href={buildMediaUrl(getIdentityProof(selectedRequest))} target="_blank" rel="noreferrer" className="bg-white p-3 rounded-full text-blue-600 shadow-xl"><ExternalLink size={20}/></a>
                         </div>
                       </div>
                     ) : (
-                      <a href={selectedRequest.identity_proof} target="_blank" rel="noreferrer" className="w-full flex items-center justify-between p-5 bg-white border-2 border-red-50 rounded-2xl hover:border-red-500 transition-all group">
+                      <a href={buildMediaUrl(getIdentityProof(selectedRequest))} target="_blank" rel="noreferrer" className="w-full flex items-center justify-between p-5 bg-white border-2 border-red-50 rounded-2xl hover:border-red-500 transition-all group">
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-red-50 text-red-600 rounded-xl group-hover:bg-red-600 group-hover:text-white transition-all"><FileText size={20}/></div>
                           <span className="font-bold text-slate-700">Open Student ID (PDF)</span>
@@ -546,7 +544,6 @@ function UserTable({ data }) {
   );
 }
 
-// Helper UI Components
 function NavItem({ to, icon, label, badge }) {
   return (
     <NavLink to={to} className={({ isActive }) => `flex items-center justify-between px-4 py-4 rounded-2xl transition-all group ${
