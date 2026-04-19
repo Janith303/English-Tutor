@@ -157,7 +157,7 @@ export default function AdminDashboard() {
                       ) : activeTab === "placement-questions" ? (
                          <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
                       ) : (
-                         <UserTable data={listData} />
+                         <UserManager data={listData} onRefresh={fetchTabData} />
                       )}
                       
                       {listData.length === 0 && <EmptyState label={`No ${activeTab.replace('-', ' ')} data available.`} />}
@@ -187,6 +187,180 @@ export default function AdminDashboard() {
 }
 
 // --- SUB COMPONENTS ---
+
+function UserManager({ data, onRefresh }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [formData, setFormData] = useState({
+    full_name: "",
+    email: "",
+    password: "",
+    role: "ADMIN",
+    is_verified: true, // Auto-verify users created by Admin
+    onboarding_status: "REGISTER" // Assume admin setup is complete
+  });
+
+  const roles = [/*"STUDENT", "TUTOR", "STUDENT_TUTOR",*/ "ADMIN"];
+  const API_BASE = "http://127.0.0.1:8000/api";
+  const token = localStorage.getItem("access_token");
+
+  const handleOpenModal = () => {
+    setSubmitError(null);
+    setFormData({
+      full_name: "",
+      email: "",
+      password: "",
+      role: "ADMIN",
+      is_verified: true,
+      onboarding_status: "REGISTER"
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError(null);
+
+    try {
+      await axios.post(`${API_BASE}/register/`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setIsModalOpen(false);
+      onRefresh(); 
+    } catch (err) {
+      if (err.response && err.response.data) {
+        const errorData = err.response.data;
+        const formattedError = typeof errorData === 'string' 
+            ? errorData 
+            : JSON.stringify(errorData).replace(/[{}[\]"]/g, ' ').trim();
+        setSubmitError(`Failed to create user: ${formattedError}`);
+      } else {
+        setSubmitError("Network Error. Check server connection.");
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <p className="text-slate-500 font-medium">Manage platform users and roles.</p>
+        <button 
+          onClick={handleOpenModal} 
+          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-100 transition-all"
+        >
+          <Plus size={18} /> Add New User
+        </button>
+      </div>
+
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50/50">
+            <tr>
+              <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400">User Details</th>
+              <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400">Role</th>
+              <th className="px-8 py-5 text-right uppercase text-[10px] font-black text-slate-400 px-8">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {data.map((user) => (
+              <tr key={user.id} className="hover:bg-slate-50/20 transition-colors">
+                <td className="px-8 py-6">
+                  <p className="font-black text-slate-900">{user.full_name}</p>
+                  <p className="text-xs text-slate-400 font-medium">{user.email}</p>
+                </td>
+                <td className="px-8 py-6 uppercase text-[10px] font-black">
+                  <span className={`px-2 py-1 rounded-md ${user.role === 'ADMIN' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-8 py-6 text-right"><MoreVertical className="text-slate-300 inline cursor-pointer hover:text-slate-900" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* --- ADD USER MODAL --- */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.form 
+              onSubmit={handleSubmit}
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative bg-white w-full max-w-xl rounded-[2.5rem] p-10 shadow-2xl overflow-y-auto max-h-[90vh]"
+            >
+              <h3 className="text-2xl font-black mb-6 text-slate-900">Create New User</h3>
+              
+              {submitError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
+                  <AlertCircle className="text-red-500 w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-red-800">Creation Failed</p>
+                    <p className="text-sm text-red-600 mt-1 capitalize">{submitError}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-5">
+                <div>
+                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Full Name</label>
+                  <input 
+                    type="text" value={formData.full_name} 
+                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                    placeholder="E.g., John Doe"
+                    className="w-full bg-slate-50 border-none rounded-xl p-4 font-medium text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100" 
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Email Address</label>
+                  <input 
+                    type="email" value={formData.email} 
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    placeholder="mail@gmail.com"
+                    className="w-full bg-slate-50 border-none rounded-xl p-4 font-medium text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100" 
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Temporary Password</label>
+                  <input 
+                    type="password" value={formData.password} 
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    placeholder="Create a secure password"
+                    className="w-full bg-slate-50 border-none rounded-xl p-4 font-medium text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100" 
+                    required minLength="8"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-black uppercase text-slate-400 mb-2 block">Account Role</label>
+                  <select 
+                    value={formData.role} 
+                    onChange={(e) => setFormData({...formData, role: e.target.value})}
+                    className="w-full bg-slate-50 border-none rounded-xl p-4 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 cursor-pointer"
+                  >
+                    {roles.map(role => <option key={role} value={role}>{role.replace('_', ' ')}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-10 flex gap-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 bg-slate-100 text-slate-500 hover:text-slate-700 rounded-2xl font-black transition-all">Cancel</button>
+                <button type="submit" className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black shadow-xl shadow-blue-100 transition-all hover:bg-blue-700 hover:scale-[1.02]">
+                  Create Account
+                </button>
+              </div>
+            </motion.form>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 function PlacementQuestionManager({ data, onRefresh }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -381,13 +555,11 @@ function PlacementQuestionManager({ data, onRefresh }) {
 function TutorRequestsGrid({ data, onAction, onViewVideo }) {
   const [selectedRequest, setSelectedRequest] = useState(null);
 
-  // 🟢 FIX 1: Smart extractors to handle both nested 'req.user.X' and flat 'req.X' structures
   const getFullName = (req) => req?.full_name || req?.user?.full_name || "Unknown Applicant";
   const getEmail = (req) => req?.email || req?.user?.email || "No Email Provided";
   const getIdentityProof = (req) => req?.identity_proof || req?.user?.identity_proof;
   const getVideo = (req) => req?.video || req?.user?.video;
 
-  // 🟢 FIX 2: Ensure Media URLs are absolute so React can open PDFs properly
   const buildMediaUrl = (path) => {
     if (!path) return "#";
     if (path.startsWith('http')) return path;
@@ -411,7 +583,6 @@ function TutorRequestsGrid({ data, onAction, onViewVideo }) {
             <div className="flex justify-between items-start mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-blue-100">
-                  {/* Using smart extractor */}
                   {getFullName(req).charAt(0)}
                 </div>
                 <div>
@@ -442,7 +613,6 @@ function TutorRequestsGrid({ data, onAction, onViewVideo }) {
         ))}
       </div>
 
-      {/* --- DETAIL DRAWER --- */}
       <AnimatePresence>
         {selectedRequest && (
           <div className="fixed inset-0 z-[110] flex justify-end">
@@ -479,7 +649,6 @@ function TutorRequestsGrid({ data, onAction, onViewVideo }) {
 
                   <div className="flex flex-col gap-3">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Identity Proof (ID Card)</label>
-                    {/* Using safely built URL to open PDF/Image */}
                     {getFileType(getIdentityProof(selectedRequest)) === 'image' ? (
                       <div className="relative group rounded-2xl overflow-hidden border border-slate-200">
                         <img src={buildMediaUrl(getIdentityProof(selectedRequest))} alt="ID" className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -509,38 +678,6 @@ function TutorRequestsGrid({ data, onAction, onViewVideo }) {
         )}
       </AnimatePresence>
     </>
-  );
-}
-
-function UserTable({ data }) {
-  return (
-    <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
-      <table className="w-full text-left">
-        <thead className="bg-slate-50/50">
-          <tr>
-            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400">User Details</th>
-            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400">Role</th>
-            <th className="px-8 py-5 text-right uppercase text-[10px] font-black text-slate-400 px-8">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-50">
-          {data.map((user) => (
-            <tr key={user.id} className="hover:bg-slate-50/20 transition-colors">
-              <td className="px-8 py-6">
-                <p className="font-black text-slate-900">{user.full_name}</p>
-                <p className="text-xs text-slate-400 font-medium">{user.email}</p>
-              </td>
-              <td className="px-8 py-6 uppercase text-[10px] font-black">
-                <span className={`px-2 py-1 rounded-md ${user.role === 'ADMIN' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
-                  {user.role}
-                </span>
-              </td>
-              <td className="px-8 py-6 text-right"><MoreVertical className="text-slate-300 inline cursor-pointer hover:text-slate-900" /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 
