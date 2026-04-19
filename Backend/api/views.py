@@ -984,6 +984,7 @@ from .serializers import (
     QuizAttemptSerializer,
     QuizAnswerDetailSerializer,
     QuizOptionSerializer,
+    QuizQuestionAdminSerializer,
 )
 
 
@@ -1022,13 +1023,98 @@ class QuizDailyView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        try:
-            daily_quiz = Quiz.objects.filter(is_daily_quiz=True, is_active=True).latest('created_at')
-        except Quiz.DoesNotExist:
-            return Response({'error': 'Daily quiz not found.'}, status=status.HTTP_404_NOT_FOUND)
+        from random import sample
+        
+        bank_questions = QuizQuestion.objects.filter(is_in_bank=True, is_approved=True).select_related('quiz')
+        
+        if bank_questions.count() < 10:
+            return Response({'error': 'Not enough questions in the bank. Need at least 10.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        selected_questions = sample(list(bank_questions), 10)
+        
+        quiz_data = {
+            'id': 0,
+            'title': 'Daily Quiz',
+            'description': 'Test your knowledge with 10 random questions from the question bank!',
+            'category': 'DAILY',
+            'difficulty': 'MEDIUM',
+            'time_limit': 10,
+            'passing_score': 70,
+            'randomize_questions': True,
+            'immediate_results': True,
+            'is_daily_quiz': True,
+            'is_active': True,
+            'questions': [
+                {
+                    'id': q.id,
+                    'question_text': q.question_text,
+                    'marks': q.marks,
+                    'question_type': q.question_type,
+                    'order': idx + 1,
+                    'options': [
+                        {'id': opt.id, 'option_text': opt.option_text, 'is_correct': opt.is_correct}
+                        for opt in q.options.all()
+                    ]
+                }
+                for idx, q in enumerate(selected_questions)
+            ]
+        }
+        
+        return Response(quiz_data, status=status.HTTP_200_OK)
 
-        serializer = QuizDetailSerializer(daily_quiz)
+
+class AdminPendingQuestionsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.role == 'ADMIN':
+            return Response({'error': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        pending_questions = QuizQuestion.objects.filter(
+            is_in_bank=True, 
+            is_approved=False
+        ).select_related('quiz')
+        
+        serializer = QuizQuestionAdminSerializer(pending_questions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AdminQuestionApproveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, question_id):
+        if not request.user.role == 'ADMIN':
+            return Response({'error': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            question = QuizQuestion.objects.get(id=question_id)
+        except QuizQuestion.DoesNotExist:
+            return Response({'error': 'Question not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        question.is_approved = True
+        question.save()
+        
+        serializer = QuizQuestionAdminSerializer(question)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AdminQuestionRejectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, question_id):
+        if not request.user.role == 'ADMIN':
+            return Response({'error': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            question = QuizQuestion.objects.get(id=question_id)
+        except QuizQuestion.DoesNotExist:
+            return Response({'error': 'Question not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        question.is_in_bank = False
+        question.is_approved = False
+        question.save()
+        
+        return Response({'message': 'Question rejected and removed from bank.'}, status=status.HTTP_200_OK)
 
 
 class QuizCreateView(APIView):
