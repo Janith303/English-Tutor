@@ -225,6 +225,16 @@ export function toLessonRowsFromCourseDetail(course) {
         isCompleted: !!lesson.is_completed,
         isUnlocked: !!lesson.is_unlocked,
         description: chapter.title,
+        // New: Chapter metadata for grouping in right panel
+        chapterId: chapter.id,
+        chapterTitle: chapter.title,
+        chapterOrder: chapter.order,
+        // New: Snake_case variants for 3-panel layout
+        duration_minutes: lesson.duration_minutes,
+        credits_awarded: lesson.credits_awarded,
+        required_credits_to_unlock: lesson.required_credits_to_unlock,
+        is_completed: !!lesson.is_completed,
+        is_unlocked: !!lesson.is_unlocked,
       });
     });
   });
