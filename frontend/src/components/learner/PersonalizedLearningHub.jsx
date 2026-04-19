@@ -334,7 +334,7 @@ export default function PersonalizedLearningHub() {
 
         <button
           onClick={() => navigate("/dashboard")}
-          className="mb-6 px-4 py-2  rounded-lg text-blue-600 font-medium hover:bg-gray-100 transition-colors"
+          className="mb-6 px-4 py-2  rounded-lg text-blue-600 font-medium  transition-colors"
         >
           ← Back to Dashboard
         </button>
@@ -555,103 +555,135 @@ export default function PersonalizedLearningHub() {
                         <h3 className="font-bold text-gray-900 mb-4">
                           📝 Lesson Quiz
                         </h3>
-                        {currentLessonContent.quizzes.map((quiz) => (
-                          <div
-                            key={quiz.id}
-                            className="bg-blue-50 rounded-lg p-4 mb-4"
-                          >
-                            <h4 className="font-semibold text-gray-900 mb-4">
-                              {quiz.title}
-                            </h4>
-                            <div className="space-y-4">
-                              {quiz.questions &&
-                                quiz.questions.map((question) => (
-                                  <div
-                                    key={question.id}
-                                    className="bg-white rounded-lg p-4"
-                                  >
-                                    <p className="font-medium text-gray-900 mb-3">
-                                      {question.question_text}
+                        <div className="grid grid-cols-1 gap-4">
+                          {currentLessonContent.quizzes.map((quiz) => {
+                            const isCompleted =
+                              currentLessonContent.quiz_results?.[quiz.id];
+                            const questionCount = quiz.questions?.length || 0;
+
+                            return (
+                              <div
+                                key={quiz.id}
+                                className="bg-white border-2 border-blue-200 rounded-2xl p-5 hover:shadow-md transition-shadow"
+                              >
+                                {/* Card Header */}
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-gray-900 text-lg">
+                                      {quiz.title}
+                                    </h4>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                      {questionCount} question
+                                      {questionCount !== 1 ? "s" : ""}
                                     </p>
-                                    <div className="space-y-2">
-                                      {(
-                                        question.options ||
-                                        [
-                                          question.option_a && {
-                                            id: "a",
-                                            option_text: question.option_a,
-                                          },
-                                          question.option_b && {
-                                            id: "b",
-                                            option_text: question.option_b,
-                                          },
-                                          question.option_c && {
-                                            id: "c",
-                                            option_text: question.option_c,
-                                          },
-                                          question.option_d && {
-                                            id: "d",
-                                            option_text: question.option_d,
-                                          },
-                                        ].filter(Boolean)
-                                      ).map((option) => (
-                                        <label
-                                          key={option.id}
-                                          className="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer"
-                                        >
-                                          <input
-                                            type="radio"
-                                            name={`question-${question.id}`}
-                                            value={option.id}
-                                            checked={
-                                              answersByQuiz[quiz.id]?.[
-                                                question.id
-                                              ] === option.id
-                                            }
-                                            onChange={() =>
-                                              setAnswer(
-                                                quiz.id,
-                                                question.id,
-                                                option.id,
-                                              )
-                                            }
-                                            disabled={
-                                              submittingQuizId === quiz.id
-                                            }
-                                            className="w-4 h-4"
-                                          />
-                                          <span className="text-gray-700">
-                                            {option.option_text}
-                                          </span>
-                                        </label>
-                                      ))}
-                                    </div>
                                   </div>
-                                ))}
-                            </div>
-                            <button
-                              onClick={() => handleSubmitQuiz(quiz)}
-                              disabled={submittingQuizId === quiz.id}
-                              className="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition-colors"
-                            >
-                              {submittingQuizId === quiz.id
-                                ? "Submitting..."
-                                : "Submit Quiz"}
-                            </button>
-                            {currentLessonContent.quiz_results?.[quiz.id] && (
-                              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                <p className="text-sm text-green-700 font-medium">
-                                  ✓ Quiz completed! Score:{" "}
-                                  {
-                                    currentLessonContent.quiz_results[quiz.id]
-                                      .score
-                                  }
-                                  %
-                                </p>
+                                  {isCompleted && (
+                                    <div className="flex-shrink-0 bg-green-100 rounded-full px-3 py-1">
+                                      <p className="text-xs font-semibold text-green-700">
+                                        ✓ Completed
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Quiz Details */}
+                                {isCompleted ? (
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                    <p className="text-sm text-green-700 font-medium">
+                                      Score: {isCompleted.score}%
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="bg-blue-50 rounded-lg p-3 mb-4">
+                                    <p className="text-xs text-blue-700">
+                                      Answer all {questionCount} questions to
+                                      submit
+                                    </p>
+                                  </div>
+                                )}
+
+                                {/* Questions */}
+                                <div className="space-y-3 mb-4">
+                                  {quiz.questions &&
+                                    quiz.questions.map((question) => (
+                                      <div
+                                        key={question.id}
+                                        className="bg-gray-50 rounded-lg p-3"
+                                      >
+                                        <p className="font-medium text-gray-900 text-sm mb-2">
+                                          {question.question_text}
+                                        </p>
+                                        <div className="space-y-1">
+                                          {(
+                                            question.options ||
+                                            [
+                                              question.option_a && {
+                                                id: "a",
+                                                option_text: question.option_a,
+                                              },
+                                              question.option_b && {
+                                                id: "b",
+                                                option_text: question.option_b,
+                                              },
+                                              question.option_c && {
+                                                id: "c",
+                                                option_text: question.option_c,
+                                              },
+                                              question.option_d && {
+                                                id: "d",
+                                                option_text: question.option_d,
+                                              },
+                                            ].filter(Boolean)
+                                          ).map((option) => (
+                                            <label
+                                              key={option.id}
+                                              className="flex items-center gap-2 p-2 rounded hover:bg-gray-100 cursor-pointer transition-colors"
+                                            >
+                                              <input
+                                                type="radio"
+                                                name={`question-${question.id}`}
+                                                value={option.id}
+                                                checked={
+                                                  answersByQuiz[quiz.id]?.[
+                                                    question.id
+                                                  ] === option.id
+                                                }
+                                                onChange={() =>
+                                                  setAnswer(
+                                                    quiz.id,
+                                                    question.id,
+                                                    option.id,
+                                                  )
+                                                }
+                                                disabled={
+                                                  submittingQuizId === quiz.id
+                                                }
+                                                className="w-4 h-4"
+                                              />
+                                              <span className="text-sm text-gray-700">
+                                                {option.option_text}
+                                              </span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+
+                                {/* Submit Button */}
+                                <button
+                                  onClick={() => handleSubmitQuiz(quiz)}
+                                  disabled={submittingQuizId === quiz.id}
+                                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition-colors"
+                                >
+                                  {submittingQuizId === quiz.id
+                                    ? "Submitting..."
+                                    : "Submit Quiz"}
+                                </button>
                               </div>
-                            )}
-                          </div>
-                        ))}
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
 
