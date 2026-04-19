@@ -12,6 +12,9 @@ import {
   Play,
   Lock,
   ChevronLeft,
+  FileText,
+  X,
+  Trash2,
 } from "lucide-react";
 import {
   getCourseProgress,
@@ -22,6 +25,9 @@ import {
   getStudentLessonDetail,
   submitStudentLessonQuiz,
   completeStudentLessonChecked,
+  createStudentNote,
+  getStudentNotes,
+  deleteStudentNote,
 } from "../../api/courseApi";
 
 export default function PersonalizedLearningHub() {
@@ -43,6 +49,16 @@ export default function PersonalizedLearningHub() {
   const [expandedChapters, setExpandedChapters] = useState({});
   const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
+
+  // Notes state
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notesTab, setNotesTab] = useState("new"); // "new" or "my"
+  const [myNotes, setMyNotes] = useState([]);
+  const [noteFilter, setNoteFilter] = useState("lesson"); // "lesson" or "course"
+  const [newNoteForm, setNewNoteForm] = useState({
+    title: "",
+    description: "",
+  });
 
   const enrolledCourse = course;
 
@@ -87,6 +103,13 @@ export default function PersonalizedLearningHub() {
 
     load();
   }, [courseId]);
+
+  // Reload notes when lesson selection or filter changes
+  useEffect(() => {
+    if (notesOpen && notesTab === "my") {
+      loadNotes();
+    }
+  }, [selectedLessonId, noteFilter, notesOpen, notesTab]);
 
   const completedCount = lessons.filter((l) => l.isCompleted).length;
   const totalCount = lessons.length;
@@ -192,6 +215,58 @@ export default function PersonalizedLearningHub() {
     } finally {
       setCompletingLesson(false);
     }
+  };
+
+  // Helper functions for notes
+  const loadNotes = async () => {
+    if (noteFilter === "lesson" && !selectedLessonId) {
+      setMyNotes([]);
+      return;
+    }
+    const notes = await getStudentNotes(
+      courseId,
+      noteFilter === "lesson"
+        ? { lessonId: selectedLessonId, context: "lesson" }
+        : {}, // Show all notes when filter is "course"
+    );
+    setMyNotes(notes);
+  };
+
+  const handleCreateNote = async () => {
+    if (!newNoteForm.title.trim() || !newNoteForm.description.trim()) {
+      alert("Please fill in both title and description");
+      return;
+    }
+
+    try {
+      await createStudentNote(courseId, {
+        title: newNoteForm.title,
+        description: newNoteForm.description,
+        lessonId: noteFilter === "lesson" ? selectedLessonId : null,
+        context: noteFilter === "lesson" ? "lesson" : "course",
+      });
+      setNewNoteForm({ title: "", description: "" });
+      setNotesTab("my");
+      await loadNotes();
+    } catch (error) {
+      console.error("Failed to create note:", error);
+      alert("Failed to create note. Please try again.");
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    try {
+      await deleteStudentNote(courseId, noteId);
+      await loadNotes();
+    } catch (error) {
+      console.error("Failed to delete note:", error);
+      alert("Failed to delete note. Please try again.");
+    }
+  };
+
+  const handleOpenNotes = async () => {
+    setNotesOpen(true);
+    await loadNotes();
   };
 
   // Helper function to resolve media URLs
@@ -613,89 +688,302 @@ export default function PersonalizedLearningHub() {
                   <ChevronRight className="w-5 h-5 text-gray-600" />
                 </button>
                 <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-y-auto p-4 h-full">
-                  <h3 className="font-bold text-gray-900 mb-4">Lessons</h3>
-                  <div className="space-y-2">
-                    {lessonsByChapter.map((chapter) => (
-                      <div key={chapter.chapterId}>
-                        {/* Chapter Header */}
+                  {!notesOpen ? (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-gray-900">Lessons</h3>
                         <button
-                          onClick={() =>
-                            setExpandedChapters((prev) => ({
-                              ...prev,
-                              [chapter.chapterId]: !prev[chapter.chapterId],
-                            }))
-                          }
-                          className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                          onClick={handleOpenNotes}
+                          className="p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+                          title="Open notes"
                         >
-                          <span className="font-semibold text-gray-900 text-sm text-left">
-                            {chapter.chapterTitle}
-                          </span>
-                          {expandedChapters[chapter.chapterId] ? (
-                            <ChevronDown className="w-4 h-4" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4" />
-                          )}
+                          <FileText className="w-5 h-5 text-blue-600" />
                         </button>
-
-                        {/* Lessons List */}
-                        {expandedChapters[chapter.chapterId] && (
-                          <div className="pl-2 space-y-1 mt-1">
-                            {chapter.lessons.map((lesson) => (
-                              <button
-                                key={lesson.id}
-                                onClick={() => {
-                                  if (chapter.isLocked || !lesson.isUnlocked) {
-                                    return;
-                                  }
-                                  setSelectedLessonId(lesson.id);
-                                  loadLessonContent(lesson.id);
-                                }}
-                                disabled={
-                                  chapter.isLocked || !lesson.isUnlocked
-                                }
-                                className={`w-full text-left p-3 rounded-lg transition-all ${
-                                  selectedLessonId === lesson.id
-                                    ? "bg-blue-100 border-l-4 border-blue-600"
-                                    : chapter.isLocked || !lesson.isUnlocked
-                                      ? "bg-gray-50 opacity-70 cursor-not-allowed"
-                                      : "hover:bg-gray-50"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-gray-900 text-sm truncate">
-                                      {lesson.title}
-                                    </p>
-                                    <p className="text-xs text-gray-600 mt-1">
-                                      {lesson.duration_minutes} mins
-                                    </p>
-                                  </div>
-                                  <div className="flex-shrink-0">
-                                    {lesson.isCompleted ? (
-                                      <span className="inline-flex items-center justify-center w-5 h-5 bg-green-100 rounded-full">
-                                        <span className="text-xs font-bold text-green-700">
-                                          ✓
-                                        </span>
-                                      </span>
-                                    ) : chapter.isLocked ||
-                                      !lesson.isUnlocked ? (
-                                      <Lock className="w-4 h-4 text-gray-400" />
-                                    ) : (
-                                      <span className="inline-flex items-center justify-center w-5 h-5 bg-gray-200 rounded-full">
-                                        <span className="text-xs text-gray-500">
-                                          ◦
-                                        </span>
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
                       </div>
-                    ))}
-                  </div>
+                      <div className="space-y-2">
+                        {lessonsByChapter.map((chapter) => (
+                          <div key={chapter.chapterId}>
+                            {/* Chapter Header */}
+                            <button
+                              onClick={() =>
+                                setExpandedChapters((prev) => ({
+                                  ...prev,
+                                  [chapter.chapterId]: !prev[chapter.chapterId],
+                                }))
+                              }
+                              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 transition-colors"
+                            >
+                              <span className="font-semibold text-gray-900 text-sm text-left">
+                                {chapter.chapterTitle}
+                              </span>
+                              {expandedChapters[chapter.chapterId] ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4" />
+                              )}
+                            </button>
+
+                            {/* Lessons List */}
+                            {expandedChapters[chapter.chapterId] && (
+                              <div className="pl-2 space-y-1 mt-1">
+                                {chapter.lessons.map((lesson) => (
+                                  <button
+                                    key={lesson.id}
+                                    onClick={() => {
+                                      if (
+                                        chapter.isLocked ||
+                                        !lesson.isUnlocked
+                                      ) {
+                                        return;
+                                      }
+                                      setSelectedLessonId(lesson.id);
+                                      loadLessonContent(lesson.id);
+                                    }}
+                                    disabled={
+                                      chapter.isLocked || !lesson.isUnlocked
+                                    }
+                                    className={`w-full text-left p-3 rounded-lg transition-all ${
+                                      selectedLessonId === lesson.id
+                                        ? "bg-blue-100 border-l-4 border-blue-600"
+                                        : chapter.isLocked || !lesson.isUnlocked
+                                          ? "bg-gray-50 opacity-70 cursor-not-allowed"
+                                          : "hover:bg-gray-50"
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-gray-900 text-sm truncate">
+                                          {lesson.title}
+                                        </p>
+                                        <p className="text-xs text-gray-600 mt-1">
+                                          {lesson.duration_minutes} mins
+                                        </p>
+                                      </div>
+                                      <div className="flex-shrink-0">
+                                        {lesson.isCompleted ? (
+                                          <span className="inline-flex items-center justify-center w-5 h-5 bg-green-100 rounded-full">
+                                            <span className="text-xs font-bold text-green-700">
+                                              ✓
+                                            </span>
+                                          </span>
+                                        ) : chapter.isLocked ||
+                                          !lesson.isUnlocked ? (
+                                          <Lock className="w-4 h-4 text-gray-400" />
+                                        ) : (
+                                          <span className="inline-flex items-center justify-center w-5 h-5 bg-gray-200 rounded-full">
+                                            <span className="text-xs text-gray-500">
+                                              ◦
+                                            </span>
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Notes Panel */}
+                      <div className="flex flex-col h-full">
+                        {/* Header */}
+                        <div className="flex items-center gap-3 mb-4">
+                          <button
+                            onClick={() => setNotesOpen(false)}
+                            className="p-1 rounded hover:bg-gray-100"
+                            title="Back to lessons"
+                          >
+                            <ChevronLeft className="w-5 h-5 text-gray-600" />
+                          </button>
+                          <h3 className="font-bold text-gray-900">Notes</h3>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="flex gap-2 mb-4 border-b border-gray-200">
+                          <button
+                            onClick={() => setNotesTab("new")}
+                            className={`px-3 py-2 text-sm font-medium transition-colors ${
+                              notesTab === "new"
+                                ? "text-blue-600 border-b-2 border-blue-600"
+                                : "text-gray-600 hover:text-gray-900"
+                            }`}
+                          >
+                            New Note
+                          </button>
+                          <button
+                            onClick={() => {
+                              setNotesTab("my");
+                              loadNotes();
+                            }}
+                            className={`px-3 py-2 text-sm font-medium transition-colors ${
+                              notesTab === "my"
+                                ? "text-blue-600 border-b-2 border-blue-600"
+                                : "text-gray-600 hover:text-gray-900"
+                            }`}
+                          >
+                            My Notes
+                          </button>
+                        </div>
+
+                        {/* Tab Content */}
+                        <div className="flex-1 overflow-y-auto">
+                          {notesTab === "new" ? (
+                            <div className="space-y-4">
+                              {/* Note Context Selection */}
+                              <div className="flex gap-2 mb-4">
+                                <button
+                                  onClick={() => setNoteFilter("lesson")}
+                                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                    noteFilter === "lesson"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}
+                                >
+                                  This Section
+                                </button>
+                                <button
+                                  onClick={() => setNoteFilter("course")}
+                                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                    noteFilter === "course"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}
+                                >
+                                  Course
+                                </button>
+                              </div>
+
+                              {/* Form */}
+                              <div className="space-y-3">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                                    Title{" "}
+                                    <span className="text-red-500">*</span>
+                                  </label>
+                                  <input
+                                    type="text"
+                                    placeholder="Title your note"
+                                    value={newNoteForm.title}
+                                    onChange={(e) =>
+                                      setNewNoteForm({
+                                        ...newNoteForm,
+                                        title: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-900 mb-1">
+                                    Description{" "}
+                                    <span className="text-red-500">*</span>
+                                  </label>
+                                  <textarea
+                                    placeholder="Scribble away!"
+                                    value={newNoteForm.description}
+                                    onChange={(e) =>
+                                      setNewNoteForm({
+                                        ...newNoteForm,
+                                        description: e.target.value,
+                                      })
+                                    }
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                    rows="4"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Save Button */}
+                              <button
+                                onClick={handleCreateNote}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {/* Filter Buttons */}
+                              <div className="flex gap-2 mb-4">
+                                <button
+                                  onClick={() => {
+                                    setNoteFilter("lesson");
+                                    loadNotes();
+                                  }}
+                                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                    noteFilter === "lesson"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}
+                                >
+                                  This Section
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setNoteFilter("course");
+                                    loadNotes();
+                                  }}
+                                  className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                    noteFilter === "course"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}
+                                >
+                                  Course
+                                </button>
+                              </div>
+
+                              {/* Notes List */}
+                              {myNotes.length > 0 ? (
+                                myNotes.map((note) => (
+                                  <div
+                                    key={note.id}
+                                    className="p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-gray-900 text-sm">
+                                          {note.title}
+                                        </p>
+                                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                          {note.description}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-2">
+                                          {new Date(
+                                            note.createdAt,
+                                          ).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteNote(note.id)
+                                        }
+                                        className="p-1 rounded hover:bg-red-50 transition-colors flex-shrink-0"
+                                        title="Delete note"
+                                      >
+                                        <Trash2 className="w-4 h-4 text-red-500" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-8">
+                                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                  <p className="text-gray-500 text-sm">
+                                    No notes yet
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
