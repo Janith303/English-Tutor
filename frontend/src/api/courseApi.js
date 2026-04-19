@@ -552,3 +552,46 @@ export async function completeStudentLessonChecked(courseId, lessonId) {
   );
   return data;
 }
+
+// --- STUDENT NOTES API ---
+export async function createStudentNote(courseId, payload) {
+  // TODO: Replace with actual backend endpoint when available
+  // For now, using localStorage mock
+  const notes = JSON.parse(localStorage.getItem(`notes_${courseId}`) || "[]");
+  const newNote = {
+    id: Date.now(),
+    courseId,
+    lessonId: payload.lessonId || null,
+    title: payload.title,
+    description: payload.description,
+    context: payload.context, // "lesson" or "course"
+    createdAt: new Date().toISOString(),
+  };
+  notes.push(newNote);
+  localStorage.setItem(`notes_${courseId}`, JSON.stringify(notes));
+  return newNote;
+}
+
+export async function getStudentNotes(courseId, filters = {}) {
+  // TODO: Replace with actual backend endpoint when available
+  const notes = JSON.parse(localStorage.getItem(`notes_${courseId}`) || "[]");
+
+  if (filters.lessonId && filters.context === "lesson") {
+    return notes.filter(
+      (note) => note.lessonId === filters.lessonId && note.context === "lesson",
+    );
+  }
+
+  if (!filters.lessonId && Object.keys(filters).length === 0) {
+    return notes;
+  }
+
+  return notes;
+}
+
+export async function deleteStudentNote(courseId, noteId) {
+  // TODO: Replace with actual backend endpoint when available
+  const notes = JSON.parse(localStorage.getItem(`notes_${courseId}`) || "[]");
+  const filtered = notes.filter((note) => note.id !== noteId);
+  localStorage.setItem(`notes_${courseId}`, JSON.stringify(filtered));
+}
