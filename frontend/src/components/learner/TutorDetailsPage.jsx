@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, CheckCircle, MessageSquare } from "lucide-react";
+import {
+  Star,
+  CheckCircle,
+  MessageSquare,
+  Clock,
+  Award,
+  CalendarDays,
+} from "lucide-react";
 import LearnerTopNav from "./LearnerTopNav";
 import {
   createEnrollment,
@@ -183,55 +190,133 @@ const TutorDetailsPage = () => {
             {/* Hero Section */}
             <div className="bg-white border-b border-gray-200 py-8">
               <div className="max-w-6xl mx-auto px-6">
-                {/* Course Info */}
-                <div>
-                  {/* Badge & Rating */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="bg-green-50 text-green-600 text-xs px-3 py-1 rounded border border-green-200 font-semibold">
-                      Free Course
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <div className="flex">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            size={16}
-                            className="text-yellow-400 fill-yellow-400"
-                          />
-                        ))}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {/* Course Info - Left (2 cols on desktop) */}
+                  <div className="md:col-span-2">
+                    {/* Badge & Rating */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="bg-green-50 text-green-600 text-xs px-3 py-1 rounded border border-green-200 font-semibold">
+                        Free Course
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={16}
+                              className="text-yellow-400 fill-yellow-400"
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700 ml-1">
+                          4.5
+                        </span>
                       </div>
-                      <span className="text-sm font-semibold text-gray-700 ml-1">
-                        4.5
+                    </div>
+
+                    {/* Title */}
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                      {course?.title || "Course Title"}
+                    </h1>
+
+                    {/* Meta Info */}
+                    <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+                      <span className="font-medium">
+                        {enrolledStudents} Learners Enrolled
+                      </span>
+                      <span>•</span>
+                      <span className="font-medium">{levelLabel} Level</span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-gray-700 leading-relaxed mb-6 text-sm">
+                      {course?.summary ||
+                        "Learn the fundamentals of this course from scratch. This beginner-friendly course covers core concepts and practical applications to help you get started."}
+                    </p>
+
+                    {/* Instructor */}
+                    <div className="text-sm text-gray-600">
+                      with{" "}
+                      <span className="font-semibold text-gray-900">
+                        {tutorName}
                       </span>
                     </div>
                   </div>
 
-                  {/* Title */}
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                    {course?.title || "Course Title"}
-                  </h1>
+                  {/* Details Card - Right (1 col on desktop) */}
+                  <div>
+                    <div className="bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl shadow-sm p-6 sticky top-24">
+                      {/* FREE Badge */}
+                      {course?.price == 0 && (
+                        <span className="inline-block bg-green-600 text-white text-xs px-3 py-1 rounded font-semibold mb-4">
+                          FREE
+                        </span>
+                      )}
 
-                  {/* Meta Info */}
-                  <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-                    <span className="font-medium">
-                      {enrolledStudents} Learners Enrolled
-                    </span>
-                    <span>•</span>
-                    <span className="font-medium">{levelLabel} Level</span>
-                  </div>
+                      {/* Start Learning Button */}
+                      <button
+                        onClick={handleEnroll}
+                        className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold py-3 px-4 rounded-lg mb-6 transition-colors"
+                      >
+                        Start Learning
+                      </button>
 
-                  {/* Description */}
-                  <p className="text-gray-700 leading-relaxed mb-6 text-sm">
-                    {course?.summary ||
-                      "Learn the fundamentals of this course from scratch. This beginner-friendly course covers core concepts and practical applications to help you get started."}
-                  </p>
+                      {/* This Course Includes */}
+                      <div>
+                        <p className="text-sm font-semibold text-white mb-4">
+                          This Course Includes
+                        </p>
+                        <div className="space-y-4">
+                          {/* Duration */}
+                          <div className="flex items-start gap-3">
+                            <Clock
+                              size={20}
+                              className="text-slate-200 flex-shrink-0 mt-0.5"
+                            />
+                            <div>
+                              <p className="text-sm text-white font-medium">
+                                {course?.duration_hours} Hours
+                              </p>
+                              <p className="text-xs text-slate-300">
+                                Of self-paced lessons
+                              </p>
+                            </div>
+                          </div>
 
-                  {/* Instructor */}
-                  <div className="text-sm text-gray-600">
-                    with{" "}
-                    <span className="font-semibold text-gray-900">
-                      {tutorName}
-                    </span>
+                          {/* Certificate */}
+                          <div className="flex items-start gap-3">
+                            <Award
+                              size={20}
+                              className="text-slate-200 flex-shrink-0 mt-0.5"
+                            />
+                            <div>
+                              <p className="text-sm text-white font-medium">
+                                Completion Certificate
+                              </p>
+                              <p className="text-xs text-slate-300">
+                                awarded on course completion
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Access Days */}
+                          <div className="flex items-start gap-3">
+                            <CalendarDays
+                              size={20}
+                              className="text-slate-200 flex-shrink-0 mt-0.5"
+                            />
+                            <div>
+                              <p className="text-sm text-white font-medium">
+                                10 Days of Access
+                              </p>
+                              <p className="text-xs text-slate-300">
+                                To your Free Course
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
