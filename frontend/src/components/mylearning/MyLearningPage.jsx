@@ -26,6 +26,7 @@ export default function MyLearningPage() {
   const navigate = useNavigate();
   const [student, setStudent] = useState(mockStudent);
   const [courses, setCourses] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [recommended, setRecommended] = useState(recommendedCourses);
   const [loading, setLoading] = useState(true);
 
@@ -71,8 +72,37 @@ export default function MyLearningPage() {
     loadData();
   }, []);
 
-  const inProgressCourses = courses.filter((c) => c.status === "in_progress");
-  const completedCourses = courses.filter((c) => c.status === "completed");
+  const availableCategories = useMemo(() => {
+    const fromBackend = Array.from(
+      new Set(
+        courses
+          .map((c) => c.category)
+          .filter(Boolean)
+          .map((c) => String(c).trim()),
+      ),
+    ).sort((a, b) => a.localeCompare(b));
+
+    return ["All", ...fromBackend];
+  }, [courses]);
+
+  const filteredCourses = useMemo(() => {
+    const category = selectedCategory;
+
+    return courses.filter((course) => {
+      const matchesCategory =
+        category === "All" ||
+        String(course.category || "").toLowerCase() === category.toLowerCase();
+
+      return matchesCategory;
+    });
+  }, [courses, selectedCategory]);
+
+  const inProgressCourses = filteredCourses.filter(
+    (c) => c.status === "in_progress",
+  );
+  const completedCourses = filteredCourses.filter(
+    (c) => c.status === "completed",
+  );
 
   const liveStats = useMemo(() => {
     const completed = completedCourses.length;
@@ -156,7 +186,10 @@ export default function MyLearningPage() {
                     Focus: {student.selectedArea} · Level: {student.level}
                   </p>
                 </div>
-                <CourseSearchFilter />
+                <CourseSearchFilter
+                  categories={availableCategories}
+                  onCategory={setSelectedCategory}
+                />
               </div>
             </div>
 

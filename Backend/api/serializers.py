@@ -325,6 +325,7 @@ class CoursePublicSerializer(serializers.ModelSerializer):
     instructor = serializers.SerializerMethodField()
     totalLessons = serializers.SerializerMethodField()
     durationWeeks = serializers.SerializerMethodField()
+    enrolledStudents = serializers.SerializerMethodField()
     focusArea = serializers.CharField(source='category', read_only=True)
     thumbnail = serializers.SerializerMethodField()
 
@@ -341,6 +342,7 @@ class CoursePublicSerializer(serializers.ModelSerializer):
             'thumbnail',
             'status',
             'instructor',
+            'enrolledStudents',
             'totalLessons',
             'durationWeeks',
         ]
@@ -355,6 +357,9 @@ class CoursePublicSerializer(serializers.ModelSerializer):
         hours = float(obj.duration_hours)
         return max(1, round(hours / 4))
 
+    def get_enrolledStudents(self, obj):
+        return Enrollment.objects.filter(course=obj).count()
+
     def get_thumbnail(self, obj):
         if obj.thumbnail:
             return obj.thumbnail.url
@@ -366,6 +371,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     chapters = serializers.SerializerMethodField()
     totalLessons = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
+    enrolledStudents = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -383,6 +389,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'instructor',
+            'enrolledStudents',
             'totalLessons',
             'chapters',
         ]
@@ -392,6 +399,9 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 
     def get_totalLessons(self, obj):
         return Lesson.objects.filter(chapter__course=obj).count()
+
+    def get_enrolledStudents(self, obj):
+        return Enrollment.objects.filter(course=obj).count()
 
     def get_thumbnail(self, obj):
         if obj.thumbnail:
