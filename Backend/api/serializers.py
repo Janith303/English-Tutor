@@ -485,7 +485,7 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizQuestion
-        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options', 'is_in_bank', 'is_approved']
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'learning_link', 'options', 'is_in_bank', 'is_approved']
 
 
 class QuizQuestionAdminSerializer(serializers.ModelSerializer):
@@ -494,7 +494,7 @@ class QuizQuestionAdminSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizQuestion
-        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options', 'is_in_bank', 'is_approved', 'category']
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'learning_link', 'options', 'is_in_bank', 'is_approved', 'category']
 
     def get_category(self, obj):
         return obj.quiz.category if obj.quiz else None
@@ -505,7 +505,7 @@ class QuizQuestionCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizQuestion
-        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options']
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'learning_link', 'options']
         extra_kwargs = {
             'marks': {'default': 10},
             'question_type': {'default': 'MULTIPLE_CHOICE'},

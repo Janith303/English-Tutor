@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import { getQuizzes } from "../../api/quizApi";
 import QuizNavbar from "./QuizNavbar";
 import Hero from "./Hero";
 import CategoryCard, { categories } from "./CategoryCard";
@@ -111,8 +111,8 @@ export default function QuizHome() {
   const fetchQuizzes = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://127.0.0.1:8000/api/quizzes/");
-      setQuizzes(response.data);
+      const data = await getQuizzes();
+      setQuizzes(data);
       setError(null);
     } catch (err) {
       console.error("Failed to fetch quizzes:", err);

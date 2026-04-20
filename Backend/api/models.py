@@ -357,6 +357,7 @@ class QuizQuestion(models.Model):
     marks = models.IntegerField(default=10)
     question_type = models.CharField(max_length=50, choices=QUESTION_TYPE_CHOICES, default='MULTIPLE_CHOICE')
     order = models.IntegerField(default=1)
+    learning_link = models.URLField(blank=True, null=True, help_text="Learning resource URL for incorrect answers")
     is_in_bank = models.BooleanField(default=False, help_text="Whether this question is added to the shared question bank")
     is_approved = models.BooleanField(default=False, help_text="Whether this question is approved by admin for use in daily quiz")
 

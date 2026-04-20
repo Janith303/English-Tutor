@@ -51,6 +51,7 @@ export default function TutorCreateQuizPage() {
         type: "MULTIPLE_CHOICE",
         options: ["", "", "", ""],
         correctAnswer: null,
+        learningLink: "",
       },
     ],
   });
@@ -92,6 +93,7 @@ export default function TutorCreateQuizPage() {
           type: q.question_type || "MULTIPLE_CHOICE",
           options: q.options?.map((opt) => opt.option_text) || ["", "", "", ""],
           correctAnswer: correctIndex !== undefined && correctIndex >= 0 ? correctIndex : null,
+          learningLink: q.learning_link || "",
         };
       });
 
@@ -103,6 +105,7 @@ export default function TutorCreateQuizPage() {
           type: "MULTIPLE_CHOICE",
           options: ["", "", "", ""],
           correctAnswer: null,
+          learningLink: "",
         });
       }
 
@@ -239,6 +242,7 @@ export default function TutorCreateQuizPage() {
       type: "MULTIPLE_CHOICE",
       options: ["", "", "", ""],
       correctAnswer: null,
+      learningLink: "",
     };
     setQuiz((prev) => ({
       ...prev,
@@ -302,6 +306,7 @@ export default function TutorCreateQuizPage() {
         marks: q.marks,
         question_type: q.type,
         order: index + 1,
+        learning_link: q.learningLink || null,
         options: optionsPayload,
       };
     });
@@ -798,6 +803,28 @@ export default function TutorCreateQuizPage() {
                             {errors.questions[qIndex].correctAnswer}
                           </p>
                         )}
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Learning Resource Link (optional)
+                      </label>
+                      <input
+                        type="url"
+                        value={question.learningLink || ""}
+                        onChange={(e) =>
+                          handleQuestionChange(
+                            qIndex,
+                            "learningLink",
+                            e.target.value
+                          )
+                        }
+                        placeholder="https://example.com/learn-more-about-topic"
+                        className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Add a helpful learning resource for students who answer incorrectly
+                      </p>
                     </div>
                   </div>
                 </div>

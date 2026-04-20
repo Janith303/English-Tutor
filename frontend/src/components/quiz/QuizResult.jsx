@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import QuizNavbar from "./QuizNavbar";
-import { CheckCircle, XCircle, Trophy, Clock, Target, RotateCcw } from "lucide-react";
+import { CheckCircle, XCircle, Trophy, Clock, Target, RotateCcw, BookOpen } from "lucide-react";
+
+const STORAGE_KEY = "learning_tasks";
 
 export default function QuizResult() {
   const navigate = useNavigate();
@@ -32,6 +34,7 @@ export default function QuizResult() {
         userAnswer: userSelectedOption?.option_text || null,
         correctAnswer: correctOption?.option_text,
         isCorrect,
+        learningLink: question.learning_link || null,
         options: question.options || []
       };
     });
@@ -57,6 +60,36 @@ export default function QuizResult() {
       navigate("/quiz");
     }
   }, [quiz, navigate]);
+
+  useEffect(() => {
+    if (!quizData) return;
+    
+    const wrongWithLinks = quizData.questionResults.filter(
+      r => !r.isCorrect && r.learningLink
+    );
+    
+    if (wrongWithLinks.length === 0) return;
+    
+    const existingData = localStorage.getItem(STORAGE_KEY);
+    const existingTasks = existingData ? JSON.parse(existingData) : [];
+    const existingIds = new Set(existingTasks.map(t => t.id));
+    
+    const newTasks = wrongWithLinks.map((r) => {
+      const taskId = `${quiz?.title || "quiz"}-${r.index}`;
+      if (existingIds.has(taskId)) return null;
+      return {
+        id: taskId,
+        title: r.questionText,
+        link: r.learningLink,
+        completed: false
+      };
+    }).filter(Boolean);
+    
+    if (newTasks.length > 0) {
+      const updated = [...newTasks, ...existingTasks];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    }
+  }, [quizData, quiz]);
 
   const formatTime = (seconds) => {
     if (!seconds && seconds !== 0) return "--:--";
@@ -93,7 +126,7 @@ export default function QuizResult() {
     );
   }
 
-  const { questionResults, totalQuestions, correctCount, percentage, timeUsed, quizTitle } = quizData;
+  const { questionResults, totalQuestions, correctCount, percentage, timeUsed } = quizData;
 
   return (
     <div className="min-h-screen bg-[#F5F9FF]">
@@ -180,6 +213,18 @@ export default function QuizResult() {
                     <p className="text-sm text-green-700 font-medium">
                       Correct: {result.correctAnswer}
                     </p>
+
+                    {!result.isCorrect && result.learningLink && (
+                      <a
+                        href={result.learningLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        Learn more about this topic
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
