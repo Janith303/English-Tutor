@@ -330,6 +330,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     chapters = serializers.SerializerMethodField()
     totalLessons = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
+    enrolledStudents = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -347,6 +348,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'instructor',
+            'enrolledStudents',
             'totalLessons',
             'chapters',
         ]
@@ -356,6 +358,9 @@ class CourseDetailSerializer(serializers.ModelSerializer):
 
     def get_totalLessons(self, obj):
         return Lesson.objects.filter(chapter__course=obj).count()
+
+    def get_enrolledStudents(self, obj):
+        return Enrollment.objects.filter(course=obj).count()
 
     def get_thumbnail(self, obj):
         if obj.thumbnail:
