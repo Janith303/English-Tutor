@@ -255,6 +255,7 @@ export function toMyLearningCard(enrollment) {
   return {
     id: enrollment.course.id,
     title: enrollment.course.title,
+    category: enrollment.course.category || "General",
     provider: enrollment.course.instructor || "English Tutor",
     type: isFree ? "Free Course" : "Paid Course",
     progress: enrollment.progress,
