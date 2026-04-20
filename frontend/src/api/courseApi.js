@@ -175,6 +175,7 @@ export function toLearnerCourseCard(course) {
   const lessonCount = Number(course.totalLessons || 0);
   const durationWeeks = Number(course.durationWeeks || 1);
   const baseRating = 4.2 + Math.min(lessonCount, 20) / 25;
+  const enrolledStudents = Number(course.enrolledStudents || 0);
   const reviewsCount = Math.max(8, lessonCount * durationWeeks + 4);
 
   return {
@@ -184,6 +185,7 @@ export function toLearnerCourseCard(course) {
     level: levelToLabel(course.level),
     rating: Number(course.rating || baseRating).toFixed(1),
     reviews: course.reviews || `${reviewsCount}`,
+    enrolledStudents,
     focusArea: (course.focusArea || course.category || "General").replace(
       /-/g,
       " ",
@@ -225,6 +227,16 @@ export function toLessonRowsFromCourseDetail(course) {
         isCompleted: !!lesson.is_completed,
         isUnlocked: !!lesson.is_unlocked,
         description: chapter.title,
+        // New: Chapter metadata for grouping in right panel
+        chapterId: chapter.id,
+        chapterTitle: chapter.title,
+        chapterOrder: chapter.order,
+        // New: Snake_case variants for 3-panel layout
+        duration_minutes: lesson.duration_minutes,
+        credits_awarded: lesson.credits_awarded,
+        required_credits_to_unlock: lesson.required_credits_to_unlock,
+        is_completed: !!lesson.is_completed,
+        is_unlocked: !!lesson.is_unlocked,
       });
     });
   });
@@ -243,6 +255,7 @@ export function toMyLearningCard(enrollment) {
   return {
     id: enrollment.course.id,
     title: enrollment.course.title,
+    category: enrollment.course.category || "General",
     provider: enrollment.course.instructor || "English Tutor",
     type: isFree ? "Free Course" : "Paid Course",
     progress: enrollment.progress,
@@ -541,4 +554,47 @@ export async function completeStudentLessonChecked(courseId, lessonId) {
     {},
   );
   return data;
+}
+
+// --- STUDENT NOTES API ---
+export async function createStudentNote(courseId, payload) {
+  // TODO: Replace with actual backend endpoint when available
+  // For now, using localStorage mock
+  const notes = JSON.parse(localStorage.getItem(`notes_${courseId}`) || "[]");
+  const newNote = {
+    id: Date.now(),
+    courseId,
+    lessonId: payload.lessonId || null,
+    title: payload.title,
+    description: payload.description,
+    context: payload.context, // "lesson" or "course"
+    createdAt: new Date().toISOString(),
+  };
+  notes.push(newNote);
+  localStorage.setItem(`notes_${courseId}`, JSON.stringify(notes));
+  return newNote;
+}
+
+export async function getStudentNotes(courseId, filters = {}) {
+  // TODO: Replace with actual backend endpoint when available
+  const notes = JSON.parse(localStorage.getItem(`notes_${courseId}`) || "[]");
+
+  if (filters.lessonId && filters.context === "lesson") {
+    return notes.filter(
+      (note) => note.lessonId === filters.lessonId && note.context === "lesson",
+    );
+  }
+
+  if (!filters.lessonId && Object.keys(filters).length === 0) {
+    return notes;
+  }
+
+  return notes;
+}
+
+export async function deleteStudentNote(courseId, noteId) {
+  // TODO: Replace with actual backend endpoint when available
+  const notes = JSON.parse(localStorage.getItem(`notes_${courseId}`) || "[]");
+  const filtered = notes.filter((note) => note.id !== noteId);
+  localStorage.setItem(`notes_${courseId}`, JSON.stringify(filtered));
 }

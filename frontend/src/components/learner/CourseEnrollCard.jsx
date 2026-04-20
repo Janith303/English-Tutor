@@ -55,6 +55,10 @@ export default function CourseEnrollCard({ course, onEnroll }) {
         </div>
       </div>
 
+      <div className="text-xs text-gray-500 -mt-2">
+        {Number(course.enrolledStudents || 0)} Learners
+      </div>
+
       <h3 className="font-bold text-gray-900 text-lg leading-snug">
         {course.title}
       </h3>
