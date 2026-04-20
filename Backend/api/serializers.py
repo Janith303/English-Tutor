@@ -495,7 +495,19 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizQuestion
-        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options']
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options', 'is_in_bank', 'is_approved']
+
+
+class QuizQuestionAdminSerializer(serializers.ModelSerializer):
+    options = QuizOptionSerializer(many=True, read_only=True)
+    category = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuizQuestion
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options', 'is_in_bank', 'is_approved', 'category']
+
+    def get_category(self, obj):
+        return obj.quiz.category if obj.quiz else None
 
 
 class QuizQuestionCreateSerializer(serializers.ModelSerializer):
@@ -616,6 +628,7 @@ class QuizDetailSerializer(serializers.ModelSerializer):
 
 class QuizCreateSerializer(serializers.ModelSerializer):
     questions = QuizQuestionCreateSerializer(many=True)
+    add_to_bank = serializers.BooleanField(write_only=True, default=False)
 
     class Meta:
         model = Quiz
@@ -631,6 +644,7 @@ class QuizCreateSerializer(serializers.ModelSerializer):
             'immediate_results',
             'is_daily_quiz',
             'is_active',
+            'add_to_bank',
             'questions',
         ]
         extra_kwargs = {
@@ -640,6 +654,7 @@ class QuizCreateSerializer(serializers.ModelSerializer):
             'immediate_results': {'default': True},
             'is_daily_quiz': {'default': False},
             'is_active': {'default': True},
+            'add_to_bank': {'write_only': True},
         }
 
     def validate_title(self, value):
@@ -665,6 +680,7 @@ class QuizCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         questions_data = validated_data.pop('questions')
+        add_to_bank = validated_data.pop('add_to_bank', False)
         request = self.context.get('request')
 
         quiz = Quiz.objects.create(
@@ -674,6 +690,9 @@ class QuizCreateSerializer(serializers.ModelSerializer):
 
         for i, question_data in enumerate(questions_data):
             question_data['order'] = question_data.get('order', i + 1)
+            if add_to_bank:
+                question_data['is_in_bank'] = True
+                question_data['is_approved'] = False
             options_data = question_data.pop('options')
             question = QuizQuestion.objects.create(quiz=quiz, **question_data)
             for option_data in options_data:
@@ -683,6 +702,7 @@ class QuizCreateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         questions_data = validated_data.pop('questions', None)
+        add_to_bank = validated_data.pop('add_to_bank', False)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -692,6 +712,9 @@ class QuizCreateSerializer(serializers.ModelSerializer):
             instance.questions.all().delete()
             for i, question_data in enumerate(questions_data):
                 question_data['order'] = question_data.get('order', i + 1)
+                if add_to_bank:
+                    question_data['is_in_bank'] = True
+                    question_data['is_approved'] = False
                 options_data = question_data.pop('options')
                 question = QuizQuestion.objects.create(quiz=instance, **question_data)
                 for option_data in options_data:

@@ -23,9 +23,19 @@ export default function AdminDashboard() {
   const activeTab = pathParts[pathParts.length - 1] || "dashboard";
 
   const API_BASE = "http://127.0.0.1:8000/api";
-  const token = localStorage.getItem("access_token");
+
+  const getToken = () => localStorage.getItem("access_token");
+  const getAuthHeader = () => {
+    const token = getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      navigate("/login");
+      return;
+    }
     fetchStats();
     if (activeTab !== "dashboard" && activeTab !== "admin") {
       fetchTabData();
@@ -35,10 +45,15 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       const res = await axios.get(`${API_BASE}/admin/stats/`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeader()
       });
       setStats(res.data);
-    } catch (err) { console.error("Stats fetch failed"); }
+    } catch (err) { 
+      console.error("Stats fetch failed", err.response?.status);
+      if (err.response?.status === 401) {
+        navigate("/login");
+      }
+    }
   };
 
   const fetchTabData = async () => {
@@ -48,6 +63,7 @@ export default function AdminDashboard() {
     if (activeTab === "users") endpoint = "/admin/users/";
     if (activeTab === "student-tutors") endpoint = "/admin/users/?role=STUDENT_TUTOR";
     if (activeTab === "placement-questions") endpoint = "/create-questions/";
+    if (activeTab === "question-approval") endpoint = "/admin/questions/pending/";
 
     if (!endpoint) {
       setLoading(false);
@@ -56,12 +72,15 @@ export default function AdminDashboard() {
 
     try {
       const res = await axios.get(`${API_BASE}${endpoint}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeader()
       });
       setListData(res.data || []);
     } catch (err) {
       setListData([]);
-      console.error("Data fetch failed");
+      console.error("Data fetch failed", err.response?.status);
+      if (err.response?.status === 401) {
+        navigate("/login");
+      }
     } finally {
       setLoading(false);
     }
@@ -70,11 +89,37 @@ export default function AdminDashboard() {
   const handleTutorAction = async (id, action) => {
     try {
       await axios.post(`${API_BASE}/admin/approve-tutor/${id}/`, { action }, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeader()
       });
       fetchStats();
       fetchTabData();
-    } catch (err) { alert("Action failed"); }
+    } catch (err) { 
+      console.error("Action failed", err.response?.status);
+      if (err.response?.status === 401) {
+        navigate("/login");
+      } else {
+        alert("Action failed");
+      }
+    }
+  };
+
+  const handleQuestionAction = async (id, action) => {
+    try {
+      const endpoint = action === 'approve' 
+        ? `/admin/questions/${id}/approve/`
+        : `/admin/questions/${id}/reject/`;
+      await axios.patch(`${API_BASE}${endpoint}`, {}, {
+        headers: getAuthHeader()
+      });
+      fetchTabData();
+    } catch (err) { 
+      console.error("Action failed", err.response?.status);
+      if (err.response?.status === 401) {
+        navigate("/login");
+      } else {
+        alert("Action failed");
+      }
+    }
   };
 
   return (
@@ -91,6 +136,7 @@ export default function AdminDashboard() {
           {/* <NavItem to="/admin/student-tutors" icon={<UserCheck size={20}/>} label="All Tutors" /> */}
           <NavItem to="/admin/users" icon={<Users size={20}/>} label="All Users" />
           <NavItem to="/admin/placement-questions" icon={<BookOpen size={20}/>} label="Placement Questions" />
+          <NavItem to="/admin/question-approval" icon={<CheckCircle size={20}/>} label="Question Bank Approval" />
         </nav>
 
         <div className="p-4 border-t border-slate-50">
@@ -148,17 +194,19 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <>
-                      {activeTab === "requests" ? (
-                         <TutorRequestsGrid 
-                            data={listData} 
-                            onAction={handleTutorAction} 
-                            onViewVideo={(url) => setSelectedVideo(url)} 
-                         />
-                      ) : activeTab === "placement-questions" ? (
-                         <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
-                      ) : (
-                         <UserManager data={listData} onRefresh={fetchTabData} />
-                      )}
+{activeTab === "requests" ? (
+                          <TutorRequestsGrid 
+                             data={listData} 
+                             onAction={handleTutorAction} 
+                             onViewVideo={(url) => setSelectedVideo(url)} 
+                          />
+                       ) : activeTab === "placement-questions" ? (
+                          <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
+                       ) : activeTab === "question-approval" ? (
+                          <QuestionApprovalGrid data={listData} onAction={handleQuestionAction} />
+                       ) : (
+                          <UserManager data={listData} onRefresh={fetchTabData} />
+                       )}
                       
                       {listData.length === 0 && <EmptyState label={`No ${activeTab.replace('-', ' ')} data available.`} />}
                     </>
@@ -718,4 +766,52 @@ function DetailItem({ label, value, icon }) {
 
 function EmptyState({ label }) {
   return <div className="h-64 flex flex-col items-center justify-center text-slate-400 font-bold italic bg-white rounded-[2.5rem] border border-dashed border-slate-200">{label}</div>;
+}
+
+function QuestionApprovalGrid({ data, onAction }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {data.map((question) => (
+        <div key={question.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-bold px-3 py-1 bg-amber-100 text-amber-700 rounded-full">Pending</span>
+            <span className="text-xs font-bold text-slate-400 uppercase">{question.category}</span>
+          </div>
+          
+          <h3 className="font-bold text-slate-900 text-lg mb-4">{question.question_text}</h3>
+          
+          <div className="space-y-2 mb-6">
+            {question.options?.map((opt, idx) => (
+              <div 
+                key={idx} 
+                className={`p-3 rounded-xl text-sm font-medium ${
+                  opt.is_correct 
+                    ? "bg-green-50 text-green-700 border border-green-200" 
+                    : "bg-slate-50 text-slate-600 border border-slate-100"
+                }`}
+              >
+                {String.fromCharCode(65 + idx)}. {opt.option_text}
+                {opt.is_correct && <span className="ml-2 text-xs font-bold">(Correct)</span>}
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={() => onAction(question.id, 'approve')}
+              className="flex-1 py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors"
+            >
+              Approve
+            </button>
+            <button
+              onClick={() => onAction(question.id, 'reject')}
+              className="flex-1 py-3 bg-red-100 text-red-600 rounded-xl font-bold hover:bg-red-200 transition-colors"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

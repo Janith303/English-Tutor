@@ -42,6 +42,7 @@ export default function TutorCreateQuizPage() {
     passingScore: 70,
     randomize: false,
     immediateResults: true,
+    addToBank: false,
     questions: [
       {
         id: 1,
@@ -57,6 +58,8 @@ export default function TutorCreateQuizPage() {
   const [errors, setErrors] = useState({
     title: "",
     description: "",
+    category: "",
+    difficulty: "",
     questions: [],
   });
 
@@ -112,6 +115,7 @@ export default function TutorCreateQuizPage() {
         passingScore: data.passing_score || 70,
         randomize: data.randomize_questions || false,
         immediateResults: data.immediate_results !== false,
+        addToBank: data.add_to_bank || false,
         questions: mappedQuestions,
       });
     } catch (error) {
@@ -124,15 +128,30 @@ export default function TutorCreateQuizPage() {
   };
 
   const categories = [
-    "Vocabulary",
-    "Grammar",
-    "Reading",
-    "Idioms",
-    "Writing",
-    "Sentence Structure",
+    "VOCABULARY",
+    "GRAMMAR",
+    "READING",
+    "IDIOMS",
+    "WRITING",
+    "SENTENCE",
   ];
 
-  const difficulties = ["Easy", "Medium", "Hard"];
+  const categoryLabels = {
+    VOCABULARY: "Vocabulary",
+    GRAMMAR: "Grammar",
+    READING: "Reading",
+    IDIOMS: "Idioms",
+    WRITING: "Writing",
+    SENTENCE: "Sentence Structure",
+  };
+
+  const difficulties = ["EASY", "MEDIUM", "HARD"];
+
+  const difficultyLabels = {
+    EASY: "Easy",
+    MEDIUM: "Medium",
+    HARD: "Hard",
+  };
 
   const validateTitle = (value) => {
     if (!value.trim()) return "Title is required";
@@ -245,9 +264,11 @@ export default function TutorCreateQuizPage() {
   const validateStep1 = () => {
     const titleError = validateTitle(quiz.title);
     const descError = validateDescription(quiz.description);
-    setErrors({ title: titleError, description: descError, questions: [] });
-    setTouched({ title: true, description: true });
-    return !titleError && !descError;
+    const categoryError = !quiz.category ? "Category is required" : "";
+    const difficultyError = !quiz.difficulty ? "Difficulty is required" : "";
+    setErrors({ title: titleError, description: descError, category: categoryError, difficulty: difficultyError, questions: [] });
+    setTouched({ title: true, description: true, category: true, difficulty: true });
+    return !titleError && !descError && !categoryError && !difficultyError;
   };
 
   const validateStep2 = () => {
@@ -288,14 +309,15 @@ export default function TutorCreateQuizPage() {
     return {
       title: quiz.title,
       description: quiz.description,
-      category: CATEGORY_MAP[quiz.category] || quiz.category.toUpperCase(),
-      difficulty: DIFFICULTY_MAP[quiz.difficulty] || quiz.difficulty.toUpperCase(),
+      category: quiz.category,
+      difficulty: quiz.difficulty,
       time_limit: quiz.timeLimit,
       passing_score: quiz.passingScore,
       randomize_questions: quiz.randomize,
       immediate_results: quiz.immediateResults,
       is_daily_quiz: false,
       is_active: true,
+      add_to_bank: quiz.addToBank,
       questions: questionsPayload,
     };
   };
@@ -511,10 +533,13 @@ export default function TutorCreateQuizPage() {
                     <option value="">Select a category</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
-                        {cat}
+                        {categoryLabels[cat] || cat}
                       </option>
                     ))}
                   </select>
+                  {touched.category && errors.category && (
+                    <p className="text-red-500 text-sm mt-1">{errors.category}</p>
+                  )}
                 </div>
 
                 <div>
@@ -531,10 +556,13 @@ export default function TutorCreateQuizPage() {
                     <option value="">Select difficulty</option>
                     {difficulties.map((diff) => (
                       <option key={diff} value={diff}>
-                        {diff}
+                        {difficultyLabels[diff] || diff}
                       </option>
                     ))}
                   </select>
+                  {touched.difficulty && errors.difficulty && (
+                    <p className="text-red-500 text-sm mt-1">{errors.difficulty}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -619,6 +647,29 @@ export default function TutorCreateQuizPage() {
                     <span
                       className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                         quiz.immediateResults ? "left-7" : "left-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between py-3 border-t border-slate-200 mt-4">
+                  <div>
+                    <p className="font-medium text-gray-900">Add to Daily Quiz Bank</p>
+                    <p className="text-sm text-gray-500">
+                      Add these questions to the shared question bank
+                    </p>
+                  </div>
+                  <button
+                    onClick={() =>
+                      handleInputChange("addToBank", !quiz.addToBank)
+                    }
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      quiz.addToBank ? "bg-indigo-600" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        quiz.addToBank ? "left-7" : "left-1"
                       }`}
                     />
                   </button>
