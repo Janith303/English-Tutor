@@ -154,6 +154,12 @@ const TutorDetailsPage = () => {
     }
   };
 
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `http://localhost:8000${url.startsWith("/") ? url : `/${url}`}`;
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <LearnerTopNav />
@@ -359,27 +365,42 @@ const TutorDetailsPage = () => {
                     >
                       {related.thumbnail ? (
                         <img
-                          src={related.thumbnail}
+                          src={resolveMediaUrl(related.thumbnail)}
                           alt={related.title}
                           className="w-full h-40 object-cover"
                         />
                       ) : (
-                        <div className="w-full h-40 bg-gray-200" />
+                        <div className="w-full h-40 bg-gradient-to-br from-slate-700 to-slate-900 flex items-end p-3">
+                          <p className="text-slate-200 text-xs font-semibold uppercase tracking-wide">
+                            {(related.focusArea || "Course").slice(0, 18)}
+                          </p>
+                        </div>
                       )}
 
                       <div className="p-4">
-                        <p className="text-sm text-gray-500">{related.level}</p>
-                        <h3 className="mt-2 text-2xl font-semibold text-gray-800 leading-snug min-h-[3.25rem]">
+                        <p className="text-xs text-gray-500">{related.level}</p>
+                        <h3
+                          className="mt-1 text-xl font-semibold text-gray-800 leading-snug overflow-hidden"
+                          style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            minHeight: "3.15rem",
+                          }}
+                        >
                           {related.title}
                         </h3>
-                        <p className="mt-3 text-sm text-gray-500">
-                          {related.totalLessons} Lessons •{" "}
-                          {related.durationWeeks} weeks
+                        <p className="mt-2 text-xs text-gray-500">
+                          {related.rating} ★ • {related.enrolledStudents}{" "}
+                          Learners • {related.durationWeeks} wks
                         </p>
-                        <p className="mt-2 text-sm text-gray-600">
+                        <p className="mt-1 text-xs text-gray-600 truncate">
                           by {related.instructor}
                         </p>
-                        <p className="mt-3 text-green-600 font-semibold">
+                        <p className="mt-2 text-xs text-gray-500">
+                          {related.totalLessons} lessons
+                        </p>
+                        <p className="mt-2 text-green-600 font-semibold text-sm">
                           FREE
                         </p>
                       </div>

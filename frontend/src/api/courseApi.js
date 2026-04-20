@@ -175,6 +175,7 @@ export function toLearnerCourseCard(course) {
   const lessonCount = Number(course.totalLessons || 0);
   const durationWeeks = Number(course.durationWeeks || 1);
   const baseRating = 4.2 + Math.min(lessonCount, 20) / 25;
+  const enrolledStudents = Number(course.enrolledStudents || 0);
   const reviewsCount = Math.max(8, lessonCount * durationWeeks + 4);
 
   return {
@@ -184,6 +185,7 @@ export function toLearnerCourseCard(course) {
     level: levelToLabel(course.level),
     rating: Number(course.rating || baseRating).toFixed(1),
     reviews: course.reviews || `${reviewsCount}`,
+    enrolledStudents,
     focusArea: (course.focusArea || course.category || "General").replace(
       /-/g,
       " ",
