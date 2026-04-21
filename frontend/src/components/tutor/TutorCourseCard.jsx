@@ -21,6 +21,8 @@ export default function TutorCourseCard({
       : `${API_ORIGIN}${String(course.thumbnail).startsWith("/") ? "" : "/"}${course.thumbnail}`
     : "";
 
+  const isRejected = course.approvalStatus === 'REJECTED' && course.rejectionReason;
+
   return (
     <div className="bg-gradient-to-br from-[#2563EB] to-[#3B82F6] rounded-2xl shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex h-56">
       <div
@@ -45,9 +47,15 @@ export default function TutorCourseCard({
           </div>
         )}
 
-        <span className="absolute top-3 right-3 bg-white text-blue-600 text-xs font-semibold px-3 py-1 rounded-full">
-          {course.status}
-        </span>
+        {isRejected ? (
+          <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+            Rejected
+          </span>
+        ) : (
+          <span className="absolute top-3 right-3 bg-white text-blue-600 text-xs font-semibold px-3 py-1 rounded-full">
+            {course.status}
+          </span>
+        )}
       </div>
 
       <div className="w-2/3 p-5 flex flex-col flex-1 gap-3">
@@ -57,6 +65,17 @@ export default function TutorCourseCard({
         <p className="text-sm text-white font-semibold leading-relaxed flex-1">
           {course.description}
         </p>
+
+        {isRejected && (
+          <div className="mt-1 p-2 bg-red-500/30 rounded-lg">
+            <p className="text-xs text-red-200 font-semibold">
+              Rejection Reason:
+            </p>
+            <p className="text-xs text-white">
+              {course.rejectionReason}
+            </p>
+          </div>
+        )}
 
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-1.5 text-white font-semibold text-sm">

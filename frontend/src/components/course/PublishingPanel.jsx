@@ -59,33 +59,39 @@ export default function PublishingPanel({ value, onChange, disabled = false }) {
           </span>
         </div>
 
-        <div className="relative">
-          <select
-            value={publishMode}
-            onChange={(e) => updateStatus(e.target.value)}
-            className={selectClass}
-            disabled={disabled}
-          >
-            {Object.entries(STATUS_LABELS).map(([code, label]) => (
-              <option key={code} value={code}>
-                {label}
-              </option>
-            ))}
-          </select>
-          <svg
-            className="w-4 h-4 text-slate-700 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
+        {disabled ? (
+          <div className="text-sm text-slate-500 italic bg-slate-50 rounded-lg px-4 py-3">
+            Status cannot be changed. Admin approval required to publish.
+          </div>
+        ) : (
+          <div className="relative">
+            <select
+              value={publishMode}
+              onChange={(e) => updateStatus(e.target.value)}
+              className={selectClass}
+              disabled={disabled}
+            >
+              {Object.entries(STATUS_LABELS).map(([code, label]) => (
+                <option key={code} value={code}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <svg
+              className="w-4 h-4 text-slate-700 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
+        )}
       </div>
     </div>
   );

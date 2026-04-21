@@ -163,6 +163,8 @@ export function toTutorCourseCard(course) {
     title: course.title,
     description: course.summary || "",
     status: statusToLabel(course.status),
+    approvalStatus: course.approval_status || null,
+    rejectionReason: course.rejection_reason || null,
     totalLessons: course.totalLessons || 0,
     thumbnail: course.thumbnail || null,
     thumbnailLabel: (course.category || "Course").replace(/-/g, " "),
