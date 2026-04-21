@@ -992,7 +992,7 @@ class QuizListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        quizzes = Quiz.objects.filter(is_active=True).select_related('created_by')
+        quizzes = Quiz.objects.filter(is_active=True).select_related('created_by').distinct()
         serializer = QuizListSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1014,7 +1014,7 @@ class QuizCategoryListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, category):
-        quizzes = Quiz.objects.filter(category=category.upper(), is_active=True).select_related('created_by')
+        quizzes = Quiz.objects.filter(category=category.upper(), is_active=True).select_related('created_by').distinct()
         serializer = QuizListSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1171,7 +1171,8 @@ class QuizUpdateDeleteView(APIView):
         quiz = self.get_object(quiz_id, request.user)
         if quiz is None:
             return Response({'error': 'Quiz not found or unauthorized.'}, status=status.HTTP_404_NOT_FOUND)
-        quiz.delete()
+        quiz.is_active = False
+        quiz.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
