@@ -399,6 +399,7 @@ class CoursePublicSerializer(serializers.ModelSerializer):
     focusArea = serializers.CharField(source='category', read_only=True)
     thumbnail = serializers.SerializerMethodField()
     created_by_role = serializers.CharField(read_only=True)
+    rejection_reason = serializers.CharField(read_only=True)
 
     class Meta:
         model = Course
@@ -413,6 +414,8 @@ class CoursePublicSerializer(serializers.ModelSerializer):
             'thumbnail',
             'status',
             'created_by_role',
+            'approval_status',
+            'rejection_reason',
             'instructor',
             'enrolledStudents',
             'totalLessons',
