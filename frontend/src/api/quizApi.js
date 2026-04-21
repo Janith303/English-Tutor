@@ -1,8 +1,8 @@
 import privateApi from "./axios";
 
 export async function getQuizzes() {
-  const { data } = await privateApi.get("quizzes/");
-  return data;
+  const response = await privateApi.get("quizzes/");
+  return response.data;
 }
 
 export async function getQuizDetail(quizId) {

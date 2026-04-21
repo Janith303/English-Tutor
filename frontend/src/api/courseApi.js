@@ -163,6 +163,8 @@ export function toTutorCourseCard(course) {
     title: course.title,
     description: course.summary || "",
     status: statusToLabel(course.status),
+    approvalStatus: course.approval_status || null,
+    rejectionReason: course.rejection_reason || null,
     totalLessons: course.totalLessons || 0,
     thumbnail: course.thumbnail || null,
     thumbnailLabel: (course.category || "Course").replace(/-/g, " "),
@@ -597,4 +599,20 @@ export async function deleteStudentNote(courseId, noteId) {
   const notes = JSON.parse(localStorage.getItem(`notes_${courseId}`) || "[]");
   const filtered = notes.filter((note) => note.id !== noteId);
   localStorage.setItem(`notes_${courseId}`, JSON.stringify(filtered));
+}
+
+// --- ADMIN COURSE APPROVAL API ---
+export async function getPendingCourseApprovals() {
+  const { data } = await privateApi.get("admin/courses/pending/");
+  return data;
+}
+
+export async function approveCourse(courseId) {
+  const { data } = await privateApi.patch(`admin/courses/${courseId}/approve/`, {});
+  return data;
+}
+
+export async function rejectCourse(courseId, reason = "") {
+  const { data } = await privateApi.patch(`admin/courses/${courseId}/reject/`, { reason });
+  return data;
 }

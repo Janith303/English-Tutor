@@ -178,6 +178,8 @@ class CourseWriteSerializer(serializers.ModelSerializer):
             'price',
             'thumbnail',
             'status',
+            'created_by_role',
+            'rejection_reason',
             'published_at',
             'created_at',
             'updated_at',
@@ -213,8 +215,15 @@ class CourseWriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get('request')
         validated_data['tutor'] = request.user
-        if validated_data.get('status') == 'PUBLISHED':
-            validated_data['published_at'] = timezone.now()
+        user_role = request.user.role
+        if user_role == 'STUDENT_TUTOR':
+            validated_data['created_by_role'] = 'STUDENT_TUTOR'
+            validated_data['status'] = 'DRAFT'
+            validated_data['approval_status'] = 'PENDING'
+        elif user_role == 'TUTOR':
+            validated_data['created_by_role'] = 'TUTOR'
+            if validated_data.get('status') == 'PUBLISHED':
+                validated_data['published_at'] = timezone.now()
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -283,20 +292,81 @@ class LessonReadSerializer(serializers.ModelSerializer):
     is_completed = serializers.SerializerMethodField()
     is_unlocked = serializers.SerializerMethodField()
     duration = serializers.SerializerMethodField()
+    content = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+    quizzes = serializers.SerializerMethodField()
+    media = serializers.SerializerMethodField()
 
     class Meta:
         model = Lesson
         fields = [
             'id',
             'title',
+            'description',
             'order',
             'duration_minutes',
             'duration',
             'credits_awarded',
             'required_credits_to_unlock',
+            'content',
+            'quizzes',
+            'media',
             'is_completed',
             'is_unlocked',
         ]
+
+    def get_content(self, obj):
+        return obj.content or ''
+
+    def get_description(self, obj):
+        try:
+            profile = obj.authoring_profile
+            return profile.description or ''
+        except:
+            return ''
+
+    def get_quizzes(self, obj):
+        quizzes_data = []
+        for quiz in obj.quizzes.all():
+            questions = []
+            for q in quiz.questions.all():
+                questions.append({
+                    'id': q.id,
+                    'question_text': q.question_text,
+                    'option_a': q.option_a,
+                    'option_b': q.option_b,
+                    'option_c': q.option_c,
+                    'option_d': q.option_d,
+                    'correct_option': q.correct_option,
+                    'order': q.order,
+                    'explanation': q.explanation,
+                })
+            quizzes_data.append({
+                'id': quiz.id,
+                'title': quiz.title,
+                'instructions': quiz.instructions,
+                'passing_score': quiz.passing_score,
+                'order': quiz.order,
+                'questions': questions,
+            })
+        return quizzes_data
+
+    def get_media(self, obj):
+        try:
+            profile = obj.authoring_profile
+            return {
+                'image': profile.lesson_image.url if profile.lesson_image else None,
+                'video_file': profile.lesson_video_file.url if profile.lesson_video_file else None,
+                'video_embed_url': profile.lesson_video_embed_url or '',
+                'lesson_link_url': profile.lesson_link_url or '',
+            }
+        except:
+            return {
+                'image': None,
+                'video_file': None,
+                'video_embed_url': '',
+                'lesson_link_url': '',
+            }
 
     def get_duration(self, obj):
         return f"{obj.duration_minutes} min"
@@ -328,6 +398,8 @@ class CoursePublicSerializer(serializers.ModelSerializer):
     enrolledStudents = serializers.SerializerMethodField()
     focusArea = serializers.CharField(source='category', read_only=True)
     thumbnail = serializers.SerializerMethodField()
+    created_by_role = serializers.CharField(read_only=True)
+    rejection_reason = serializers.CharField(read_only=True)
 
     class Meta:
         model = Course
@@ -341,6 +413,9 @@ class CoursePublicSerializer(serializers.ModelSerializer):
             'price',
             'thumbnail',
             'status',
+            'created_by_role',
+            'approval_status',
+            'rejection_reason',
             'instructor',
             'enrolledStudents',
             'totalLessons',
@@ -372,6 +447,8 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     totalLessons = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
     enrolledStudents = serializers.SerializerMethodField()
+    created_by_role = serializers.CharField(read_only=True)
+    rejection_reason = serializers.CharField(read_only=True)
 
     class Meta:
         model = Course
@@ -385,6 +462,8 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             'price',
             'thumbnail',
             'status',
+            'created_by_role',
+            'rejection_reason',
             'published_at',
             'created_at',
             'updated_at',
@@ -495,7 +574,7 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizQuestion
-        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options', 'is_in_bank', 'is_approved']
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'learning_link', 'options', 'is_in_bank', 'is_approved']
 
 
 class QuizQuestionAdminSerializer(serializers.ModelSerializer):
@@ -504,7 +583,7 @@ class QuizQuestionAdminSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizQuestion
-        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options', 'is_in_bank', 'is_approved', 'category']
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'learning_link', 'options', 'is_in_bank', 'is_approved', 'category']
 
     def get_category(self, obj):
         return obj.quiz.category if obj.quiz else None
@@ -515,7 +594,7 @@ class QuizQuestionCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = QuizQuestion
-        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'options']
+        fields = ['id', 'question_text', 'marks', 'question_type', 'order', 'learning_link', 'options']
         extra_kwargs = {
             'marks': {'default': 10},
             'question_type': {'default': 'MULTIPLE_CHOICE'},
