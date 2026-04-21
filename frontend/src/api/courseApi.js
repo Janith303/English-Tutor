@@ -598,3 +598,19 @@ export async function deleteStudentNote(courseId, noteId) {
   const filtered = notes.filter((note) => note.id !== noteId);
   localStorage.setItem(`notes_${courseId}`, JSON.stringify(filtered));
 }
+
+// --- ADMIN COURSE APPROVAL API ---
+export async function getPendingCourseApprovals() {
+  const { data } = await privateApi.get("admin/courses/pending/");
+  return data;
+}
+
+export async function approveCourse(courseId) {
+  const { data } = await privateApi.patch(`admin/courses/${courseId}/approve/`, {});
+  return data;
+}
+
+export async function rejectCourse(courseId, reason = "") {
+  const { data } = await privateApi.patch(`admin/courses/${courseId}/reject/`, { reason });
+  return data;
+}
