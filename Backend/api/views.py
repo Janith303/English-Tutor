@@ -1117,6 +1117,72 @@ class AdminQuestionRejectView(APIView):
         return Response({'message': 'Question rejected and removed from bank.'}, status=status.HTTP_200_OK)
 
 
+# --- ADMIN COURSE CONTENT APPROVAL VIEWS ---
+class AdminCourseApprovalListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.role == 'ADMIN':
+            return Response({'error': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        courses = Course.objects.filter(
+            approval_status='PENDING',
+            status='DRAFT',
+            created_by_role='STUDENT_TUTOR'
+        ).select_related('tutor')
+
+        from .serializers import CourseDetailSerializer
+        serializer = CourseDetailSerializer(courses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AdminCourseApproveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, course_id):
+        if not request.user.role == 'ADMIN':
+            return Response({'error': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response({'error': 'Course not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if course.created_by_role != 'STUDENT_TUTOR':
+            return Response({'error': 'This course does not need approval.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        course.status = 'PUBLISHED'
+        course.published_at = timezone.now()
+        course.approval_status = 'APPROVED'
+        course.approved_at = timezone.now()
+        course.save()
+
+        return Response({'message': 'Course approved and published.', 'status': course.status}, status=status.HTTP_200_OK)
+
+
+class AdminCourseRejectView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, course_id):
+        if not request.user.role == 'ADMIN':
+            return Response({'error': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response({'error': 'Course not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if course.created_by_role != 'STUDENT_TUTOR':
+            return Response({'error': 'This course does not need approval.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        rejection_reason = request.data.get('reason', '')
+        course.rejection_reason = rejection_reason
+        course.approval_status = 'REJECTED'
+        course.save()
+
+        return Response({'message': 'Course rejected.', 'rejection_reason': course.rejection_reason}, status=status.HTTP_200_OK)
+
+
 class QuizCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1985,7 +2051,8 @@ class WallAnswerViewSet(viewsets.ModelViewSet):
         serializer.save(author=user, is_expert_answer=is_expert)
 
 
-from rest_framework.permissions import IsAdminUser
+from .permissions import IsAdminUser
+from .models import Course
 class AdminDashboardStatsView(APIView):
     permission_classes = [IsAdminUser] # Only Admins can see this
 
@@ -1995,6 +2062,7 @@ class AdminDashboardStatsView(APIView):
             "pendingRequests": StudentTutorProfile.objects.filter(status='PENDING').count(),
             "approvedTutors": User.objects.filter(role__in=['TUTOR', 'STUDENT_TUTOR'], is_verified=True).count(),
             "activeStudents": User.objects.filter(role='STUDENT').count(),
+            "pendingCourseApprovals": Course.objects.filter(approval_status='PENDING').count(),
         }
         return Response(stats)
   
