@@ -147,11 +147,11 @@ export default function AdminDashboard() {
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
       {/* --- SIDEBAR --- */}
       <aside className="w-72 bg-white border-r border-slate-100 flex flex-col h-full z-20">
-        <div className="p-8">
+        <div className="p-3">
           <h1 className="text-2xl font-black text-blue-600 tracking-tighter italic">English Tutor<span className="text-slate-900">Admin</span></h1>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 space-y-1">
           <NavItem to="/admin/dashboard" icon={<LayoutDashboard size={20}/>} label="Dashboard Overview" />
           <NavItem to="/admin/requests" icon={<Clock size={20}/>} label="Tutor Requests" badge={stats.pendingRequests} />
           {/* <NavItem to="/admin/student-tutors" icon={<UserCheck size={20}/>} label="All Tutors" /> */}
@@ -159,16 +159,13 @@ export default function AdminDashboard() {
           <NavItem to="/admin/placement-questions" icon={<BookOpen size={20}/>} label="Placement Questions" />
           <NavItem to="/admin/question-approval" icon={<CheckCircle size={20}/>} label="Question Bank Approval" />
           <NavItem to="/admin/course-approval" icon={<GraduationCap size={20}/>} label="Course Content Approval" badge={stats.pendingCourseApprovals} />
-        </nav>
-
-        <div className="p-4 border-t border-slate-50">
           <button 
             onClick={() => { localStorage.clear(); navigate("/login"); }}
-            className="flex items-center gap-3 w-full px-4 py-3 text-slate-500 font-bold hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+            className="flex items-center gap-3 w-full px-4 py-4 text-slate-500 font-bold hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
           >
             <LogOut size={20} /> Logout
           </button>
-        </div>
+        </nav>
       </aside>
 
       {/* --- MAIN CONTENT AREA --- */}
