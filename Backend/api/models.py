@@ -139,6 +139,18 @@ class Course(models.Model):
         ('ARCHIVED', 'Archived'),
     ]
 
+    APPROVAL_STATUS_CHOICES = [
+        ('NOT_REQUIRED', 'Not Required'),
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    CREATED_BY_ROLE_CHOICES = [
+        ('TUTOR', 'Tutor'),
+        ('STUDENT_TUTOR', 'Student Tutor'),
+    ]
+
     LEVEL_CHOICES = [
         ('beginner', 'Beginner'),
         ('intermediate', 'Intermediate'),
@@ -162,6 +174,13 @@ class Course(models.Model):
     )
     thumbnail = models.ImageField(upload_to='courses/thumbnails/', null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    created_by_role = models.CharField(max_length=20, choices=CREATED_BY_ROLE_CHOICES, default='TUTOR')
+    approval_status = models.CharField(max_length=20, choices=APPROVAL_STATUS_CHOICES, default='NOT_REQUIRED')
+    approval_notes = models.TextField(blank=True, default='')
+    rejection_reason = models.TextField(blank=True, default='')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_courses')
+    requested_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
