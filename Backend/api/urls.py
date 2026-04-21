@@ -20,6 +20,7 @@ from .views import (
     WallQuestionViewSet,
     WallAnswerViewSet,
     QuestionDetailView,
+    UserProfileView,               # ADDED: For dynamic profile name
 )
 
 from rest_framework.routers import DefaultRouter
@@ -37,6 +38,7 @@ urlpatterns = [
     path('verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
+    path('user/profile/', UserProfileView.as_view(), name='user-profile'), # ADDED: This fixes the 404
     
     # --- Onboarding Flow ---
     path('interests/list/', InterestListView.as_view(), name='list_interests'), # To GET interests

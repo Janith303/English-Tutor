@@ -2030,3 +2030,18 @@ def approve_tutor(request, profile_id):
         
     profile.save()
     return Response({"message": f"Tutor {action}ed successfully"})
+
+# --- PROFILE VIEW FOR QA WALL ---
+class UserProfileView(APIView):
+    """
+    This view takes the user's token and returns their actual name.
+    This is what replaces 'Loading...' with your real name in the navbar.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # We send back the full_name, or the username if full_name is empty
+        return Response({
+            "full_name": request.user.full_name or request.user.username,
+            "username": request.user.username,
+        })
