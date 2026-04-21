@@ -174,6 +174,7 @@ function AppRoutes() {
           <Route path="/admin/users" element={<Admin />} />
           <Route path="/admin/placement-questions" element={<Admin />} />
           <Route path="/admin/question-approval" element={<Admin />} />
+          <Route path="/admin/course-approval" element={<Admin />} />
         </Routes>
       </div>
     </div>
