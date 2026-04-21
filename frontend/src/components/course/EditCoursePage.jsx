@@ -47,6 +47,9 @@ export default function EditCoursePage({ onBack }) {
   const [savingCourse, setSavingCourse] = useState(false);
   const [loadError, setLoadError] = useState("");
 
+  const userRole = localStorage.getItem("role");
+  const isStudentTutor = userRole === "STUDENT_TUTOR";
+
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [publishing, setPublishing] = useState({
     status: "DRAFT",
@@ -237,13 +240,15 @@ export default function EditCoursePage({ onBack }) {
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                     <ThumbnailUploader onFileChange={handleThumbnailChange} />
                   </div>
-                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                    <PublishingPanel
-                      value={publishing}
-                      onChange={handlePublishingChange}
-                      disabled={savingCourse}
-                    />
-                  </div>
+                  {!isStudentTutor && (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                      <PublishingPanel
+                        value={publishing}
+                        onChange={handlePublishingChange}
+                        disabled={savingCourse}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
