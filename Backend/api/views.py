@@ -1929,12 +1929,12 @@ class WallQuestionViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         """
-        Ensures only the person who asked the question can delete it.
+        Ensures only the person who asked the question OR an Admin can delete it.
         """
         question = self.get_object()
         
-        # Security check: Does the logged-in user own this question?
-        if question.author != request.user:
+        # Security check: Allow if user is the author OR if user is staff (Admin)
+        if question.author != request.user and not request.user.is_staff:
             return Response(
                 {"detail": "You do not have permission to delete this question."}, 
                 status=status.HTTP_403_FORBIDDEN

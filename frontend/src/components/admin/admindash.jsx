@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Settings, Bell, LogOut, Search, 
   CheckCircle, XCircle, MoreVertical, ShieldCheck,
   FileText, Play, ExternalLink, Loader2, Mail, BookOpen, User, Image as ImageIcon,
-  Plus, Edit3, Trash2, AlertCircle 
+  Plus, Edit3, Trash2, AlertCircle, MessageSquare, ChevronUp 
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -64,6 +64,7 @@ export default function AdminDashboard() {
     if (activeTab === "student-tutors") endpoint = "/admin/users/?role=STUDENT_TUTOR";
     if (activeTab === "placement-questions") endpoint = "/create-questions/";
     if (activeTab === "question-approval") endpoint = "/admin/questions/pending/";
+    if (activeTab === "moderation") endpoint = "/wall-questions/"; // Added for moderation
 
     if (!endpoint) {
       setLoading(false);
@@ -122,6 +123,19 @@ export default function AdminDashboard() {
     }
   };
 
+  // NEW: Handle Admin Deletion from Q&A Wall
+  const handleDeleteWallQuestion = async (id) => {
+    if (!window.confirm("ADMIN ACTION: Are you sure you want to permanently delete this question from the wall?")) return;
+    try {
+      await axios.delete(`${API_BASE}/wall-questions/${id}/`, {
+        headers: getAuthHeader()
+      });
+      fetchTabData();
+    } catch (err) {
+      alert("Delete failed. Check server connection or permissions.");
+    }
+  };
+
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
       {/* --- SIDEBAR --- */}
@@ -133,8 +147,8 @@ export default function AdminDashboard() {
         <nav className="flex-1 px-4 space-y-2">
           <NavItem to="/admin/dashboard" icon={<LayoutDashboard size={20}/>} label="Dashboard Overview" />
           <NavItem to="/admin/requests" icon={<Clock size={20}/>} label="Tutor Requests" badge={stats.pendingRequests} />
-          {/* <NavItem to="/admin/student-tutors" icon={<UserCheck size={20}/>} label="All Tutors" /> */}
           <NavItem to="/admin/users" icon={<Users size={20}/>} label="All Users" />
+          <NavItem to="/admin/moderation" icon={<MessageSquare size={20}/>} label="Q&A Moderation" />
           <NavItem to="/admin/placement-questions" icon={<BookOpen size={20}/>} label="Placement Questions" />
           <NavItem to="/admin/question-approval" icon={<CheckCircle size={20}/>} label="Question Bank Approval" />
         </nav>
@@ -194,19 +208,21 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <>
-{activeTab === "requests" ? (
-                          <TutorRequestsGrid 
-                             data={listData} 
-                             onAction={handleTutorAction} 
-                             onViewVideo={(url) => setSelectedVideo(url)} 
-                          />
-                       ) : activeTab === "placement-questions" ? (
-                          <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
-                       ) : activeTab === "question-approval" ? (
-                          <QuestionApprovalGrid data={listData} onAction={handleQuestionAction} />
-                       ) : (
-                          <UserManager data={listData} onRefresh={fetchTabData} />
-                       )}
+                      {activeTab === "requests" ? (
+                        <TutorRequestsGrid 
+                           data={listData} 
+                           onAction={handleTutorAction} 
+                           onViewVideo={(url) => setSelectedVideo(url)} 
+                        />
+                      ) : activeTab === "placement-questions" ? (
+                        <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
+                      ) : activeTab === "question-approval" ? (
+                        <QuestionApprovalGrid data={listData} onAction={handleQuestionAction} />
+                      ) : activeTab === "moderation" ? (
+                        <WallModerationGrid data={listData} onDelete={handleDeleteWallQuestion} />
+                      ) : (
+                        <UserManager data={listData} onRefresh={fetchTabData} />
+                      )}
                       
                       {listData.length === 0 && <EmptyState label={`No ${activeTab.replace('-', ' ')} data available.`} />}
                     </>
@@ -236,6 +252,61 @@ export default function AdminDashboard() {
 
 // --- SUB COMPONENTS ---
 
+function WallModerationGrid({ data, onDelete }) {
+  if (data.length === 0) return <EmptyState label="The Q&A Wall is currently empty." />;
+
+  return (
+    <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
+      <table className="w-full text-left">
+        <thead className="bg-slate-50/50">
+          <tr>
+            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400">Author & Date</th>
+            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400">Question Content</th>
+            <th className="px-8 py-5 text-[10px] font-black uppercase text-slate-400 text-center">Engagement</th>
+            <th className="px-8 py-5 text-right uppercase text-[10px] font-black text-slate-400 pr-10">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-50">
+          {data.map((q) => (
+            <tr key={q.id} className="hover:bg-slate-50/20 transition-colors">
+              <td className="px-8 py-6">
+                <p className="font-black text-slate-900">{q.author_name}</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">{q.created_at_human}</p>
+              </td>
+              <td className="px-8 py-6 max-w-md">
+                <p className="font-bold text-slate-700 text-sm truncate">{q.title}</p>
+                <div className="flex gap-1 mt-2">
+                  {q.tags && (Array.isArray(q.tags) ? q.tags : q.tags.split(',')).map(tag => (
+                    <span key={tag} className="text-[9px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">#{tag.trim()}</span>
+                  ))}
+                </div>
+              </td>
+              <td className="px-8 py-6">
+                <div className="flex justify-center gap-4 text-slate-400">
+                  <div className="flex items-center gap-1 text-[11px] font-bold">
+                    <ChevronUp size={14} /> {q.votes}
+                  </div>
+                  <div className="flex items-center gap-1 text-[11px] font-bold">
+                    <MessageSquare size={14} /> {q.answers?.length || 0}
+                  </div>
+                </div>
+              </td>
+              <td className="px-8 py-6 text-right pr-10">
+                <button 
+                  onClick={() => onDelete(q.id)}
+                  className="p-3 bg-red-50 text-red-500 hover:bg-red-600 hover:text-white rounded-2xl transition-all shadow-sm"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function UserManager({ data, onRefresh }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -248,7 +319,7 @@ function UserManager({ data, onRefresh }) {
     onboarding_status: "REGISTER" // Assume admin setup is complete
   });
 
-  const roles = [/*"STUDENT", "TUTOR", "STUDENT_TUTOR",*/ "ADMIN"];
+  const roles = ["ADMIN"];
   const API_BASE = "http://127.0.0.1:8000/api";
   const token = localStorage.getItem("access_token");
 
