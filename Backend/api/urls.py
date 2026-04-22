@@ -9,7 +9,7 @@ from .views import (
     VerifyOTPView, 
     InterestListView,
     SubmitInterestsView, 
-    StudentProfileView,
+    StudentProfileView, 
     PlacementTestView, 
     CreateQuestionView,
     IdentityVerificationView,      # New: Step 1 of Tutor Application
@@ -21,6 +21,7 @@ from .views import (
     WallAnswerViewSet,
     QuestionDetailView,
     UserProfileView,               # ADDED: For dynamic profile name
+    NotificationViewSet,           # ADDED: Step 5 for Intelligent Routing
 )
 
 from rest_framework.routers import DefaultRouter
@@ -28,6 +29,7 @@ from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'wall-questions', WallQuestionViewSet)
 router.register(r'wall-answers', WallAnswerViewSet)
+router.register(r'notifications', NotificationViewSet, basename='notifications') # ADDED: Step 5
 
 urlpatterns = [
     # --- Router URLs (The missing piece of Step 4) ---

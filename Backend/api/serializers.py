@@ -1,9 +1,11 @@
 # api/serializers.py
 from rest_framework import serializers
 from django.contrib.humanize.templatetags.humanize import naturaltime
-from .models import User, Question, Interest, StudentTutorProfile, WallQuestion, WallAnswer
+from .models import Notification, User, Question, Interest, StudentTutorProfile, WallQuestion, WallAnswer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db.models import Sum
+from rest_framework import serializers
+from .models import Notification
 
 # --- 1. AUTHENTICATION SERIALIZER ---
 # This fixes your navigation issue by adding 'role' to the login response
@@ -1117,15 +1119,12 @@ class WallAnswerSerializer(serializers.ModelSerializer):
 
 class WallQuestionSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
-    tags = serializers.SerializerMethodField()
     created_at_human = serializers.SerializerMethodField()
     answers = WallAnswerSerializer(many=True, read_only=True, source='wall_answers')
     
-    # Existing logic for votes
+    # Logic for votes
     votes = serializers.SerializerMethodField()
     is_upvoted = serializers.SerializerMethodField()
-
-    # NEW: Tells the frontend if the logged-in user owns this question
     is_owner = serializers.SerializerMethodField()
 
     class Meta:
@@ -1136,8 +1135,24 @@ class WallQuestionSerializer(serializers.ModelSerializer):
             'created_at', 'created_at_human'
         ]
 
+    # --- UPDATED LOGIC ---
+    # We remove 'tags = serializers.SerializerMethodField()' from the top.
+    # By default, DRF will now treat 'tags' as a writable CharField.
+
+    def to_representation(self, instance):
+        """
+        This method lets us change how data looks when it's SENT to React.
+        We keep 'tags' as a string in the DB, but send it as a list to React.
+        """
+        representation = super().to_representation(instance)
+        if instance.tags:
+            # Convert "Grammar, Writing" -> ["Grammar", "Writing"] for the frontend
+            representation['tags'] = [tag.strip() for tag in instance.tags.split(',') if tag.strip()]
+        else:
+            representation['tags'] = []
+        return representation
+
     def get_is_owner(self, obj):
-        """Checks if the current logged-in user is the author of the question."""
         user = self.context.get('request').user
         if user and user.is_authenticated:
             return obj.author == user
@@ -1148,21 +1163,27 @@ class WallQuestionSerializer(serializers.ModelSerializer):
             return "Anonymous Student"
         return obj.author.full_name or obj.author.username
 
-    def get_tags(self, obj):
-        if not obj.tags:
-            return []
-        return [tag.strip() for tag in obj.tags.split(',') if tag.strip()]
-
     def get_created_at_human(self, obj):
+        from django.contrib.humanize.templatetags.humanize import naturaltime
         return naturaltime(obj.created_at)
 
     def get_votes(self, obj):
-        """Returns the total count of unique users who upvoted."""
         return obj.upvoted_by.count()
 
     def get_is_upvoted(self, obj):
-        """Tells the frontend if the logged-in user has already voted for this."""
         user = self.context.get('request').user
         if user and user.is_authenticated:
             return obj.upvoted_by.filter(id=user.id).exists()
         return False
+
+class NotificationSerializer(serializers.ModelSerializer):
+    # This pulls in the human-readable time (e.g., "2 mins ago")
+    created_at_human = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Notification
+        fields = ['id', 'message', 'is_read', 'question', 'created_at', 'created_at_human']
+
+    def get_created_at_human(self, obj):
+        from django.contrib.humanize.templatetags.humanize import naturaltime
+        return naturaltime(obj.created_at)

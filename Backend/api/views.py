@@ -14,7 +14,7 @@ from django.core.mail import send_mail
 from django.db import transaction # Added for atomic transactions
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
-from .models import WallQuestion
+from .models import Notification, WallQuestion
 from .serializers import WallQuestionSerializer
 
 # Make sure to import the new models and serializers
@@ -24,7 +24,7 @@ from .serializers import (
     QuestionSerializer, 
     InterestSerializer,
     IdentityVerificationSerializer, 
-    StudentTutorApplicationSerializer, WallQuestionSerializer, WallAnswerSerializer
+    StudentTutorApplicationSerializer, WallQuestionSerializer, WallAnswerSerializer, NotificationSerializer
 )
 from .permissions import IsApprovedTutor
 
@@ -2045,3 +2045,21 @@ class UserProfileView(APIView):
             "full_name": request.user.full_name or request.user.username,
             "username": request.user.username,
         })
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """
+    Allows Tutors to see and manage their expertise-based alerts.
+    """
+    serializer_class = NotificationSerializer # We will create this next
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Only show notifications belonging to the logged-in user
+        return Notification.objects.filter(recipient=self.request.user).order_by('-created_at')
+
+    @action(detail=True, methods=['post'])
+    def mark_as_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response({'status': 'notification marked as read'})
