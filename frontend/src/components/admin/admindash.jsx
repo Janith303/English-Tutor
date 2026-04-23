@@ -353,7 +353,7 @@ function UserManager({ data, onRefresh }) {
       password: "",
       role: "ADMIN",
       is_verified: true,
-      onboarding_status: "REGISTER"
+      onboarding_status: "REGISTERED"
     });
     setIsModalOpen(true);
   };

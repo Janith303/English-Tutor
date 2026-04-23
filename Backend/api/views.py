@@ -2081,6 +2081,12 @@ class AdminTutorRequestListView(generics.ListAPIView):
     serializer_class = StudentTutorApplicationSerializer
     permission_classes = [IsAdminUser]
 
+from django.core.mail import send_mail
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
 # 3. APPROVE/REJECT TUTOR ACTION
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
@@ -2088,17 +2094,46 @@ def approve_tutor(request, profile_id):
     profile = get_object_or_404(StudentTutorProfile, id=profile_id)
     action = request.data.get('action') # 'APPROVE' or 'REJECT'
     
+    # Store the user's name and email for the message
+    user_name = profile.user.full_name or "Applicant"
+    user_email = profile.user.email
+    
     if action == 'APPROVE':
         profile.status = 'APPROVED'
-        profile.user.role = 'TUTOR' # Ensure role is updated
+        profile.user.role = 'TUTOR' 
         profile.user.is_verified = True
-        profile.user.onboarding_status = 'REGISTERED'
+        profile.user.onboarding_status = 'REGISTERED' 
         profile.user.save()
+        
+        # 🟢 Send Approval Email
+        try:
+            send_mail(
+                'Application Approved - Welcome to English Tutor!',
+                f'Hello {user_name},\n\nCongratulations! Your application to become a Tutor has been approved. You can now log in to the platform and access your new Tutor Dashboard.\n\nBest regards,\nThe Admin Team',
+                'noreply@english-tutor.edu',
+                [user_email],
+                fail_silently=True, # Set to False if you want it to crash on email failure
+            )
+        except Exception as e:
+            print(f"Failed to send approval email: {e}")
+            
     else:
         profile.status = 'REJECTED'
         
+        # 🔴 Send Rejection Email
+        try:
+            send_mail(
+                'Update on your Tutor Application',
+                f'Hello {user_name},\n\nThank you for taking the time to apply. After reviewing your application, we are unfortunately unable to approve your request to become a tutor at this time.\n\nBest regards,\nThe Admin Team',
+                'noreply@english-tutor.edu',
+                [user_email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Failed to send rejection email: {e}")
+        
     profile.save()
-    return Response({"message": f"Tutor {action}ed successfully"})
+    return Response({"message": f"Tutor {action.lower()}ed successfully and email sent."})
 
 # --- PROFILE VIEW FOR QA WALL ---
 class UserProfileView(APIView):
@@ -2132,3 +2167,71 @@ class NotificationViewSet(viewsets.ModelViewSet):
         notification.is_read = True
         notification.save()
         return Response({'status': 'notification marked as read'})
+    
+    
+from rest_framework.permissions import AllowAny
+from django.contrib.auth.hashers import make_password
+
+class RequestPasswordResetView(APIView):
+    """Step 1: User requests an OTP to reset their password"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        
+        try:
+            user = User.objects.get(email=email)
+            # Generate a 6-digit OTP
+            otp_code = str(random.randint(100000, 999999))
+            
+            # Reuse your existing OTP model
+            OTP.objects.update_or_create(user=user, defaults={'code': otp_code})
+            
+            # Send Email
+            send_mail(
+                'Password Reset Code',
+                f'Hello {user.full_name},\n\nYour password reset code is: {otp_code}\n\nIf you did not request this, please ignore this email.',
+                'noreply@english-tutor.edu',
+                [user.email],
+                fail_silently=False,
+            )
+            # We return 200 OK even if the email doesn't exist to prevent "Email Enumeration" attacks
+            return Response({"message": "If an account exists with that email, an OTP has been sent."}, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            # Security Best Practice: Don't tell hackers if an email is in your database or not.
+            return Response({"message": "If an account exists with that email, an OTP has been sent."}, status=status.HTTP_200_OK)
+
+
+class ResetPasswordConfirmView(APIView):
+    """Step 2: User submits the OTP and their new password"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        code = request.data.get('code')
+        new_password = request.data.get('password')
+
+        if not email or not code or not new_password:
+            return Response({"error": "Email, code, and new password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+            otp = OTP.objects.get(user=user, code=code)
+            
+            if otp.is_valid(): # Assuming your OTP model has the is_valid() method you used in registration
+                # 🟢 CRITICAL: Use set_password to securely hash the new password
+                user.set_password(new_password)
+                user.save()
+                
+                # Delete the OTP so it can't be reused
+                otp.delete()
+                
+                return Response({"message": "Password successfully reset! You can now log in."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
+                
+        except User.DoesNotExist:
+            return Response({"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST)
+        except OTP.DoesNotExist:
+            return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)

@@ -134,4 +134,7 @@ urlpatterns += [
     path('students/courses/<int:course_id>/lessons/<int:lesson_id>/', course_views.StudentLessonDetailView.as_view(), name='student-lesson-detail'),
     path('students/courses/<int:course_id>/lessons/<int:lesson_id>/quizzes/<int:quiz_id>/submit/', course_views.StudentLessonQuizSubmitView.as_view(), name='student-lesson-quiz-submit'),
     path('students/courses/<int:course_id>/lessons/<int:lesson_id>/complete-checked/', course_views.StudentLessonCompleteWithRulesView.as_view(), name='student-lesson-complete-checked'),
+    
+    path('password-reset/request/', views.RequestPasswordResetView.as_view(), name='password-reset-request'),
+    path('password-reset/confirm/', views.ResetPasswordConfirmView.as_view(), name='password-reset-confirm'),
 ]
