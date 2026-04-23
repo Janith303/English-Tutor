@@ -134,6 +134,8 @@ export default function AdminDashboard() {
       fetchTabData();
     } catch (err) {
       alert("Delete failed. Check server connection or permissions.");
+    }
+  };
   const handleCourseApproval = async (id, action, reason = '') => {
     try {
       const endpoint = action === 'approve' 
