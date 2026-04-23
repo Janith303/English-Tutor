@@ -9,7 +9,7 @@ from .views import (
     VerifyOTPView, 
     InterestListView,
     SubmitInterestsView, 
-    StudentProfileView,
+    StudentProfileView, 
     PlacementTestView, 
     CreateQuestionView,
     IdentityVerificationView,      # New: Step 1 of Tutor Application
@@ -20,6 +20,8 @@ from .views import (
     WallQuestionViewSet,
     WallAnswerViewSet,
     QuestionDetailView,
+    UserProfileView,               # ADDED: For dynamic profile name
+    NotificationViewSet,           # ADDED: Step 5 for Intelligent Routing
 )
 
 from rest_framework.routers import DefaultRouter
@@ -27,6 +29,7 @@ from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'wall-questions', WallQuestionViewSet)
 router.register(r'wall-answers', WallAnswerViewSet)
+router.register(r'notifications', NotificationViewSet, basename='notifications') # ADDED: Step 5
 
 urlpatterns = [
     # --- Router URLs (The missing piece of Step 4) ---
@@ -37,6 +40,7 @@ urlpatterns = [
     path('verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
     path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), 
+    path('user/profile/', UserProfileView.as_view(), name='user-profile'), # ADDED: This fixes the 404
     
     # --- Onboarding Flow ---
     path('interests/list/', InterestListView.as_view(), name='list_interests'), # To GET interests
