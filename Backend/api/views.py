@@ -2102,7 +2102,7 @@ def approve_tutor(request, profile_id):
         profile.status = 'APPROVED'
         profile.user.role = 'TUTOR' 
         profile.user.is_verified = True
-        profile.user.onboarding_status = 'REGISTER' 
+        profile.user.onboarding_status = 'REGISTERED' 
         profile.user.save()
         
         # 🟢 Send Approval Email

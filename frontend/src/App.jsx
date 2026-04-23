@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   useLocation,
+  Navigate
 } from "react-router-dom";
 import Home from "./components/home/Home";
 import Login from "./components/home/login";
@@ -58,6 +59,18 @@ import Waitingapproval from "./components/home/waitingtoverify";
 import Admin from "./components/admin/admindash";
 import ForgotPassword from "./components/home/forgotpassword";
 
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("access_token");
+  
+  if (!token) {
+    // If no token is found, kick them to the login page immediately
+    return <Navigate to="/login" replace />;
+  }
+  
+  // If they have a token, let them see the page
+  return children;
+};
+
 function AppRoutes() {
   const location = useLocation();
   const hasGlobalMesh = location.pathname !== "/signup";
@@ -110,33 +123,33 @@ function AppRoutes() {
           <Route path="/edit-course" element={<EditCoursePage />} />
           <Route
             path="/tutor/courses/:courseId/chapter/:chapterId/lesson/:lessonId/edit"
-            element={<TutorLessonEditorPage />}
+            element={<ProtectedRoute><TutorLessonEditorPage /></ProtectedRoute>}
           />
           <Route
             path="/tutor/courses/:courseId/chapter/:chapterId/lesson/:lessonId/preview"
-            element={<TutorLessonPreviewPage />}
+            element={<ProtectedRoute><TutorLessonPreviewPage /></ProtectedRoute>}
           />
-          <Route path="/tutor/create-quiz" element={<TutorCreateQuizPage />} />
-          <Route path="/tutor/edit-quiz/:id" element={<TutorCreateQuizPage />} />
+          <Route path="/tutor/create-quiz" element={<ProtectedRoute><TutorCreateQuizPage /></ProtectedRoute>} />
+          <Route path="/tutor/edit-quiz/:id" element={<ProtectedRoute><TutorCreateQuizPage /></ProtectedRoute>} />
 
-          <Route path="/daily-quiz" element={<DailyQuizStart />} />
-          <Route path="/daily-quiz/play" element={<DailyQuizGame />} />
-          <Route path="/daily-quiz/result" element={<DailyQuizResult />} />
-          <Route path="/vocabulary-quiz" element={<VocabularyQuizStart />} />
+          <Route path="/daily-quiz" element={<ProtectedRoute><DailyQuizStart /></ProtectedRoute>} />
+          <Route path="/daily-quiz/play" element={<ProtectedRoute><DailyQuizGame /></ProtectedRoute>} />
+          <Route path="/daily-quiz/result" element={<ProtectedRoute><DailyQuizResult /></ProtectedRoute>} />
+          <Route path="/vocabulary-quiz" element={<ProtectedRoute><VocabularyQuizStart /></ProtectedRoute>} />
           <Route
             path="/vocabulary-quiz/play"
-            element={<VocabularyQuizGame />}
+            element={<ProtectedRoute><VocabularyQuizGame /></ProtectedRoute>}
           />
           <Route
             path="/vocabulary-quiz/result"
-            element={<VocabularyQuizResult />}
+            element={<ProtectedRoute><VocabularyQuizResult /></ProtectedRoute>}
           />
-          <Route path="/grammar-quiz" element={<GrammarQuizStart />} />
-          <Route path="/grammar-quiz/play" element={<GrammarQuizGame />} />
-          <Route path="/grammar-quiz/result" element={<GrammarQuizResult />} />
-          <Route path="/reading-quiz" element={<ReadingQuizStart />} />
-          <Route path="/reading-quiz/play" element={<ReadingQuizGame />} />
-          <Route path="/reading-quiz/result" element={<ReadingQuizResult />} />
+          <Route path="/grammar-quiz" element={<ProtectedRoute><GrammarQuizStart /></ProtectedRoute>} />
+          <Route path="/grammar-quiz/play" element={<ProtectedRoute><GrammarQuizGame /></ProtectedRoute>} />
+          <Route path="/grammar-quiz/result" element={<ProtectedRoute><GrammarQuizResult /></ProtectedRoute>} />
+          <Route path="/reading-quiz" element={<ProtectedRoute><ReadingQuizStart /></ProtectedRoute>} />
+          <Route path="/reading-quiz/play" element={<ProtectedRoute><ReadingQuizGame /></ProtectedRoute>} />
+          <Route path="/reading-quiz/result" element={<ProtectedRoute><ReadingQuizResult /></ProtectedRoute>} />
           <Route path="/waiting-approval" element={<Waitingapproval />} />
           <Route path="/admin/dashboard" element={<Admin />} />
 
@@ -157,27 +170,29 @@ function AppRoutes() {
           <Route path="/grammar-quiz/result" element={<GrammarQuizResult />} />
           <Route path="/reading-quiz" element={<ReadingQuizStart />} />
           <Route path="/reading-quiz/play" element={<ReadingQuizGame />} />
-          <Route path="/reading-quiz/result" element={<ReadingQuizResult />} />
-          <Route path="/idioms-quiz" element={<IdiomsQuizStart />} />
-          <Route path="/idioms-quiz/play" element={<IdiomsQuizGame />} />
-          <Route path="/idioms-quiz/result" element={<IdiomsQuizResult />} />
-          <Route path="/writing-quiz" element={<WritingQuizStart />} />
-          <Route path="/writing-quiz/play" element={<WritingQuizGame />} />
-          <Route path="/writing-quiz/result" element={<WritingQuizResult />} />
-          <Route path="/sentence-quiz" element={<SentenceQuizStart />} />
-          <Route path="/sentence-quiz/play" element={<SentenceQuizGame />} />
+          <Route path="/reading-quiz/result" element={<ProtectedRoute><ReadingQuizResult /></ProtectedRoute>} />
+          <Route path="/idioms-quiz" element={<ProtectedRoute><IdiomsQuizStart /></ProtectedRoute>} />
+          <Route path="/idioms-quiz/play" element={<ProtectedRoute><IdiomsQuizGame /></ProtectedRoute>} />
+          <Route path="/idioms-quiz/result" element={<ProtectedRoute><IdiomsQuizResult /></ProtectedRoute>} />
+          <Route path="/writing-quiz" element={<ProtectedRoute><WritingQuizStart /></ProtectedRoute>} />
+          <Route path="/writing-quiz/play" element={<ProtectedRoute><WritingQuizGame /></ProtectedRoute>} />
+          <Route path="/writing-quiz/result" element={<ProtectedRoute><WritingQuizResult /></ProtectedRoute>} />
+          <Route path="/sentence-quiz" element={<ProtectedRoute><SentenceQuizStart /></ProtectedRoute>} />
+          <Route path="/sentence-quiz/play" element={<ProtectedRoute><SentenceQuizGame /></ProtectedRoute>} />
           <Route
             path="/sentence-quiz/result"
-            element={<SentenceQuizResult />}
+            element={<ProtectedRoute><SentenceQuizResult /></ProtectedRoute>}
           />
-          <Route path="/admin/requests" element={<Admin />} />
-          <Route path="/admin/student-tutors" element={<Admin />} />
-          <Route path="/admin/users" element={<Admin />} />
-          <Route path="/admin/moderation" element={<Admin />} /> {/* Added this line */}
-          <Route path="/admin/placement-questions" element={<Admin />} />
-          <Route path="/admin/question-approval" element={<Admin />} />
-          <Route path="/admin/course-approval" element={<Admin />} />
+          <Route path="/admin/requests" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin/student-tutors" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin/moderation" element={<ProtectedRoute><Admin /></ProtectedRoute>} /> {/* Added this line */}
+          <Route path="/admin/placement-questions" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin/question-approval" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin/course-approval" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/forgotpassword" element={<ForgotPassword />} />
+
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     </div>
