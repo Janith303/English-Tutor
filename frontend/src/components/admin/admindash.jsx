@@ -136,6 +136,7 @@ export default function AdminDashboard() {
       alert("Delete failed. Check server connection or permissions.");
     }
   };
+
   const handleCourseApproval = async (id, action, reason = '') => {
     try {
       const endpoint = action === 'approve' 
@@ -226,36 +227,24 @@ export default function AdminDashboard() {
                     </div>
                   ) : (
                     <>
+                      {/* 🟢 THE FIX: Merged the two duplicated blocks into one clean block */}
                       {activeTab === "requests" ? (
-                        <TutorRequestsGrid 
-                           data={listData} 
-                           onAction={handleTutorAction} 
-                           onViewVideo={(url) => setSelectedVideo(url)} 
-                        />
+                         <TutorRequestsGrid 
+                            data={listData} 
+                            onAction={handleTutorAction} 
+                            onViewVideo={(url) => setSelectedVideo(url)} 
+                         />
                       ) : activeTab === "placement-questions" ? (
-                        <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
+                         <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
                       ) : activeTab === "question-approval" ? (
-                        <QuestionApprovalGrid data={listData} onAction={handleQuestionAction} />
+                         <QuestionApprovalGrid data={listData} onAction={handleQuestionAction} />
+                      ) : activeTab === "course-approval" ? (
+                         <CourseApprovalGrid data={listData} onAction={handleCourseApproval} />
                       ) : activeTab === "moderation" ? (
-                        <WallModerationGrid data={listData} onDelete={handleDeleteWallQuestion} />
+                         <WallModerationGrid data={listData} onDelete={handleDeleteWallQuestion} />
                       ) : (
-                        <UserManager data={listData} onRefresh={fetchTabData} />
+                         <UserManager data={listData} onRefresh={fetchTabData} />
                       )}
-{activeTab === "requests" ? (
-                          <TutorRequestsGrid 
-                             data={listData} 
-                             onAction={handleTutorAction} 
-                             onViewVideo={(url) => setSelectedVideo(url)} 
-                          />
-                       ) : activeTab === "placement-questions" ? (
-                          <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
-                       ) : activeTab === "question-approval" ? (
-                          <QuestionApprovalGrid data={listData} onAction={handleQuestionAction} />
-                       ) : activeTab === "course-approval" ? (
-                          <CourseApprovalGrid data={listData} onAction={handleCourseApproval} />
-                       ) : (
-                          <UserManager data={listData} onRefresh={fetchTabData} />
-                       )}
                       
                       {listData.length === 0 && <EmptyState label={`No ${activeTab.replace('-', ' ')} data available.`} />}
                     </>
@@ -471,7 +460,7 @@ function UserManager({ data, onRefresh }) {
                   <input 
                     type="email" value={formData.email} 
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="mail@gmail.com"
+                    placeholder="student@university.edu"
                     className="w-full bg-slate-50 border-none rounded-xl p-4 font-medium text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100" 
                     required
                   />
