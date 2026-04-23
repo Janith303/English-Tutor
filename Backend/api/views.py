@@ -2081,6 +2081,12 @@ class AdminTutorRequestListView(generics.ListAPIView):
     serializer_class = StudentTutorApplicationSerializer
     permission_classes = [IsAdminUser]
 
+from django.core.mail import send_mail
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+
 # 3. APPROVE/REJECT TUTOR ACTION
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
@@ -2088,17 +2094,46 @@ def approve_tutor(request, profile_id):
     profile = get_object_or_404(StudentTutorProfile, id=profile_id)
     action = request.data.get('action') # 'APPROVE' or 'REJECT'
     
+    # Store the user's name and email for the message
+    user_name = profile.user.full_name or "Applicant"
+    user_email = profile.user.email
+    
     if action == 'APPROVE':
         profile.status = 'APPROVED'
-        profile.user.role = 'TUTOR' # Ensure role is updated
+        profile.user.role = 'TUTOR' 
         profile.user.is_verified = True
-        profile.user.onboarding_status = 'REGISTERED'
+        profile.user.onboarding_status = 'REGISTER' 
         profile.user.save()
+        
+        # 🟢 Send Approval Email
+        try:
+            send_mail(
+                'Application Approved - Welcome to English Tutor!',
+                f'Hello {user_name},\n\nCongratulations! Your application to become a Tutor has been approved. You can now log in to the platform and access your new Tutor Dashboard.\n\nBest regards,\nThe Admin Team',
+                'noreply@english-tutor.edu',
+                [user_email],
+                fail_silently=True, # Set to False if you want it to crash on email failure
+            )
+        except Exception as e:
+            print(f"Failed to send approval email: {e}")
+            
     else:
         profile.status = 'REJECTED'
         
+        # 🔴 Send Rejection Email
+        try:
+            send_mail(
+                'Update on your Tutor Application',
+                f'Hello {user_name},\n\nThank you for taking the time to apply. After reviewing your application, we are unfortunately unable to approve your request to become a tutor at this time.\n\nBest regards,\nThe Admin Team',
+                'noreply@english-tutor.edu',
+                [user_email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Failed to send rejection email: {e}")
+        
     profile.save()
-    return Response({"message": f"Tutor {action}ed successfully"})
+    return Response({"message": f"Tutor {action.lower()}ed successfully and email sent."})
 
 # --- PROFILE VIEW FOR QA WALL ---
 class UserProfileView(APIView):
