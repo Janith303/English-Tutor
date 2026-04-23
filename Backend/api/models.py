@@ -589,3 +589,59 @@ class WallAnswer(models.Model):
     def __str__(self):
         status = "Expert" if self.is_expert_answer else "Student"
         return f"{status} Answer to {self.question.title} by {self.author.email}"
+
+# 1. THE DATA STRUCTURE (The Bucket)
+class Notification(models.Model):
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    question = models.ForeignKey('WallQuestion', on_delete=models.CASCADE, null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        # Added 'self.' to fix the potential NameError
+        return f"Notification for {self.recipient.username}: {self.message[:20]}"
+
+# 2. THE INTELLIGENT ROUTER (The Logic)
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from .models import WallQuestion, StudentTutorProfile, Notification
+
+@receiver(post_save, sender=WallQuestion)
+def route_question_to_specialists(sender, instance, created, **kwargs):
+    if created:
+        # 1. Capture and Clean Tags
+        # This takes "Presentation Skills" and makes it ["presentation skills"]
+        question_tags = [tag.strip().lower() for tag in instance.tags.split(',') if tag.strip()]
+        
+        print(f"\n--- [ROUTING DEBUG START] ---")
+        print(f"New Question ID: {instance.id}")
+        print(f"Tags found on question: {question_tags}")
+
+        # 2. Get all Tutors that are Approved
+        tutors = StudentTutorProfile.objects.filter(status='APPROVED')
+        print(f"Checking {tutors.count()} approved tutors...")
+
+        for profile in tutors:
+            # Normalize Tutor areas to lowercase for a fair comparison
+            # Example: ["Presentation Skills"] -> ["presentation skills"]
+            tutor_areas = [area.strip().lower() for area in (profile.teaching_areas or [])]
+            
+            # 3. Check for Match
+            matches = set(question_tags) & set(tutor_areas)
+            
+            if matches:
+                print(f"MATCH FOUND! Tutor: {profile.user.username} matches on: {matches}")
+                
+                # 4. Security Check: Don't notify the author
+                if profile.user != instance.author:
+                    Notification.objects.create(
+                        recipient=profile.user,
+                        question=instance,
+                        message=f"Expert Alert: A new question about '{list(matches)[0]}' matches your expertise!"
+                    )
+                    print(f"SUCCESS: Notification created for {profile.user.username}")
+                else:
+                    print(f"NOTICE: Tutor is the author. Skipping notification.")
+        
+        print(f"--- [ROUTING DEBUG END] ---\n")
