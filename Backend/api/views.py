@@ -2132,3 +2132,71 @@ class NotificationViewSet(viewsets.ModelViewSet):
         notification.is_read = True
         notification.save()
         return Response({'status': 'notification marked as read'})
+    
+    
+from rest_framework.permissions import AllowAny
+from django.contrib.auth.hashers import make_password
+
+class RequestPasswordResetView(APIView):
+    """Step 1: User requests an OTP to reset their password"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        
+        try:
+            user = User.objects.get(email=email)
+            # Generate a 6-digit OTP
+            otp_code = str(random.randint(100000, 999999))
+            
+            # Reuse your existing OTP model
+            OTP.objects.update_or_create(user=user, defaults={'code': otp_code})
+            
+            # Send Email
+            send_mail(
+                'Password Reset Code',
+                f'Hello {user.full_name},\n\nYour password reset code is: {otp_code}\n\nIf you did not request this, please ignore this email.',
+                'noreply@english-tutor.edu',
+                [user.email],
+                fail_silently=False,
+            )
+            # We return 200 OK even if the email doesn't exist to prevent "Email Enumeration" attacks
+            return Response({"message": "If an account exists with that email, an OTP has been sent."}, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            # Security Best Practice: Don't tell hackers if an email is in your database or not.
+            return Response({"message": "If an account exists with that email, an OTP has been sent."}, status=status.HTTP_200_OK)
+
+
+class ResetPasswordConfirmView(APIView):
+    """Step 2: User submits the OTP and their new password"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        code = request.data.get('code')
+        new_password = request.data.get('password')
+
+        if not email or not code or not new_password:
+            return Response({"error": "Email, code, and new password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=email)
+            otp = OTP.objects.get(user=user, code=code)
+            
+            if otp.is_valid(): # Assuming your OTP model has the is_valid() method you used in registration
+                # 🟢 CRITICAL: Use set_password to securely hash the new password
+                user.set_password(new_password)
+                user.save()
+                
+                # Delete the OTP so it can't be reused
+                otp.delete()
+                
+                return Response({"message": "Password successfully reset! You can now log in."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
+                
+        except User.DoesNotExist:
+            return Response({"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST)
+        except OTP.DoesNotExist:
+            return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)

@@ -56,6 +56,7 @@ import LessonReaderPage from "./components/lesson/LessonReaderPage";
 import VibrantMeshBackground from "./components/ui/VibrantMeshBackground";
 import Waitingapproval from "./components/home/waitingtoverify";
 import Admin from "./components/admin/admindash";
+import ForgotPassword from "./components/home/forgotpassword";
 
 function AppRoutes() {
   const location = useLocation();
@@ -176,6 +177,7 @@ function AppRoutes() {
           <Route path="/admin/placement-questions" element={<Admin />} />
           <Route path="/admin/question-approval" element={<Admin />} />
           <Route path="/admin/course-approval" element={<Admin />} />
+          <Route path="/forgotpassword" element={<ForgotPassword />} />
         </Routes>
       </div>
     </div>
