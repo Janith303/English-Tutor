@@ -194,7 +194,6 @@ export default function TutorDashboardPage({ onLogout }) {
     try {
       await deleteQuiz(quiz.id);
       setQuizzes((prev) => prev.filter((item) => item.id !== quiz.id));
-      navigate("/quizzes");
     } catch (deleteError) {
       console.error("Failed to delete quiz:", deleteError);
       alert(

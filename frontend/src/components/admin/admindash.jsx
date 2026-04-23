@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ totalUsers: 0, pendingRequests: 0, approvedTutors: 0, activeStudents: 0 });
+  const [stats, setStats] = useState({ totalUsers: 0, pendingRequests: 0, approvedTutors: 0, activeStudents: 0, pendingCourseApprovals: 0 });
   const [listData, setListData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -65,6 +65,7 @@ export default function AdminDashboard() {
     if (activeTab === "placement-questions") endpoint = "/create-questions/";
     if (activeTab === "question-approval") endpoint = "/admin/questions/pending/";
     if (activeTab === "moderation") endpoint = "/wall-questions/"; // Added for moderation
+    if (activeTab === "course-approval") endpoint = "/admin/courses/pending/";
 
     if (!endpoint) {
       setLoading(false);
@@ -133,6 +134,23 @@ export default function AdminDashboard() {
       fetchTabData();
     } catch (err) {
       alert("Delete failed. Check server connection or permissions.");
+  const handleCourseApproval = async (id, action, reason = '') => {
+    try {
+      const endpoint = action === 'approve' 
+        ? `/admin/courses/${id}/approve/`
+        : `/admin/courses/${id}/reject/`;
+      const payload = action === 'reject' ? { reason: reason || 'Course does not meet quality standards' } : {};
+      await axios.patch(`${API_BASE}${endpoint}`, payload, {
+        headers: getAuthHeader()
+      });
+      fetchTabData();
+    } catch (err) { 
+      console.error("Action failed", err.response?.status);
+      if (err.response?.status === 401) {
+        navigate("/login");
+      } else {
+        alert("Action failed");
+      }
     }
   };
 
@@ -140,27 +158,25 @@ export default function AdminDashboard() {
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
       {/* --- SIDEBAR --- */}
       <aside className="w-72 bg-white border-r border-slate-100 flex flex-col h-full z-20">
-        <div className="p-8">
+        <div className="p-3">
           <h1 className="text-2xl font-black text-blue-600 tracking-tighter italic">English Tutor<span className="text-slate-900">Admin</span></h1>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2">
+        <nav className="flex-1 px-4 space-y-1">
           <NavItem to="/admin/dashboard" icon={<LayoutDashboard size={20}/>} label="Dashboard Overview" />
           <NavItem to="/admin/requests" icon={<Clock size={20}/>} label="Tutor Requests" badge={stats.pendingRequests} />
           <NavItem to="/admin/users" icon={<Users size={20}/>} label="All Users" />
           <NavItem to="/admin/moderation" icon={<MessageSquare size={20}/>} label="Q&A Moderation" />
           <NavItem to="/admin/placement-questions" icon={<BookOpen size={20}/>} label="Placement Questions" />
           <NavItem to="/admin/question-approval" icon={<CheckCircle size={20}/>} label="Question Bank Approval" />
-        </nav>
-
-        <div className="p-4 border-t border-slate-50">
+          <NavItem to="/admin/course-approval" icon={<GraduationCap size={20}/>} label="Course Content Approval" badge={stats.pendingCourseApprovals} />
           <button 
             onClick={() => { localStorage.clear(); navigate("/login"); }}
-            className="flex items-center gap-3 w-full px-4 py-3 text-slate-500 font-bold hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+            className="flex items-center gap-3 w-full px-4 py-4 text-slate-500 font-bold hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
           >
             <LogOut size={20} /> Logout
           </button>
-        </div>
+        </nav>
       </aside>
 
       {/* --- MAIN CONTENT AREA --- */}
@@ -223,6 +239,21 @@ export default function AdminDashboard() {
                       ) : (
                         <UserManager data={listData} onRefresh={fetchTabData} />
                       )}
+{activeTab === "requests" ? (
+                          <TutorRequestsGrid 
+                             data={listData} 
+                             onAction={handleTutorAction} 
+                             onViewVideo={(url) => setSelectedVideo(url)} 
+                          />
+                       ) : activeTab === "placement-questions" ? (
+                          <PlacementQuestionManager data={listData} onRefresh={fetchTabData} />
+                       ) : activeTab === "question-approval" ? (
+                          <QuestionApprovalGrid data={listData} onAction={handleQuestionAction} />
+                       ) : activeTab === "course-approval" ? (
+                          <CourseApprovalGrid data={listData} onAction={handleCourseApproval} />
+                       ) : (
+                          <UserManager data={listData} onRefresh={fetchTabData} />
+                       )}
                       
                       {listData.length === 0 && <EmptyState label={`No ${activeTab.replace('-', ' ')} data available.`} />}
                     </>
@@ -884,5 +915,303 @@ function QuestionApprovalGrid({ data, onAction }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function CourseApprovalGrid({ data, onAction }) {
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectModal, setShowRejectModal] = useState(false);
+
+  const handleViewDetails = (course) => {
+    setSelectedCourse(course);
+  };
+
+  const handleApprove = () => {
+    if (selectedCourse) {
+      onAction(selectedCourse.id, 'approve');
+      setSelectedCourse(null);
+    }
+  };
+
+  const handleRejectClick = () => {
+    setShowRejectModal(true);
+  };
+
+  const confirmReject = () => {
+    if (selectedCourse) {
+      onAction(selectedCourse.id, 'reject', rejectReason);
+      setSelectedCourse(null);
+      setShowRejectModal(false);
+      setRejectReason("");
+    }
+  };
+
+  return (
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {data.map((course) => (
+          <div key={course.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold px-3 py-1 bg-amber-100 text-amber-700 rounded-full">Pending Approval</span>
+              <span className="text-xs font-bold text-slate-400 uppercase">{course.category}</span>
+            </div>
+
+            <h3 className="font-bold text-slate-900 text-lg mb-2">{course.title}</h3>
+            <p className="text-sm text-slate-500 mb-4">{course.summary}</p>
+
+            <div className="flex items-center gap-4 mb-4 text-xs text-slate-400">
+              <div className="flex items-center gap-1">
+                <User size={14} />
+                <span>{course.instructor}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock size={14} />
+                <span>{course.level}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>{course.totalLessons} Lessons</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleViewDetails(course)}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              >
+                View Details
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Course Details Modal */}
+      <AnimatePresence>
+        {selectedCourse && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedCourse(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
+              <button onClick={() => setSelectedCourse(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <XCircle size={24} />
+              </button>
+
+              <h3 className="text-2xl font-black text-slate-900 mb-2">{selectedCourse.title}</h3>
+              <p className="text-slate-500 mb-4">{selectedCourse.summary}</p>
+
+              <div className="flex items-center gap-4 mb-6 text-sm text-slate-400">
+                <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold">{selectedCourse.category}</span>
+                <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-bold">{selectedCourse.level}</span>
+                <span>{selectedCourse.totalLessons} Lessons</span>
+              </div>
+
+              {/* Course Structure - Full Overview */}
+              <div className="mb-6">
+                <h4 className="text-sm font-black text-slate-400 uppercase mb-3">Course Structure - Full Overview</h4>
+
+                {/* Course Stats */}
+                <div className="flex items-center gap-4 mb-4 p-3 bg-slate-50 rounded-xl">
+                  <div className="text-center">
+                    <span className="block text-xl font-black text-blue-600">{selectedCourse.chapters?.length || 0}</span>
+                    <span className="text-xs text-slate-400">Chapters</span>
+                  </div>
+                  <div className="w-px h-8 bg-slate-200"></div>
+                  <div className="text-center">
+                    <span className="block text-xl font-black text-blue-600">{selectedCourse.totalLessons}</span>
+                    <span className="text-xs text-slate-400">Lessons</span>
+                  </div>
+                  <div className="w-px h-8 bg-slate-200"></div>
+                  <div className="text-center">
+                    <span className="block text-xl font-black text-green-600">{selectedCourse.duration_hours}</span>
+                    <span className="text-xs text-slate-400">Hours</span>
+                  </div>
+                </div>
+
+                {/* Chapters and Lessons List */}
+                <div className="space-y-6">
+                  {selectedCourse.chapters?.map((chapter) => (
+                    <div key={chapter.id} className="border-2 border-slate-200 rounded-xl overflow-hidden">
+                      {/* Chapter Header */}
+                      <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
+                        <h5 className="font-bold">Chapter {chapter.order}: {chapter.title}</h5>
+                        <span className="text-xs bg-white/20 px-2 py-1 rounded">{chapter.lessons?.length || 0} Lessons</span>
+                      </div>
+
+                      {/* Lessons List */}
+                      <div className="p-4 bg-white">
+                        {chapter.lessons?.length > 0 ? (
+                          <div className="space-y-4">
+                            {chapter.lessons?.map((lesson) => (
+                              <div key={lesson.id} className="border border-slate-200 rounded-lg overflow-hidden">
+                                {/* Lesson Header */}
+                                <div className="bg-slate-50 px-4 py-3 flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <span className="w-8 h-8 bg-blue-600 text-white rounded-full text-sm flex items-center justify-center font-bold">{lesson.order}</span>
+                                    <div>
+                                      <span className="font-bold text-slate-700 block">{lesson.title}</span>
+                                      {lesson.description && <span className="text-xs text-slate-500">{lesson.description}</span>}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded">{lesson.duration}</span>
+                                    <span className="bg-green-100 text-green-600 px-2 py-1 rounded">+{lesson.credits_awarded} Credits</span>
+                                  </div>
+                                </div>
+
+                                {/* Lesson Content */}
+                                <div className="p-4 border-t border-slate-100">
+                                  <div className="text-xs font-bold text-slate-400 uppercase mb-2">Lesson Content:</div>
+                                  <div className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg whitespace-pre-wrap min-h-[60px]">
+                                    {lesson.content && lesson.content.trim() ? lesson.content : 'No lesson content provided'}
+                                  </div>
+                                </div>
+
+                                {/* Quizzes Block */}
+                                {lesson.quizzes && lesson.quizzes.length > 0 && (
+                                  <div className="p-4 border-t border-slate-100">
+                                    <div className="text-xs font-bold text-slate-400 uppercase mb-2">Quizzes ({lesson.quizzes.length}):</div>
+                                    <div className="space-y-3">
+                                      {lesson.quizzes.map((quiz) => (
+                                        <div key={quiz.id} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                                          <div className="flex items-center justify-between">
+                                            <span className="font-bold text-purple-700">{quiz.title}</span>
+                                            <span className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-600">
+                                              Pass: {quiz.passing_score}%
+                                            </span>
+                                          </div>
+                                          {quiz.instructions && (
+                                            <p className="text-xs text-purple-600 mt-1">{quiz.instructions}</p>
+                                          )}
+                                          {quiz.questions && quiz.questions.length > 0 && (
+                                            <div className="mt-3 space-y-2">
+                                              <div className="text-xs font-semibold text-purple-500">Questions ({quiz.questions.length}):</div>
+                                              {quiz.questions.map((q, qIdx) => {
+                                                const correctLabel = q.correct_option === 'A' ? q.option_a : q.correct_option === 'B' ? q.option_b : q.correct_option === 'C' ? q.option_c : q.option_d;
+                                                return (
+                                                <div key={q.id} className="bg-white border border-purple-100 rounded p-2 text-xs">
+                                                  <div className="font-medium text-purple-700">{qIdx + 1}. {q.question_text}</div>
+                                                  <div className="mt-1 grid grid-cols-2 gap-1 text-purple-600">
+                                                    <span className={q.correct_option === 'A' ? 'font-bold text-green-600' : ''}>A. {q.option_a}</span>
+                                                    <span className={q.correct_option === 'B' ? 'font-bold text-green-600' : ''}>B. {q.option_b}</span>
+                                                    <span className={q.correct_option === 'C' ? 'font-bold text-green-600' : ''}>C. {q.option_c}</span>
+                                                    <span className={q.correct_option === 'D' ? 'font-bold text-green-600' : ''}>D. {q.option_d}</span>
+                                                  </div>
+                                                  <div className="mt-1 text-green-600 font-semibold">Correct: {q.correct_option} ({correctLabel})</div>
+                                                  {q.explanation && (
+                                                    <div className="mt-1 text-purple-400 italic">Explanation: {q.explanation}</div>
+                                                  )}
+                                                </div>
+                                              );
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Media Uploads Block */}
+                                {(lesson.media?.image || lesson.media?.video_file || lesson.media?.video_embed_url || lesson.media?.lesson_link_url) && (
+                                  <div className="p-4 border-t border-slate-100">
+                                    <div className="text-xs font-bold text-slate-400 uppercase mb-2">Media & Resources:</div>
+                                    <div className="space-y-2">
+                                      {lesson.media?.image && (
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2 flex items-center gap-2">
+                                          <span className="text-indigo-600 text-sm">📷 Image Attached</span>
+                                        </div>
+                                      )}
+                                      {lesson.media?.video_file && (
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2 flex items-center gap-2">
+                                          <span className="text-indigo-600 text-sm">🎬 Video File Attached</span>
+                                        </div>
+                                      )}
+                                      {lesson.media?.video_embed_url && (
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2">
+                                          <span className="text-indigo-600 text-xs">🔗 Video Embed: {lesson.media.video_embed_url}</span>
+                                        </div>
+                                      )}
+                                      {lesson.media?.lesson_link_url && (
+                                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-2">
+                                          <span className="text-indigo-600 text-xs">🔗 External Link: {lesson.media.lesson_link_url}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-slate-400 text-sm italic">No lessons in this chapter</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {(!selectedCourse.chapters || selectedCourse.chapters.length === 0) && (
+                  <p className="text-slate-400 text-center py-4">No chapters available</p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleApprove}
+                  className="flex-1 py-4 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors"
+                >
+                  Approve & Publish
+                </button>
+                <button
+                  onClick={handleRejectClick}
+                  className="flex-1 py-4 bg-red-100 text-red-600 rounded-xl font-bold hover:bg-red-200 transition-colors"
+                >
+                  Reject
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Reject Modal */}
+      <AnimatePresence>
+        {showRejectModal && selectedCourse && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowRejectModal(false)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl">
+              <button onClick={() => setShowRejectModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <XCircle size={24} />
+              </button>
+
+              <h3 className="text-xl font-black text-slate-900 mb-4">Reject Course</h3>
+              <p className="text-sm text-slate-500 mb-4">Please provide a reason for rejecting "{selectedCourse.title}"</p>
+
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Enter rejection reason..."
+                className="w-full h-32 bg-slate-50 border-none rounded-xl p-4 font-medium text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-100 resize-none mb-4"
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRejectModal(false)}
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmReject}
+                  className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors"
+                >
+                  Confirm Reject
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

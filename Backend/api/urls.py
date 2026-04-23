@@ -125,6 +125,11 @@ urlpatterns += [
     path('admin/questions/<int:question_id>/approve/', course_views.AdminQuestionApproveView.as_view(), name='admin-approve-question'),
     path('admin/questions/<int:question_id>/reject/', course_views.AdminQuestionRejectView.as_view(), name='admin-reject-question'),
 
+    # --- Admin Course Content Approval ---
+    path('admin/courses/pending/', course_views.AdminCourseApprovalListView.as_view(), name='admin-pending-courses'),
+    path('admin/courses/<int:course_id>/approve/', course_views.AdminCourseApproveView.as_view(), name='admin-approve-course'),
+    path('admin/courses/<int:course_id>/reject/', course_views.AdminCourseRejectView.as_view(), name='admin-reject-course'),
+
     # --- Learner Lesson Reader + Quiz ---
     path('students/courses/<int:course_id>/lessons/<int:lesson_id>/', course_views.StudentLessonDetailView.as_view(), name='student-lesson-detail'),
     path('students/courses/<int:course_id>/lessons/<int:lesson_id>/quizzes/<int:quiz_id>/submit/', course_views.StudentLessonQuizSubmitView.as_view(), name='student-lesson-quiz-submit'),
