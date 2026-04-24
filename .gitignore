@@ -11,3 +11,6 @@ frontend/build/
 frontend/.env
 frontend/.vite/                   
 frontend/dist/
+
+#enviromental
+.env
