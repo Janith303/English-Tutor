@@ -477,14 +477,38 @@ export default function PersonalizedLearningHub() {
                     ← Back to Lessons
                   </button>
 
+                  {/* Cover Image */}
+                  {currentLessonContent?.lesson_image_url && (
+                    <div className="mb-6">
+                      <img
+                        src={resolveMediaUrl(currentLessonContent.lesson_image_url)}
+                        alt="Lesson cover"
+                        className="w-full max-h-[400px] object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+
                   {/* Video Section */}
                   {currentLessonContent?.lesson_video_embed_url ||
                   currentLessonContent?.lesson_video_file_url ? (
                     <div className="mb-6">
-                      <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
-                        {toEmbeddableVideoUrl(
-                          currentLessonContent?.lesson_video_embed_url,
-                        ) && (
+                      {/* Show uploaded video file */}
+                      {currentLessonContent?.lesson_video_file_url && (
+                        <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
+                          <video
+                            controls
+                            className="w-full h-full"
+                            src={resolveMediaUrl(currentLessonContent.lesson_video_file_url)}
+                          >
+                            Your browser does not support video playback.
+                          </video>
+                        </div>
+                      )}
+                      {/* Show embedded video (YouTube) */}
+                      {toEmbeddableVideoUrl(
+                        currentLessonContent?.lesson_video_embed_url,
+                      ) && (
+                        <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
                           <iframe
                             width="100%"
                             height="100%"
@@ -496,8 +520,8 @@ export default function PersonalizedLearningHub() {
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                           ></iframe>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   ) : null}
 

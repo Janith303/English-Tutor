@@ -1103,11 +1103,17 @@ class LessonAuthoringProfileSerializer(serializers.ModelSerializer):
 
     def get_lesson_image_url(self, obj):
         if obj.lesson_image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.lesson_image.url)
             return obj.lesson_image.url
         return None
 
     def get_lesson_video_file_url(self, obj):
         if obj.lesson_video_file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.lesson_video_file.url)
             return obj.lesson_video_file.url
         return None
 
