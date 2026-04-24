@@ -1,14 +1,13 @@
-import { FieldError, FieldLabel, inputClass, CharCount } from "../ui/FormField";
-import RichTextEditor from "./RichTextEditor";
-import { validateField } from "../../utils/courseFormValidation";
+import { FieldError, CharCount } from "../ui/FormField";
 
-function generateSlug(title) {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-");
-}
+const labelClass = "block text-base font-semibold text-black";
+
+const inputClass = (hasError) =>
+  `w-full rounded-lg border bg-slate-50 px-4 py-3 text-base text-slate-700 placeholder:text-slate-500 focus:bg-white focus:ring-2 focus:outline-none ${
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-red-200"
+      : "border-slate-400 focus:border-indigo-500 focus:ring-indigo-500"
+  }`;
 
 export default function BasicInfoForm({ formData, errors, onChange, onBlur }) {
   const handleChange = (field) => (e) => {
@@ -19,28 +18,25 @@ export default function BasicInfoForm({ formData, errors, onChange, onBlur }) {
     onBlur(field, formData[field]);
   };
 
-  const handleGenerateSlug = () => {
-    const slug = generateSlug(formData.title || "");
-    onChange("slug", slug);
-    onBlur("slug", slug);
-  };
-
   return (
-    <div className="flex flex-col gap-6">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-7 transition-all duration-200 hover:-translate-y-1 hover:shadow-md flex flex-col gap-7">
       <div>
-        <h2 className="text-2xl font-bold text-black mb-1">Basic Info</h2>
-        <p className="text-sm text-black leading-relaxed">
+        <h2 className="text-xl font-bold text-black mb-3">Basic Info</h2>
+        <p className="text-sm text-slate-600 leading-relaxed">
           Provide basic information about the course to help students understand
           the value proposition.
         </p>
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <FieldLabel>Course Title</FieldLabel>
+        <div className="flex items-center justify-between mb-3">
+          <label htmlFor="course-title" className={labelClass}>
+            Course Title
+          </label>
           <CharCount value={formData.title} max={120} />
         </div>
         <input
+          id="course-title"
           type="text"
           name="title"
           value={formData.title}
@@ -53,45 +49,14 @@ export default function BasicInfoForm({ formData, errors, onChange, onBlur }) {
       </div>
 
       <div>
-        <FieldLabel>URL Slug</FieldLabel>
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <input
-              type="text"
-              name="slug"
-              value={formData.slug}
-              onChange={handleChange("slug")}
-              onBlur={handleBlur("slug")}
-              placeholder="url-slug-will-appear-here"
-              className={inputClass(!!errors.slug)}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleGenerateSlug}
-            disabled={!formData.title?.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-5 rounded-xl transition-colors whitespace-nowrap"
-          >
-            Generate
-          </button>
-        </div>
-        <FieldError message={errors.slug} />
-        {!errors.slug && formData.slug && (
-          <p className="text-xs text-gray-400 mt-1.5">
-            Preview:{" "}
-            <span className="text-blue-500">
-              englishtutor.com/courses/{formData.slug}
-            </span>
-          </p>
-        )}
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <FieldLabel>Summary</FieldLabel>
+        <div className="flex items-center justify-between mb-3">
+          <label htmlFor="course-summary" className={labelClass}>
+            Summary
+          </label>
           <CharCount value={formData.summary} max={300} />
         </div>
         <textarea
+          id="course-summary"
           name="summary"
           value={formData.summary}
           onChange={handleChange("summary")}
@@ -102,18 +67,6 @@ export default function BasicInfoForm({ formData, errors, onChange, onBlur }) {
         />
         <FieldError message={errors.summary} />
       </div>
-
-      <RichTextEditor
-        label="Full Description"
-        name="description"
-        value={formData.description}
-        onChange={(val) => {
-          onChange("description", val);
-          onBlur("description", val);
-        }}
-        error={errors.description}
-        placeholder="Write a comprehensive description of your course content, objectives, and what students will achieve..."
-      />
     </div>
   );
 }

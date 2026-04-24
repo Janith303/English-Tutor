@@ -1,273 +1,501 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Star,
   CheckCircle,
   MessageSquare,
-  ShieldCheck,
-  Lightbulb,
-  TrendingUp,
-  GraduationCap,
   Clock,
-  User,
-  Flame,
+  Award,
+  CalendarDays,
 } from "lucide-react";
 import LearnerTopNav from "./LearnerTopNav";
-import { mockCourses, mockLessons } from "../../data/mockCourses";
+import {
+  createEnrollment,
+  getPublishedCourses,
+  getPublishedCourseDetail,
+  toLearnerCourseCard,
+  toLessonRowsFromCourseDetail,
+} from "../../api/courseApi";
 
 const TutorDetailsPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const course = mockCourses.find((c) => c.id === parseInt(courseId));
-  const courseLessons = mockLessons.filter(
-    (l) => l.courseId === parseInt(courseId),
+  const [course, setCourse] = useState(null);
+  const [courseLessons, setCourseLessons] = useState([]);
+  const [relatedCourses, setRelatedCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCourse = async () => {
+      setLoading(true);
+      try {
+        const data = await getPublishedCourseDetail(courseId);
+        setCourse(data);
+        setCourseLessons(toLessonRowsFromCourseDetail(data));
+
+        const publishedCourses = await getPublishedCourses();
+        const currentCourseId = Number(courseId);
+
+        const filtered = (
+          Array.isArray(publishedCourses) ? publishedCourses : []
+        )
+          .filter((item) => Number(item?.id) !== currentCourseId)
+          .filter((item) => {
+            if (!data?.category) return true;
+            return (
+              String(item?.category || "").toLowerCase() ===
+              String(data.category).toLowerCase()
+            );
+          });
+
+        const picked = (filtered.length ? filtered : publishedCourses || [])
+          .filter((item) => Number(item?.id) !== currentCourseId)
+          .slice(0, 3)
+          .map((item) => toLearnerCourseCard(item));
+
+        setRelatedCourses(picked);
+      } catch (error) {
+        console.error("Failed to load course detail:", error);
+        setCourse(null);
+        setCourseLessons([]);
+        setRelatedCourses([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCourse();
+  }, [courseId]);
+
+  const lessonCount = courseLessons.length;
+  const totalMinutes = courseLessons.reduce(
+    (sum, lesson) => sum + Number(lesson.duration || 0),
+    0,
   );
+  const enrolledStudents = Number(course?.enrolledStudents || 0);
+  const tutorName = course?.instructor || "English Tutor";
+  const levelLabel = course?.level
+    ? `${String(course.level).charAt(0).toUpperCase()}${String(course.level).slice(1)}`
+    : "Beginner";
 
-  const [selectedDate, setSelectedDate] = useState("Wed 17");
-  const [selectedDuration, setSelectedDuration] = useState("25 mins");
-  const [selectedTime, setSelectedTime] = useState(null);
+  const lessonsByChapter = courseLessons.reduce((acc, lesson) => {
+    const chapterId = lesson.chapterId ?? "uncategorized";
+    const chapterTitle = lesson.chapterTitle || "Untitled Chapter";
+    const chapterOrder = lesson.chapterOrder ?? Number.MAX_SAFE_INTEGER;
 
-  const lectureNotesData =
-    courseLessons.length > 0
-      ? courseLessons.map((l) => l.title)
-      : [
-          "Introduction to Academic Lexis",
-          "Analyzing Root Words & Affixes",
-          "Transition Words for Essays",
-          "Scientific & Technical Terminology",
-          "Formal vs. Informal Register",
-          "Data Interpretation Vocabulary",
-          "Verbs of Attribution (Citing Sources)",
-          "Abstract Nouns in Research",
-          "Collocations in Academic Writing",
-          "Final Assessment & Mastery",
-        ];
+    if (!acc[chapterId]) {
+      acc[chapterId] = {
+        chapterId,
+        chapterTitle,
+        chapterOrder,
+        lessons: [],
+      };
+    }
 
-  const ratings = [
-    {
-      label: "Reassurance",
-      value: "5.0",
-      icon: <ShieldCheck className="text-blue-600" size={24} />,
-    },
-    {
-      label: "Clarity",
-      value: "5.0",
-      icon: <Lightbulb className="text-blue-600" size={24} />,
-    },
-    {
-      label: "Progress",
-      value: "5.0",
-      icon: <TrendingUp className="text-blue-600" size={24} />,
-    },
-    {
-      label: "Preparation",
-      value: "5.0",
-      icon: <GraduationCap className="text-blue-600" size={24} />,
-    },
-  ];
+    acc[chapterId].lessons.push(lesson);
+    return acc;
+  }, {});
+  const orderedChapters = Object.values(lessonsByChapter)
+    .map((chapter) => ({
+      ...chapter,
+      lessons: [...chapter.lessons].sort(
+        (a, b) => (a.order || 0) - (b.order || 0),
+      ),
+    }))
+    .sort((a, b) => a.chapterOrder - b.chapterOrder);
 
-  const schedule = [
-    { day: "Mon", date: "15" },
-    { day: "Tue", date: "16" },
-    { day: "Wed", date: "17" },
-    { day: "Thu", date: "18" },
-    { day: "Fri", date: "19" },
-    { day: "Sat", date: "20" },
-    { day: "Sun", date: "21" },
-  ];
+  // Dynamically generate skills based on course data
+  const getSkillsForCourse = () => {
+    const baseSkills = [
+      `${course?.category || "Subject"} Fundamentals`,
+      "Practical Applications",
+      "Best Practices & Patterns",
+    ];
 
-  const times = ["09:00", "11:30", "15:00", "18:30"];
+    if (
+      course?.level?.toLowerCase() === "advanced" ||
+      course?.level?.toLowerCase() === "intermediate"
+    ) {
+      baseSkills.push("Advanced Techniques", "Real-world Problem Solving");
+    } else {
+      baseSkills.push("Hands-on Exercises", "Project-based Learning");
+    }
+
+    return baseSkills;
+  };
+
+  // Dynamically generate audience based on course level
+  const getAudienceForCourse = () => {
+    const baseAudience = ["Beginners", "Students"];
+
+    if (
+      course?.level?.toLowerCase() === "intermediate" ||
+      course?.level?.toLowerCase() === "advanced"
+    ) {
+      baseAudience.push("Professionals", "Career Switchers");
+    } else {
+      baseAudience.push("Self-learners", "Career Switchers");
+    }
+
+    if (course?.level?.toLowerCase() === "advanced") {
+      baseAudience.push("Tech Enthusiasts", "Experts");
+    } else {
+      baseAudience.push("Tech Enthusiasts");
+    }
+
+    return baseAudience;
+  };
+
+  const handleEnroll = async () => {
+    if (!course?.id) return;
+
+    try {
+      await createEnrollment(course.id);
+      navigate(`/learning/${course.id}`);
+    } catch (error) {
+      if (error?.response?.status === 400) {
+        navigate(`/learning/${course.id}`);
+        return;
+      }
+      alert("Enrollment failed. Please try again.");
+    }
+  };
+
+  const resolveMediaUrl = (url) => {
+    if (!url) return "";
+    if (url.startsWith("http")) return url;
+    return `http://localhost:8000${url.startsWith("/") ? url : `/${url}`}`;
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <LearnerTopNav />
-      <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-6">
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="text-blue-600 hover:text-blue-700 font-medium text-sm mb-6 flex items-center gap-2"
-        >
-          ← Back to Dashboard
-        </button>
+      <div className="flex-1 w-full">
+        {/* Back Button */}
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-2"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
 
-        <div className="flex items-start justify-between mb-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
-          <div className="flex gap-4">
-            <img
-              src={
-                course?.instructorImage ||
-                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150"
-              }
-              alt={course?.instructor || "Instructor"}
-              className="w-20 h-20 rounded-full object-cover"
-            />
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded border border-green-100 font-medium">
-                  Free Course
-                </span>
-                <span className="text-blue-600 flex items-center gap-1 text-xs font-medium">
-                  <CheckCircle
-                    size={14}
-                    fill="currentColor"
-                    className="text-white fill-blue-500"
-                  />{" "}
-                  University Verified
-                </span>
-              </div>
-              <h1 className="text-3xl font-bold text-gray-800">
-                {course?.title || "Course Title"}
-              </h1>
-              <p className="text-gray-500 italic mt-1">
-                with {course?.instructor || "Instructor"}
-              </p>
-            </div>
+        {loading ? (
+          <div className="max-w-6xl mx-auto px-6 py-12 text-center text-gray-500">
+            Loading course details...
           </div>
+        ) : (
+          <>
+            {/* Hero Section */}
+            <div className="bg-white border-b border-gray-200 py-8">
+              <div className="max-w-6xl mx-auto px-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {/* Course Info - Left (2 cols on desktop) */}
+                  <div className="md:col-span-2">
+                    {/* Badge & Rating */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="bg-green-50 text-green-600 text-xs px-3 py-1 rounded border border-green-200 font-semibold">
+                        Free Course
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <div className="flex">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={16}
+                              className="text-yellow-400 fill-yellow-400"
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700 ml-1">
+                          4.5
+                        </span>
+                      </div>
+                    </div>
 
-          <div className="w-72 border rounded-xl p-5 shadow-sm bg-white hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-blue-600 tracking-wide">
-                FREE
+                    {/* Title */}
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                      {course?.title || "Course Title"}
+                    </h1>
+
+                    {/* Meta Info */}
+                    <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+                      <span className="font-medium">
+                        {enrolledStudents} Learners Enrolled
+                      </span>
+                      <span>•</span>
+                      <span className="font-medium">{levelLabel} Level</span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-gray-700 leading-relaxed mb-6 text-sm">
+                      {course?.summary ||
+                        "Learn the fundamentals of this course from scratch. This beginner-friendly course covers core concepts and practical applications to help you get started."}
+                    </p>
+
+                    {/* Instructor */}
+                    <div className="text-sm text-gray-600">
+                      with{" "}
+                      <span className="font-semibold text-gray-900">
+                        {tutorName}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Details Card - Right (1 col on desktop) */}
+                  <div>
+                    <div className="bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl shadow-sm p-6 sticky top-24">
+                      {/* FREE Badge */}
+                      {course?.price == 0 && (
+                        <span className="inline-block bg-green-600 text-white text-xs px-3 py-1 rounded font-semibold mb-4">
+                          FREE
+                        </span>
+                      )}
+
+                      {/* Start Learning Button */}
+                      <button
+                        onClick={handleEnroll}
+                        className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-semibold py-3 px-4 rounded-lg mb-6 transition-colors"
+                      >
+                        Start Learning
+                      </button>
+
+                      {/* This Course Includes */}
+                      <div>
+                        <p className="text-sm font-semibold text-white mb-4">
+                          This Course Includes
+                        </p>
+                        <div className="space-y-4">
+                          {/* Duration */}
+                          <div className="flex items-start gap-3">
+                            <Clock
+                              size={20}
+                              className="text-slate-200 flex-shrink-0 mt-0.5"
+                            />
+                            <div>
+                              <p className="text-sm text-white font-medium">
+                                {course?.duration_hours} Hours
+                              </p>
+                              <p className="text-xs text-slate-300">
+                                Of self-paced lessons
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Certificate */}
+                          <div className="flex items-start gap-3">
+                            <Award
+                              size={20}
+                              className="text-slate-200 flex-shrink-0 mt-0.5"
+                            />
+                            <div>
+                              <p className="text-sm text-white font-medium">
+                                Completion Certificate
+                              </p>
+                              <p className="text-xs text-slate-300">
+                                awarded on course completion
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Access Days */}
+                          <div className="flex items-start gap-3">
+                            <CalendarDays
+                              size={20}
+                              className="text-slate-200 flex-shrink-0 mt-0.5"
+                            />
+                            <div>
+                              <p className="text-sm text-white font-medium">
+                                10 Days of Access
+                              </p>
+                              <p className="text-xs text-slate-300">
+                                To your Free Course
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Skills Section */}
+            <div className="max-w-6xl mx-auto px-6 py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                🎯 {course?.title} - Key Topics
               </h2>
-              <p className="text-xs text-gray-400 mt-1 uppercase font-semibold">
-                No payment required
-              </p>
-              <button
-                onClick={() => navigate(`/learning/${course?.id}`)}
-                className="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors"
-              >
-                Enroll Now
-              </button>
+              <div className="grid grid-cols-2 gap-4">
+                {getSkillsForCourse().map((skill, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <CheckCircle
+                      size={20}
+                      className="text-blue-600 flex-shrink-0"
+                    />
+                    <span className="text-gray-700 font-medium">{skill}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-3 text-sm text-gray-600 border-t pt-4">
-              <div className="flex items-center gap-3">
-                <div className="p-1 bg-gray-100 rounded">
-                  <User size={16} />
+            {/* Who Should Learn Section */}
+            <div className="py-12 border-y border-gray-200">
+              <div className="max-w-6xl mx-auto px-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  Who should learn this course?
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {getAudienceForCourse().map((audience, idx) => (
+                    <div
+                      key={idx}
+                      className="border border-gray-300 rounded-lg px-3 py-2 bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+                    >
+                      <p className="text-sm font-semibold text-gray-800">
+                        {audience}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <span>23 Lessons Completed</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="p-1 bg-gray-100 rounded">
-                  <Star size={16} />
+            </div>
+
+            {/* Curriculum Section */}
+            <div className="max-w-6xl mx-auto px-6 py-12 mb-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                What you will learn in this course?
+              </h2>
+
+              {courseLessons.length === 0 ? (
+                <div className="bg-gray-50 rounded-lg p-12 text-center border border-dashed border-gray-300">
+                  <MessageSquare
+                    size={48}
+                    className="text-gray-300 mx-auto mb-4"
+                  />
+                  <p className="text-gray-500 font-medium">No lessons yet</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Lessons will appear once the tutor publishes chapters.
+                  </p>
                 </div>
-                <span>New Tutor</span>
-              </div>
-            </div>
+              ) : (
+                <div className="space-y-3 bg-blue-50 rounded-lg p-6 border border-blue-100">
+                  <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {course?.title || "Course"}
+                    </h3>
+                  </div>
 
-            <div className="mt-6 bg-orange-50 border border-orange-100 p-4 rounded-lg">
-              <div className="flex items-center gap-2 text-orange-600 font-bold text-sm">
-                <Flame size={18} fill="currentColor" /> Popular
-              </div>
-              <p className="text-xs text-orange-800 mt-1">
-                11 students joined in the last 2 days
-              </p>
-            </div>
-          </div>
-        </div>
+                  {/* Lessons by Chapter */}
+                  <div className="space-y-4">
+                    {orderedChapters.map((chapter, chapterIdx) => (
+                      <div
+                        key={chapter.chapterId}
+                        className="bg-white rounded-xl border border-blue-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300"
+                      >
+                        <div className="px-4 py-3 border-b border-blue-100 bg-blue-50 rounded-t-lg">
+                          <p className="text-sm font-semibold text-gray-800">
+                            Chapter {chapterIdx + 1}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {chapter.lessons.length} lessons
+                          </p>
+                        </div>
 
-        <div className="mb-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-          <div className="grid grid-cols-4 gap-4">
-            {ratings.map((rate, idx) => (
-              <div
-                key={idx}
-                className="bg-blue-50 p-6 rounded-lg text-center flex flex-col items-center gap-3"
-              >
-                <div className="bg-white p-2 rounded-full shadow-sm">
-                  {rate.icon}
+                        <div className="p-3 space-y-2">
+                          {chapter.lessons.map((lesson, idx) => (
+                            <div
+                              key={lesson.id}
+                              className="flex items-center gap-3 p-3 bg-white rounded-lg border border-blue-100 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                            >
+                              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                                {idx + 1}
+                              </span>
+                              <div className="flex-1">
+                                <p className="text-gray-700 font-medium text-sm">
+                                  {lesson.title}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {lesson.duration || 10} min · +
+                                  {lesson.creditsAwarded || 0} credits
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="text-2xl font-bold text-gray-800">
-                  {rate.value}
-                </span>
-                <span className="text-xs text-gray-500 uppercase font-semibold">
-                  {rate.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-          <div className="bg-gray-50 rounded-xl p-16 flex flex-col items-center justify-center border border-dashed">
-            <MessageSquare size={48} className="text-gray-300 mb-4" />
-            <p className="text-gray-500 font-medium">No reviews yet</p>
-            <p className="text-xs text-gray-400 mt-2">
-              Be the first to leave a review for this course
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-12 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-          <div className="space-y-3">
-            {lectureNotesData.map((lesson, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-4 p-4 border rounded-xl hover:shadow-sm cursor-pointer transition-all bg-gray-50"
-              >
-                <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                  {idx + 1}
-                </span>
-                <span className="text-gray-700 font-medium">{lesson}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-12 bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-          <h3 className="text-xl font-semibold mb-6">Schedule</h3>
-          <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg mb-6">
-            <p className="text-blue-600 text-sm">
-              Choose the time for your first lesson. The timings are displayed
-              in your local timezone.
-            </p>
-          </div>
-
-          <div className="flex gap-4 mb-6">
-            <div className="flex bg-gray-100 p-1 rounded-lg">
-              {["25 mins", "50 mins"].map((dur) => (
-                <button
-                  key={dur}
-                  onClick={() => setSelectedDuration(dur)}
-                  className={`px-4 py-2 text-sm rounded-md transition-all ${selectedDuration === dur ? "bg-white shadow-sm font-semibold" : "text-gray-500"}`}
-                >
-                  {dur}
-                </button>
-              ))}
+              )}
             </div>
-            <div className="flex-1 bg-gray-100 rounded-lg"></div>
-          </div>
 
-          <div className="grid grid-cols-7 gap-2 mb-6 text-center">
-            {schedule.map((item) => (
-              <button
-                key={item.date}
-                onClick={() => setSelectedDate(`${item.day} ${item.date}`)}
-                className={`p-3 rounded-xl transition-all ${
-                  selectedDate === `${item.day} ${item.date}`
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                }`}
-              >
-                <div className="text-xs uppercase font-medium">{item.day}</div>
-                <div className="text-lg font-bold">{item.date}</div>
-              </button>
-            ))}
-          </div>
+            {/* Related Courses Section */}
+            <div className="max-w-6xl mx-auto px-6 pb-16">
+              <h2 className="text-4xl font-bold text-gray-900 mb-8">
+                Related Courses
+              </h2>
 
-          <div className="grid grid-cols-4 gap-3">
-            {times.map((t) => (
-              <button
-                key={t}
-                onClick={() => setSelectedTime(t)}
-                className={`py-3 border rounded-xl font-medium transition-all ${
-                  selectedTime === t
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "hover:border-blue-500 text-gray-700"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
+              {relatedCourses.length === 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-6 text-sm text-gray-500">
+                  No related courses available right now.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {relatedCourses.map((related) => (
+                    <div
+                      key={related.id}
+                      onClick={() => navigate(`/course/${related.id}`)}
+                      className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                    >
+                      {related.thumbnail ? (
+                        <img
+                          src={resolveMediaUrl(related.thumbnail)}
+                          alt={related.title}
+                          className="w-full h-40 object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-40 bg-gradient-to-br from-slate-700 to-slate-900 flex items-end p-3">
+                          <p className="text-slate-200 text-xs font-semibold uppercase tracking-wide">
+                            {(related.focusArea || "Course").slice(0, 18)}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="p-4">
+                        <p className="text-xs text-gray-500">{related.level}</p>
+                        <h3
+                          className="mt-1 text-xl font-semibold text-gray-800 leading-snug overflow-hidden"
+                          style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            minHeight: "3.15rem",
+                          }}
+                        >
+                          {related.title}
+                        </h3>
+                        <p className="mt-2 text-xs text-gray-500">
+                          {related.rating} ★ • {related.enrolledStudents}{" "}
+                          Learners • {related.durationWeeks} wks
+                        </p>
+                        <p className="mt-1 text-xs text-gray-600 truncate">
+                          by {related.instructor}
+                        </p>
+                        <p className="mt-2 text-xs text-gray-500">
+                          {related.totalLessons} lessons
+                        </p>
+                        <p className="mt-2 text-green-600 font-semibold text-sm">
+                          FREE
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { Flame, CircleCheck, Star, Trophy } from "lucide-react";
 
 import Navbar from "./Navbar";
 import StatCard from "./StatCard";
-import ContinueLearningCard from "./ContinueLearningCard";
+import SuggestedLearningCard from "./SuggestedLearningCard";
 import DailyChallengeCard from "./DailyChallengeCard";
 import RecentActivityCard from "./RecentActivityCard";
 import PerformanceCard from "./PerformanceCard";
@@ -76,7 +76,7 @@ export default function StudentDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
-            <ContinueLearningCard />
+            <SuggestedLearningCard />
           </div>
           <div className="lg:col-span-1">
             <DailyChallengeCard />

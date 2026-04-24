@@ -10,7 +10,7 @@ export default function CourseFormTabs({ activeTab, onTabChange }) {
         <button
           key={tab.key}
           onClick={() => onTabChange(tab.key)}
-          className={`pb-3 text-sm font-semibold relative transition-colors ${
+          className={`pb-3 text-lg font-bold relative transition-colors ${
             activeTab === tab.key
               ? "text-blue-600"
               : "text-black hover:text-black"

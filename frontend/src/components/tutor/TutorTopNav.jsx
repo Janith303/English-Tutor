@@ -53,20 +53,6 @@ export default function TutorTopNav({
             Add Quiz
           </button>
 
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {tutor?.avatar ? (
-              <img
-                src={tutor.avatar}
-                alt="avatar"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white text-xs font-bold">
-                {tutor?.name?.charAt(0) || "T"}
-              </span>
-            )}
-          </div>
-
           <button
             onClick={() => {
               onLogout && onLogout();

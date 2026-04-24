@@ -1,0 +1,77 @@
+export const idiomsQuestions = [
+  {
+    id: 1,
+    question: "What does the idiom 'break the ice' mean?",
+    options: ["To break something cold", "To initiate social interaction", "To cause trouble", "To start a fight"],
+    correctAnswer: "To initiate social interaction",
+    explanation: "'Break the ice' means to initiate conversation or social interaction in a situation where people feel awkward or reserved. It originated from the practice of breaking ice to allow ships to navigate frozen waters.",
+  },
+  {
+    id: 2,
+    question: "Which sentence correctly uses the idiom 'piece of cake'?",
+    options: [
+      "I dropped the cake on the floor, it was a piece of cake.",
+      "The exam was a piece of cake - I finished in 20 minutes.",
+      "She baked a delicious piece of cake for the party.",
+      "The cake was so big, it was a piece of cake."
+    ],
+    correctAnswer: "The exam was a piece of cake - I finished in 20 minutes.",
+    explanation: "'Piece of cake' is an idiom meaning something that is very easy to do or accomplish. The correct usage is to describe an easy task, not an actual cake.",
+  },
+  {
+    id: 3,
+    question: "What does 'hit the nail on the head' mean?",
+    options: ["To make a mistake", "To describe exactly what is causing a situation", "To hammer a nail incorrectly", "To forget something important"],
+    correctAnswer: "To describe exactly what is causing a situation",
+    explanation: "'Hit the nail on the head' means to describe or identify something with perfect accuracy. It refers to the precise action of striking a nail exactly where intended.",
+  },
+  {
+    id: 4,
+    question: "If someone says 'the cat's out of the bag', what has happened?",
+    options: ["A cat escaped from a bag", "A secret has been revealed", "Someone bought a new pet", "An item was lost"],
+    correctAnswer: "A secret has been revealed",
+    explanation: "'The cat's out of the bag' means that a secret has been accidentally revealed or disclosed. The phrase comes from the old trick of selling piglets in bags, where the scam was revealed when the cat jumped out instead of a piglet.",
+  },
+  {
+    id: 5,
+    question: "What does the idiom 'cost an arm and a leg' mean?",
+    options: ["To be very expensive", "To cause physical injury", "To be very cheap", "To be free"],
+    correctAnswer: "To be very expensive",
+    explanation: "'Cost an arm and a leg' means something is extremely expensive. It originated from the old portrait painting tradition where the price increased based on how much of the person was painted.",
+  },
+  {
+    id: 6,
+    question: "When someone 'bites the bullet', they are:",
+    options: ["Eating quickly", "Facing a difficult situation bravely", "Making a mistake", "Gossiping about others"],
+    correctAnswer: "Facing a difficult situation bravely",
+    explanation: "'Bite the bullet' means to endure a painful or difficult situation that is unavoidable. The phrase originated from battlefield surgeries where patients would bite on bullets to cope with pain.",
+  },
+  {
+    id: 7,
+    question: "What does 'spill the beans' mean?",
+    options: ["To cook food", "To accidentally reveal a secret", "To clean up a mess", "To plant a garden"],
+    correctAnswer: "To accidentally reveal a secret",
+    explanation: "'Spill the beans' means to reveal secret information, especially unintentionally. The phrase likely comes from voting procedures where beans were used as ballots, and accidentally knocking over the container would reveal the results.",
+  },
+  {
+    id: 8,
+    question: "If you 'beat around the bush', you are:",
+    options: ["Exercising in nature", "Avoiding the main topic", "Hunting animals", "Planting trees"],
+    correctAnswer: "Avoiding the main topic",
+    explanation: "'Beat around the bush' means to avoid talking about what is important, typically by delaying or digressing in conversation. It describes the action of hitting the area around a topic without directly addressing it.",
+  },
+  {
+    id: 9,
+    question: "What does 'burn the midnight oil' mean?",
+    options: ["To cook dinner late", "To work or study late into the night", "To waste energy", "To go camping"],
+    correctAnswer: "To work or study late into the night",
+    explanation: "'Burn the midnight oil' means to work or study until late at night. The phrase comes from the days when oil lamps were the primary source of light, and staying up late literally required burning oil past midnight.",
+  },
+  {
+    id: 10,
+    question: "When someone 'lets the cat out of the bag', they:",
+    options: ["Release a pet", "Reveal a secret", "Go shopping", "Make a mistake"],
+    correctAnswer: "Reveal a secret",
+    explanation: "'Let the cat out of the bag' means to reveal a secret, often unintentionally. This is similar to 'spill the beans' and has the same origin story about market tricks involving bags.",
+  },
+];

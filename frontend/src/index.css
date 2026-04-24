@@ -7,36 +7,35 @@
 /* Use @theme directive for Tailwind v4 variables (colors, fonts, etc.) */
 @theme {
   /* Primary Blue Palette */
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-page-bg: #EFF6FF;
-  --color-section-bg: #DBEAFE;
-  --color-card-bg: #FFFFFF;
-  
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-page-bg: #eff6ff;
+  --color-section-bg: #dbeafe;
+  --color-card-bg: #ffffff;
+
   /* Text Colors */
-  --color-text-heading: #0F172A;
+  --color-text-heading: #0f172a;
   --color-text: #475569;
-  --color-text-muted: #94A3B8;
-  
+  --color-text-muted: #94a3b8;
+
   /* Border & UI */
-  --color-border: #E2E8F0;
-  
+  --color-border: #e2e8f0;
+
   /* Accent Colors */
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-purple: #8B5CF6;
-  --color-orange: #FB923C;
-  
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-purple: #8b5cf6;
+  --color-orange: #fb923c;
+
   /* Legacy mappings for compatibility */
-  --color-accent: #2563EB;
+  --color-accent: #2563eb;
   --color-accent-bg: #eff6ff;
   --color-accent-border: #e2e8f0;
   --color-code-bg: #f4f3ec;
   --color-social-bg: #eff6ff;
 
-  --shadow: 
-    rgba(0, 0, 0, 0.08) 0 4px 6px -1px,
-    rgba(0, 0, 0, 0.04) 0 2px 4px -1px;
+  --shadow:
+    rgba(0, 0, 0, 0.08) 0 4px 6px -1px, rgba(0, 0, 0, 0.04) 0 2px 4px -1px;
 
   --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
   --font-heading: system-ui, "Segoe UI", Roboto, sans-serif;
@@ -60,9 +59,8 @@
     --color-code-bg: #1f2937;
     --color-social-bg: rgba(59, 130, 246, 0.1);
 
-    --shadow: 
-      rgba(0, 0, 0, 0.3) 0 4px 6px -1px,
-      rgba(0, 0, 0, 0.2) 0 2px 4px -1px;
+    --shadow:
+      rgba(0, 0, 0, 0.3) 0 4px 6px -1px, rgba(0, 0, 0, 0.2) 0 2px 4px -1px;
   }
 
   #social .button-icon {
@@ -96,7 +94,12 @@
     margin: 0;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-heading);
     font-weight: 600;
     color: var(--color-text-heading);
@@ -136,3 +139,13 @@
 }
 
 /* 5. Any component-specific or utility overrides can go here later */
+
+/* Shared mesh background across routed pages */
+.app-mesh-scope {
+  background-color: #f8fafc;
+}
+
+/* Keep card/section backgrounds, but let page-level wrappers show the mesh */
+.app-mesh-active [class*="min-h-screen"][class*="bg-"] {
+  background-color: transparent !important;
+}

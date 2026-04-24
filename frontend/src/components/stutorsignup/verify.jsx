@@ -179,7 +179,7 @@ export default function TutorStepOne({ onNext }) {
                   <CheckCircle2 size={20} /> Eligibility Confirmed
                 </div>
                 <button
-                  onClick={() => navigate("/stsignup/stexperiance")}
+                  onClick={() => navigate("/stsignup/mailverify")}
                   className="w-full py-5 bg-blue-600 text-white rounded-[1.8rem] font-black text-lg shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-3"
                 >
                   Proceed to Skills & Experience <ArrowRight size={22} />

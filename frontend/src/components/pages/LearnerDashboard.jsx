@@ -1,16 +1,51 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LearnerTopNav from "../learner/LearnerTopNav";
 import WelcomeHeroBanner from "../learner/WelcomeHeroBanner";
 import RecommendedCoursesGrid from "../learner/RecommendedCoursesGrid";
 import { mockStudent, mockCourses } from "../../data/mockCourses";
+import {
+  filterCoursesForStudentPreferences,
+  getPublishedCourses,
+  getStudentProfile,
+  toLearnerCourseCard,
+  toLearnerStudentProfile,
+} from "../../api/courseApi";
 
 export default function LearnerDashboard() {
   const navigate = useNavigate();
-  const student = mockStudent;
+  const [student, setStudent] = useState(mockStudent);
+  const [recommendedCourses, setRecommendedCourses] = useState(mockCourses);
 
-  const recommendedCourses = mockCourses.filter(
-    (c) => c.level === student.level
-  );
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const [profileData, published] = await Promise.all([
+          getStudentProfile(),
+          getPublishedCourses(),
+        ]);
+
+        const resolvedStudent = toLearnerStudentProfile(
+          profileData,
+          mockStudent,
+        );
+        setStudent(resolvedStudent);
+
+        const mappedCourses = (published || []).map(toLearnerCourseCard);
+        setRecommendedCourses(
+          filterCoursesForStudentPreferences(mappedCourses, resolvedStudent),
+        );
+      } catch (error) {
+        console.error("Failed to load legacy learner dashboard data:", error);
+        setStudent(mockStudent);
+        setRecommendedCourses(
+          filterCoursesForStudentPreferences(mockCourses, mockStudent),
+        );
+      }
+    };
+
+    loadDashboard();
+  }, []);
 
   const handleEnroll = (course) => {
     navigate("/hub", { state: { course } });
