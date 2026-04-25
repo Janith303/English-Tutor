@@ -97,7 +97,6 @@ const QandAPage = () => {
     return filtered;
   };
 
-  // --- NEW: LOGIC TO FILTER ARTICLES ---
   const getDisplayArticles = () => {
     return articles.filter((art) => {
       const query = searchQuery.toLowerCase();
@@ -260,6 +259,15 @@ const QandAPage = () => {
                     <h3 className="text-2xl font-bold mb-3 text-slate-900 leading-tight">{q.title}</h3>
                     <p className="text-slate-600 text-base leading-relaxed line-clamp-3 mb-6">{q.body}</p>
                     
+                    {/* ADDED TAGS DISPLAY BACK */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {q.tags && q.tags.map((tag) => (
+                        <span key={tag} className="text-blue-700 text-[10px] font-black px-3 py-1 rounded-md bg-blue-50 border border-blue-100 uppercase tracking-tight">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+
                     <div className="flex items-center justify-between text-slate-400 text-xs font-bold border-t border-black/[0.02] pt-5">
                       <div className="flex items-center gap-2">
                         <img
@@ -282,7 +290,6 @@ const QandAPage = () => {
         ) : (
           <div className="bg-white/40 border border-black/[0.05] rounded-[2.5rem] p-8 min-h-[500px]">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 justify-items-center">
-              {/* --- UPDATED: MAPPING displayArticles INSTEAD OF articles --- */}
               {displayArticles.length > 0 ? (
                 displayArticles.map((art) => (
                   <div 
