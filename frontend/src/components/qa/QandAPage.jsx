@@ -97,7 +97,18 @@ const QandAPage = () => {
     return filtered;
   };
 
+  // --- NEW: LOGIC TO FILTER ARTICLES ---
+  const getDisplayArticles = () => {
+    return articles.filter((art) => {
+      const query = searchQuery.toLowerCase();
+      const matchesTitle = art.title.toLowerCase().includes(query);
+      const matchesAuthor = art.author_name?.toLowerCase().includes(query);
+      return matchesTitle || matchesAuthor;
+    });
+  };
+
   const displayQuestions = getDisplayQuestions();
+  const displayArticles = getDisplayArticles();
 
   const handleUpvote = async (id, e) => {
     e.stopPropagation();
@@ -250,7 +261,6 @@ const QandAPage = () => {
                     <p className="text-slate-600 text-base leading-relaxed line-clamp-3 mb-6">{q.body}</p>
                     
                     <div className="flex items-center justify-between text-slate-400 text-xs font-bold border-t border-black/[0.02] pt-5">
-                      {/* --- ADDED STUDENT AVATAR HERE --- */}
                       <div className="flex items-center gap-2">
                         <img
                           src={`https://ui-avatars.com/api/?name=${q.author_name}&background=random&color=fff&bold=true`}
@@ -272,8 +282,9 @@ const QandAPage = () => {
         ) : (
           <div className="bg-white/40 border border-black/[0.05] rounded-[2.5rem] p-8 min-h-[500px]">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 justify-items-center">
-              {articles.length > 0 ? (
-                articles.map((art) => (
+              {/* --- UPDATED: MAPPING displayArticles INSTEAD OF articles --- */}
+              {displayArticles.length > 0 ? (
+                displayArticles.map((art) => (
                   <div 
                     key={art.id} 
                     className="bg-white border border-black/[0.08] rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group cursor-pointer w-full max-w-[340px]"
@@ -300,7 +311,9 @@ const QandAPage = () => {
               ) : (
                 <div className="col-span-full text-center py-32 opacity-40">
                   <BookOpen size={64} className="mx-auto mb-4" />
-                  <p className="font-bold text-xl uppercase tracking-tighter italic">Library Empty</p>
+                  <p className="font-bold text-xl uppercase tracking-tighter italic">
+                    {searchQuery ? "No matches found" : "Library Empty"}
+                  </p>
                 </div>
               )}
             </div>
