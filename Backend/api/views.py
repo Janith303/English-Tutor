@@ -992,7 +992,9 @@ class QuizListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        quizzes = Quiz.objects.filter(is_active=True).select_related('created_by').distinct()
+        quizzes = Quiz.objects.filter(is_active=True).exclude(
+            questions__is_approved=False
+        ).select_related('created_by').distinct()
         serializer = QuizListSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -1002,7 +1004,9 @@ class QuizDetailView(APIView):
 
     def get(self, request, quiz_id):
         try:
-            quiz = Quiz.objects.select_related('created_by').prefetch_related('questions__options').get(id=quiz_id, is_active=True)
+            quiz = Quiz.objects.select_related('created_by').prefetch_related('questions__options').exclude(
+                questions__is_approved=False
+            ).get(id=quiz_id, is_active=True)
         except Quiz.DoesNotExist:
             return Response({'error': 'Quiz not found.'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -1014,7 +1018,9 @@ class QuizCategoryListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, category):
-        quizzes = Quiz.objects.filter(category=category.upper(), is_active=True).select_related('created_by').distinct()
+        quizzes = Quiz.objects.filter(category=category.upper(), is_active=True).exclude(
+            questions__is_approved=False
+        ).select_related('created_by').distinct()
         serializer = QuizListSerializer(quizzes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
