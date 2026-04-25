@@ -6,6 +6,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db.models import Sum
 from rest_framework import serializers
 from .models import Notification
+from .models import Article
 
 # --- 1. AUTHENTICATION SERIALIZER ---
 # This fixes your navigation issue by adding 'role' to the login response
@@ -1272,3 +1273,19 @@ class NotificationSerializer(serializers.ModelSerializer):
     def get_created_at_human(self, obj):
         from django.contrib.humanize.templatetags.humanize import naturaltime
         return naturaltime(obj.created_at)
+    
+    #Articles QA Wall------------------------------------
+
+class ArticleSerializer(serializers.ModelSerializer):
+    author_name = serializers.ReadOnlyField(source='author.full_name')
+    created_at_human = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Article
+        fields = ['id', 'title', 'image', 'author', 'author_name', 'created_at_human']
+        read_only_fields = ['author']
+
+    def get_created_at_human(self, obj):
+        # Returns a readable string like "2 days ago"
+        from django.contrib.humanize.templatetags.humanize import naturaltime
+        return naturaltime(obj.created_at)    

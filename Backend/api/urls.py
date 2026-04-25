@@ -22,6 +22,7 @@ from .views import (
     QuestionDetailView,
     UserProfileView,               # ADDED: For dynamic profile name
     NotificationViewSet,           # ADDED: Step 5 for Intelligent Routing
+    ArticleViewSet,
 )
 
 from rest_framework.routers import DefaultRouter
@@ -30,6 +31,7 @@ router = DefaultRouter()
 router.register(r'wall-questions', WallQuestionViewSet)
 router.register(r'wall-answers', WallAnswerViewSet)
 router.register(r'notifications', NotificationViewSet, basename='notifications') # ADDED: Step 5
+router.register(r'articles', ArticleViewSet) # ADDED: For PNG articles
 
 urlpatterns = [
     # --- Router URLs (The missing piece of Step 4) ---

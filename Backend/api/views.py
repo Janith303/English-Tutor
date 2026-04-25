@@ -16,6 +16,9 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from .models import Notification, WallQuestion
 from .serializers import WallQuestionSerializer
+from rest_framework import viewsets, permissions, status
+from .models import Article
+from .serializers import ArticleSerializer
 
 # Make sure to import the new models and serializers
 from .models import User, OTP, Interest, Question, TestResult, StudentTutorProfile, TutorOTP, WallQuestion, WallAnswer
@@ -2241,3 +2244,30 @@ class ResetPasswordConfirmView(APIView):
             return Response({"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST)
         except OTP.DoesNotExist:
             return Response({"error": "Invalid verification code."}, status=status.HTTP_400_BAD_REQUEST)
+
+#Articles QA Wall part------------------------------
+class ArticleViewSet(viewsets.ModelViewSet):
+    queryset = Article.objects.all()
+    serializer_class = ArticleSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'destroy']:
+            # Only Tutors and Admins can upload or delete
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        # Logic to ensure only Tutors can post (optional additional check)
+        if self.request.user.role != 'TUTOR' and not self.request.user.is_staff:
+            return Response(
+                {"detail": "Only tutors can publish articles."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        serializer.save(author=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        article = self.get_object()
+        # Security: Only the owner or an admin can delete
+        if article.author != request.user and not request.user.is_staff:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)        

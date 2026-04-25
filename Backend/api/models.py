@@ -645,3 +645,16 @@ def route_question_to_specialists(sender, instance, created, **kwargs):
                     print(f"NOTICE: Tutor is the author. Skipping notification.")
         
         print(f"--- [ROUTING DEBUG END] ---\n")
+
+class Article(models.Model):
+    title = models.CharField(max_length=255)
+    # This stores the PNG file in a 'articles/' folder inside your media directory
+    image = models.ImageField(upload_to='articles/') 
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ['-created_at']        
