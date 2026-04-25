@@ -169,3 +169,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # settings.py
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+#QA Wall Article 
+# The URL prefix used in the browser to see the images
+MEDIA_URL = '/media/'
+
+# The actual folder on your computer where the PNGs will be saved
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

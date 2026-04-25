@@ -131,6 +131,15 @@ const QandAPage = () => {
     setQuestions([newQuestion, ...questions]);
   };
 
+  // --- NEW: FUNCTION TO OPEN IMAGE ---
+  const handleViewPng = (imageUrl) => {
+    // If Django sends a relative path, ensure we prepend the base URL
+    const fullUrl = imageUrl.startsWith('http') 
+      ? imageUrl 
+      : `http://127.0.0.1:8000${imageUrl}`;
+    window.open(fullUrl, "_blank");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-slate-900">
       <nav className="bg-white border-b px-8 py-3 flex items-center justify-between sticky top-0 z-10 shadow-sm">
@@ -190,18 +199,13 @@ const QandAPage = () => {
           </p>
         </header>
 
-        {/* --- RE-ALIGNED NAVIGATION ROW --- */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          {/* 1. FILTER TABS (Now on the LEFT) */}
           {view === 'qa' ? (
             <div className="flex gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm w-fit overflow-x-auto">
               {["All Questions", "My Questions", "Unanswered", "Most Upvoted"].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => {
-                    setActiveTab(tab);
-                    setExpandedId(null); 
-                  }}
+                  onClick={() => { setActiveTab(tab); setExpandedId(null); }}
                   className={`px-6 py-2 rounded-lg text-sm font-bold whitespace-nowrap transition-all ${
                     activeTab === tab ? "bg-blue-600 text-white shadow-md shadow-blue-100 scale-105" : "text-slate-500 hover:bg-slate-50"
                   }`}
@@ -211,10 +215,9 @@ const QandAPage = () => {
               ))}
             </div>
           ) : (
-            <div /> // Empty space placeholder for Articles view
+            <div />
           )}
 
-          {/* 2. VIEW TOGGLE BUTTON (Now on the RIGHT) */}
           <div className="flex bg-white border border-slate-200 p-1 rounded-xl shadow-sm w-fit md:ml-auto">
             <button 
               onClick={() => setView('qa')}
@@ -346,7 +349,13 @@ const QandAPage = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
-                      <button className="bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-xl">View PNG</button>
+                      {/* --- FIX: ADDED ONCLICK TO OPEN PNG --- */}
+                      <button 
+                        onClick={() => handleViewPng(art.image)}
+                        className="bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-xl active:scale-95 transition-all hover:bg-blue-50"
+                      >
+                        View PNG
+                      </button>
                     </div>
                   </div>
                   <div className="p-5">
