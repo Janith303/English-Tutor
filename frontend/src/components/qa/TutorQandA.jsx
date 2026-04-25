@@ -10,10 +10,11 @@ import {
   Send, 
   X,
   AlertCircle,
-  BookOpen, // New for articles
-  Upload, // New for upload
-  FileImage, // New for PNGs
-  Trash2 // New for deleting articles
+  BookOpen,
+  Upload,
+  FileImage,
+  Trash2,
+  Maximize2 // Added for the preview icon
 } from 'lucide-react';
 
 const TutorQandA = () => {
@@ -28,8 +29,7 @@ const TutorQandA = () => {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
-  // --- NEW: ARTICLE STATES ---
-  const [view, setView] = useState("qa"); // 'qa' or 'articles'
+  const [view, setView] = useState("qa");
   const [articles, setArticles] = useState([]);
   const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
   const [articleTitle, setArticleTitle] = useState("");
@@ -40,7 +40,7 @@ const TutorQandA = () => {
     fetchQuestions();
     fetchNotifications();
     fetchUserProfile();
-    fetchArticles(); // Fetch articles on load
+    fetchArticles();
     
     const interval = setInterval(fetchNotifications, 120000);
     return () => clearInterval(interval);
@@ -60,7 +60,6 @@ const TutorQandA = () => {
     }
   };
 
-  // --- NEW: FETCH ARTICLES ---
   const fetchArticles = async () => {
     try {
       const token = localStorage.getItem('access_token');
@@ -131,7 +130,6 @@ const TutorQandA = () => {
     }
   };
 
-  // --- NEW: UPLOAD ARTICLE LOGIC ---
   const handleUploadArticle = async (e) => {
     e.preventDefault();
     if (!articleTitle || !articleFile) {
@@ -162,18 +160,24 @@ const TutorQandA = () => {
     }
   };
 
-  const handleDeleteArticle = async (id) => {
+  const handleDeleteArticle = (id, e) => {
+      e.stopPropagation(); // Prevents opening the image when clicking delete
       if(!window.confirm("Delete this article?")) return;
-      try {
-        const token = localStorage.getItem('access_token');
-        await axios.delete(`http://127.0.0.1:8000/api/articles/${id}/`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        setArticles(articles.filter(a => a.id !== id));
-      } catch (err) {
-          alert("Could not delete article.");
-      }
-  }
+      const token = localStorage.getItem('access_token');
+      axios.delete(`http://127.0.0.1:8000/api/articles/${id}/`, {
+          headers: { Authorization: `Bearer ${token}` }
+      }).then(() => {
+          setArticles(articles.filter(a => a.id !== id));
+      }).catch(() => alert("Could not delete."));
+  };
+
+  // --- FUNCTION TO VIEW FULL PNG ---
+  const handleViewPng = (imageUrl) => {
+    const fullUrl = imageUrl.startsWith('http') 
+      ? imageUrl 
+      : `http://127.0.0.1:8000${imageUrl}`;
+    window.open(fullUrl, "_blank");
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans text-slate-900">
@@ -263,7 +267,7 @@ const TutorQandA = () => {
         </div>
 
         {view === "qa" ? (
-            /* --- ORIGINAL QUESTION FEED --- */
+            /* --- QUESTION FEED --- */
             <div className="space-y-6">
             {loading ? (
                 <div className="text-center py-20 flex flex-col items-center gap-4">
@@ -275,7 +279,7 @@ const TutorQandA = () => {
                 const isAnswered = q.answers?.some(ans => ans.is_expert_answer);
                 return (
                     <div key={q.id} className="bg-white border border-black/[0.08] rounded-3xl p-8 flex gap-8 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex flex-col items-center gap-1 text-slate-300 bg-slate-50 rounded-2xl px-4 py-3 h-fit border border-black/[0.03]">
+                    <div className="flex flex-col items-center gap-1 text-slate-300 bg-slate-50 rounded-xl px-4 py-3 h-fit border border-black/[0.03]">
                         <ChevronUp size={24} className="hover:text-blue-600 cursor-pointer" />
                         <span className="font-black text-2xl text-slate-800">{q.votes}</span>
                         <ChevronDown size={24} className="hover:text-red-400 cursor-pointer" />
@@ -327,25 +331,37 @@ const TutorQandA = () => {
             )}
             </div>
         ) : (
-            /* --- NEW ARTICLES GALLERY SECTION --- */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            /* --- REFINED COMPACT ARTICLES GALLERY --- */
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {articles.map((art) => (
-                    <div key={art.id} className="bg-white border border-black/[0.08] rounded-3xl overflow-hidden shadow-sm group">
-                        <div className="aspect-[4/5] bg-slate-100 relative overflow-hidden">
-                            <img src={art.image} alt={art.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                            <div className="absolute top-4 right-4">
+                    <div 
+                      key={art.id} 
+                      className="bg-white border border-black/[0.08] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all group relative cursor-pointer"
+                      onClick={() => handleViewPng(art.image)}
+                    >
+                        <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                            <img src={art.image} alt={art.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            
+                            {/* Hover Overlay for Clicking to View */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <div className="bg-white/90 p-2 rounded-full shadow-lg">
+                                    <Maximize2 size={20} className="text-slate-900" />
+                                </div>
+                            </div>
+
+                            <div className="absolute top-2 right-2">
                                 <button 
-                                    onClick={() => handleDeleteArticle(art.id)}
-                                    className="p-2 bg-white/90 text-red-500 rounded-lg shadow-md hover:bg-red-500 hover:text-white transition-all"
+                                    onClick={(e) => handleDeleteArticle(art.id, e)}
+                                    className="p-1.5 bg-white/90 text-red-500 rounded-lg shadow-md hover:bg-red-500 hover:text-white transition-all"
                                 >
-                                    <Trash2 size={16} />
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         </div>
-                        <div className="p-5">
-                            <h4 className="font-bold text-slate-800 text-lg mb-1">{art.title}</h4>
-                            <p className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2">
-                                <Clock size={12} /> {art.created_at_human}
+                        <div className="p-3">
+                            <h4 className="font-bold text-slate-800 text-sm truncate">{art.title}</h4>
+                            <p className="text-[9px] font-black uppercase text-slate-400 mt-1 flex items-center gap-1">
+                                <Clock size={10} /> {art.created_at_human}
                             </p>
                         </div>
                     </div>
@@ -353,14 +369,14 @@ const TutorQandA = () => {
                 {articles.length === 0 && (
                     <div className="col-span-full py-20 text-center bg-white border-2 border-dashed border-black/[0.08] rounded-3xl">
                         <FileImage size={48} className="mx-auto text-slate-200 mb-4" />
-                        <p className="text-slate-400 font-bold uppercase text-sm tracking-widest">No Articles Uploaded Yet</p>
+                        <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">No Resources Published</p>
                     </div>
                 )}
             </div>
         )}
       </main>
 
-      {/* --- NEW: ARTICLE UPLOAD MODAL --- */}
+      {/* --- ARTICLE UPLOAD MODAL --- */}
       {isArticleModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsArticleModalOpen(false)}></div>
