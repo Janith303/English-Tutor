@@ -259,7 +259,6 @@ const QandAPage = () => {
                     <h3 className="text-2xl font-bold mb-3 text-slate-900 leading-tight">{q.title}</h3>
                     <p className="text-slate-600 text-base leading-relaxed line-clamp-3 mb-6">{q.body}</p>
                     
-                    {/* ADDED TAGS DISPLAY BACK */}
                     <div className="flex flex-wrap gap-2 mb-6">
                       {q.tags && q.tags.map((tag) => (
                         <span key={tag} className="text-blue-700 text-[10px] font-black px-3 py-1 rounded-md bg-blue-50 border border-blue-100 uppercase tracking-tight">
@@ -279,6 +278,15 @@ const QandAPage = () => {
                       </div>
 
                       <div className="flex items-center gap-6">
+                        {/* RE-ADDED DELETE BUTTON */}
+                        {q.is_owner && (
+                          <button 
+                            onClick={(e) => handleDelete(q.id, e)}
+                            className="flex items-center gap-1.5 text-red-400 hover:text-red-600 transition-colors"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                        )}
                         <span className="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full"><MessageSquare size={14} /> {q.answers?.length || 0} Comments</span>
                         <span className="flex items-center gap-1.5"><Clock size={14} /> {q.created_at_human}</span>
                       </div>
