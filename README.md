@@ -6,8 +6,8 @@ An intelligent, university-based English learning platform designed to elevate s
 
 ## 👥 Contributors
 
-| Name | Role | GitHub |
-| :--- | :--- | :--- |
+| Name | GitHub |
+| :--- | :--- |
 | **Ruwanthi Thennakoon** | [@ruwanthi-t](https://github.com/ruwanthiThe) |
 | **Janith Dissanayaka**  | [@janith-d](https://github.com/Janith303) |
 | **Thilina Gunasekara**  | [@thilina-g](https://github.com/thilina250981) |
