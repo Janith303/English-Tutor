@@ -165,7 +165,7 @@ export default function AdminDashboard() {
           <h1 className="text-2xl font-black text-blue-600 tracking-tighter italic">English Tutor<span className="text-slate-900">Admin</span></h1>
         </div>
         
-        <nav className="flex-1 px-4 space-y-1">
+        <nav className="flex-1 px-3 space-y-1">
           <NavItem to="/admin/dashboard" icon={<LayoutDashboard size={20}/>} label="Dashboard Overview" />
           <NavItem to="/admin/requests" icon={<Clock size={20}/>} label="Tutor Requests" badge={stats.pendingRequests} />
           <NavItem to="/admin/users" icon={<Users size={20}/>} label="All Users" />
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
           <NavItem to="/admin/course-approval" icon={<GraduationCap size={20}/>} label="Course Content Approval" badge={stats.pendingCourseApprovals} />
           <button 
             onClick={() => { localStorage.clear(); navigate("/login"); }}
-            className="flex items-center gap-3 w-full px-4 py-4 text-slate-500 font-bold hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
+            className="flex items-center gap-3 w-full px-3 py-4 text-slate-500 font-bold hover:bg-red-50 hover:text-red-600 rounded-xl transition-all"
           >
             <LogOut size={20} /> Logout
           </button>
